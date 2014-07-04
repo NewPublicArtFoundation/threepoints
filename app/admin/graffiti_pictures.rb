@@ -1,4 +1,5 @@
 ActiveAdmin.register GraffitiPictures do
+  permit_params :image_url, :image_description
 
   
   # See permitted parameters documentation:
