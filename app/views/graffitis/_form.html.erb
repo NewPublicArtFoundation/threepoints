@@ -1,0 +1,14 @@
+<%= simple_form_for(@graffiti) do |f| %>
+  <%= f.error_notification %>
+
+  <div class="form-inputs">
+    <%= f.input :description %>
+    <%= f.input :discovered_at %>
+    <%= f.input :painted_at %>
+    <%= f.input :buffed_at %>
+  </div>
+
+  <div class="form-actions">
+    <%= f.button :submit %>
+  </div>
+<% end %>

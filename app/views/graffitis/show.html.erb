@@ -1,0 +1,24 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Description:</strong>
+  <%= @graffiti.description %>
+</p>
+
+<p>
+  <strong>Discovered at:</strong>
+  <%= @graffiti.discovered_at %>
+</p>
+
+<p>
+  <strong>Painted at:</strong>
+  <%= @graffiti.painted_at %>
+</p>
+
+<p>
+  <strong>Buffed at:</strong>
+  <%= @graffiti.buffed_at %>
+</p>
+
+<%= link_to 'Edit', edit_graffiti_path(@graffiti) %> |
+<%= link_to 'Back', graffitis_path %>
