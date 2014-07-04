@@ -6,6 +6,8 @@ class CreateLocations < ActiveRecord::Migration
       t.text :address
       t.float :longitude
       t.float :latitude
+      t.datetime :discovered_at, :include_blank => true
+      t.datetime :demolished_at, :include_blank => true
 
       t.timestamps
     end
