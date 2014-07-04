@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  resources :artists
+
   resources :graffitis do
   #->Prelang (voting/acts_as_votable)
   member do
