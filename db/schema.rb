@@ -100,7 +100,7 @@ ActiveRecord::Schema.define(version: 20140704215359) do
 
   create_table "graffitis", force: true do |t|
     t.text     "description"
-    t.datetime "discovered_at", default: '2014-07-04 22:27:33'
+    t.datetime "discovered_at"
     t.datetime "painted_at"
     t.datetime "buffed_at"
     t.datetime "created_at"
@@ -121,6 +121,8 @@ ActiveRecord::Schema.define(version: 20140704215359) do
     t.text     "address"
     t.float    "longitude"
     t.float    "latitude"
+    t.datetime "discovered_at"
+    t.datetime "demolished_at"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
