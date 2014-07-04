@@ -1,5 +1,5 @@
 class GraffitisController < ApplicationController
-  before_action :set_graffiti, only: [:show, :edit, :update, :destroy]
+  before_action :set_graffiti, only: [:show, :edit, :update, :destroy, :vote]
 
   # GET /graffitis
   # GET /graffitis.json
