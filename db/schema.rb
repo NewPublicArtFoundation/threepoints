@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140704213650) do
+ActiveRecord::Schema.define(version: 20140704213758) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -46,6 +46,30 @@ ActiveRecord::Schema.define(version: 20140704213650) do
   add_index "admin_users", ["email"], name: "index_admin_users_on_email", unique: true
   add_index "admin_users", ["reset_password_token"], name: "index_admin_users_on_reset_password_token", unique: true
 
+  create_table "artists", force: true do |t|
+    t.string   "name"
+    t.text     "description"
+    t.datetime "began_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "artists_graffitis", force: true do |t|
+    t.integer "artist_id"
+    t.integer "graffiti_id"
+  end
+
+  add_index "artists_graffitis", ["artist_id"], name: "index_artists_graffitis_on_artist_id"
+  add_index "artists_graffitis", ["graffiti_id"], name: "index_artists_graffitis_on_graffiti_id"
+
+  create_table "artists_locations", force: true do |t|
+    t.integer "artist_id"
+    t.integer "location_id"
+  end
+
+  add_index "artists_locations", ["artist_id"], name: "index_artists_locations_on_artist_id"
+  add_index "artists_locations", ["location_id"], name: "index_artists_locations_on_location_id"
+
   create_table "delayed_jobs", force: true do |t|
     t.integer  "priority",   default: 0, null: false
     t.integer  "attempts",   default: 0, null: false
@@ -61,6 +85,68 @@ ActiveRecord::Schema.define(version: 20140704213650) do
   end
 
   add_index "delayed_jobs", ["priority", "run_at"], name: "delayed_jobs_priority"
+
+  create_table "graffiti_pictures", force: true do |t|
+    t.integer  "graffiti_id"
+    t.string   "image_url"
+    t.text     "image_description"
+    t.integer  "location_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "graffiti_pictures", ["graffiti_id"], name: "index_graffiti_pictures_on_graffiti_id"
+  add_index "graffiti_pictures", ["location_id"], name: "index_graffiti_pictures_on_location_id"
+
+  create_table "graffitis", force: true do |t|
+    t.text     "description"
+    t.datetime "discovered_at"
+    t.datetime "painted_at"
+    t.datetime "buffed_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "graffitis_locations", force: true do |t|
+    t.integer "graffiti_id"
+    t.integer "location_id"
+  end
+
+  add_index "graffitis_locations", ["graffiti_id"], name: "index_graffitis_locations_on_graffiti_id"
+  add_index "graffitis_locations", ["location_id"], name: "index_graffitis_locations_on_location_id"
+
+  create_table "locations", force: true do |t|
+    t.text     "city_name"
+    t.text     "country_name"
+    t.text     "address"
+    t.float    "longitude"
+    t.float    "latitude"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "users", force: true do |t|
+    t.string   "email",                  default: "", null: false
+    t.string   "encrypted_password",     default: "", null: false
+    t.string   "reset_password_token"
+    t.datetime "reset_password_sent_at"
+    t.datetime "remember_created_at"
+    t.integer  "sign_in_count",          default: 0,  null: false
+    t.datetime "current_sign_in_at"
+    t.datetime "last_sign_in_at"
+    t.string   "current_sign_in_ip"
+    t.string   "last_sign_in_ip"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.string   "provider"
+    t.string   "uid"
+    t.string   "name"
+    t.string   "username"
+  end
+
+  add_index "users", ["email"], name: "index_users_on_email", unique: true
+  add_index "users", ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+  add_index "users", ["username"], name: "index_users_on_username", unique: true
 
   create_table "votes", force: true do |t|
     t.integer  "votable_id"
