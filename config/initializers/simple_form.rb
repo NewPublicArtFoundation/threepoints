@@ -40,7 +40,11 @@ SimpleForm.setup do |config|
     b.optional :readonly
 
     ## Inputs
-    b.use :label_input
+    # b.use :label_input
+    b.wrapper :my_wrapper, tag: :div, class: 'row' do |c|
+      c.use :label, wrap_with: {tag: :div, class: 'large-3 columns'}
+      c.use :input, wrap_with: {tag: :div, class: 'large-9 columns'}
+    end
     b.use :hint,  wrap_with: { tag: :span, class: :hint }
     b.use :error, wrap_with: { tag: :span, class: :error }
   end
@@ -55,7 +59,7 @@ SimpleForm.setup do |config|
   config.boolean_style = :nested
 
   # Default class for buttons
-  config.button_class = 'btn'
+  config.button_class = 'button'
 
   # Method used to tidy up errors. Specify any Rails Array method.
   # :first lists the first message for each field.
@@ -95,10 +99,11 @@ SimpleForm.setup do |config|
   # config.label_text = lambda { |label, required| "#{required} #{label}" }
 
   # You can define the class to use on all labels. Default is nil.
-  config.label_class = 'control-label'
+  config.label_class ='text-right inline'
 
   # You can define the class to use on all forms. Default is simple_form.
   # config.form_class = :simple_form
+  config.form_class = :nice
 
   # You can define which elements should obtain additional classes
   # config.generate_additional_classes_for = [:wrapper, :label, :input]
@@ -142,4 +147,7 @@ SimpleForm.setup do |config|
 
   # Default class for inputs
   # config.input_class = nil
+
+  require Rails.root.join("lib/core_ext/simple_form/inputs/string_input")
+  require Rails.root.join("lib/core_ext/simple_form/inputs/password_input")
 end
