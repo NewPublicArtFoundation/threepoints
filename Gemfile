@@ -14,7 +14,7 @@ gem 'coffee-rails', '~> 4.0.0'
 # gem 'therubyracer',  platforms: :ruby
 
 gem 'paperclip', github: 'thoughtbot/paperclip'
-gem 'aws-sdk', '~> 1.20.0'
+gem 'aws-sdk'
 
 gem 'foundation-rails'
 # Use jquery as the JavaScript library
