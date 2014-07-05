@@ -45,6 +45,7 @@ gem 'paper_trail', '~> 3.0.3'
 
 gem 'bundler'
 
+gem 'geocoder'
 gem 'validates_formatting_of'
 gem 'tzinfo-data'
 gem 'rails_config'
