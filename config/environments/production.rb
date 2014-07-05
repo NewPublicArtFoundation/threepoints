@@ -85,6 +85,8 @@ Rails.application.configure do
   #->Prelang
   GA.tracker = ""
 
+  config.assets.compile = true
+
   config.paperclip_defaults = {
     :storage => :s3,
     :s3_credentials => {
