@@ -14,6 +14,8 @@ gem 'coffee-rails', '~> 4.0.0'
 # See https://github.com/sstephenson/execjs#readme for more supported runtimes
 # gem 'therubyracer',  platforms: :ruby
 
+gem "paperclip", "~> 4.1"
+
 gem 'foundation-rails'
 # Use jquery as the JavaScript library
 gem 'jquery-rails'
@@ -46,6 +48,7 @@ gem 'paper_trail', '~> 3.0.3'
 gem 'bundler'
 
 gem 'geocoder'
+
 gem 'validates_formatting_of'
 gem 'tzinfo-data'
 gem 'rails_config'
