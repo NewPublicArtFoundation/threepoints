@@ -60,6 +60,8 @@ gem 'binding_of_caller'
 gem 'simple_form'
 gem 'activeadmin', github: 'gregbell/active_admin'
 gem 'devise', github: 'plataformatec/devise'
+gem 'rolify'
+gem 'cancan'
 gem 'omniauth'
 gem 'omniauth-facebook'
 

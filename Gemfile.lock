@@ -88,6 +88,7 @@ GEM
       sass (~> 3.2)
       thor
     builder (3.2.2)
+    cancan (1.6.10)
     capybara (2.4.1)
       mime-types (>= 1.16)
       nokogiri (>= 1.3.3)
@@ -245,6 +246,7 @@ GEM
       json (~> 1.4)
     responders (1.0.0)
       railties (>= 3.2, < 5)
+    rolify (3.4.0)
     rspec-core (3.0.2)
       rspec-support (~> 3.0.0)
     rspec-expectations (3.0.2)
@@ -320,6 +322,7 @@ DEPENDENCIES
   better_errors
   binding_of_caller
   bundler
+  cancan
   coffee-rails (~> 4.0.0)
   cucumber-rails
   database_cleaner
@@ -343,6 +346,7 @@ DEPENDENCIES
   pry-rails
   rails (= 4.1.1)
   rails_config
+  rolify
   rspec-rails
   sass-rails (~> 4.0.3)
   sdoc (~> 0.4.0)
