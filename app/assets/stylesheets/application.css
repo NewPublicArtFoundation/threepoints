@@ -13,6 +13,7 @@
 *= require_tree .
 *= stub active_admin
 *= require jquery.timepicker.css
+*= require jquery.fileupload-ui
 *= require_self
 *= require foundation_and_overrides
 
