@@ -15,6 +15,7 @@ gem 'coffee-rails', '~> 4.0.0'
 
 gem 'paperclip', github: 'thoughtbot/paperclip'
 gem 'aws-sdk'
+gem "jquery-fileupload-rails"
 
 gem 'foundation-rails'
 # Use jquery as the JavaScript library
