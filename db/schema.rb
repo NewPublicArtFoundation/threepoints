@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140707040527) do
+ActiveRecord::Schema.define(version: 20140707095859) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -62,7 +62,11 @@ ActiveRecord::Schema.define(version: 20140707040527) do
     t.datetime "began_at"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "artist"
+    t.string   "slug"
   end
+
+  add_index "artists", ["slug"], name: "index_artists_on_slug", unique: true
 
   create_table "artists_graffitis", force: true do |t|
     t.integer "artist_id"
@@ -96,6 +100,19 @@ ActiveRecord::Schema.define(version: 20140707040527) do
 
   add_index "delayed_jobs", ["priority", "run_at"], name: "delayed_jobs_priority"
 
+  create_table "friendly_id_slugs", force: true do |t|
+    t.string   "slug",                      null: false
+    t.integer  "sluggable_id",              null: false
+    t.string   "sluggable_type", limit: 50
+    t.string   "scope"
+    t.datetime "created_at"
+  end
+
+  add_index "friendly_id_slugs", ["slug", "sluggable_type", "scope"], name: "index_friendly_id_slugs_on_slug_and_sluggable_type_and_scope", unique: true
+  add_index "friendly_id_slugs", ["slug", "sluggable_type"], name: "index_friendly_id_slugs_on_slug_and_sluggable_type"
+  add_index "friendly_id_slugs", ["sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_id"
+  add_index "friendly_id_slugs", ["sluggable_type"], name: "index_friendly_id_slugs_on_sluggable_type"
+
   create_table "graffiti_pictures", force: true do |t|
     t.integer  "graffiti_id"
     t.string   "image_url"
@@ -115,7 +132,11 @@ ActiveRecord::Schema.define(version: 20140707040527) do
     t.datetime "buffed_at"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "graffiti"
+    t.string   "slug"
   end
+
+  add_index "graffitis", ["slug"], name: "index_graffitis_on_slug", unique: true
 
   create_table "graffitis_locations", force: true do |t|
     t.integer "graffiti_id"
@@ -135,7 +156,11 @@ ActiveRecord::Schema.define(version: 20140707040527) do
     t.datetime "demolished_at"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "location"
+    t.string   "slug"
   end
+
+  add_index "locations", ["slug"], name: "index_locations_on_slug", unique: true
 
   create_table "roles", force: true do |t|
     t.string   "name"
@@ -169,10 +194,13 @@ ActiveRecord::Schema.define(version: 20140707040527) do
     t.string   "avatar_content_type"
     t.integer  "avatar_file_size"
     t.datetime "avatar_updated_at"
+    t.string   "user"
+    t.string   "slug"
   end
 
   add_index "users", ["email"], name: "index_users_on_email", unique: true
   add_index "users", ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+  add_index "users", ["slug"], name: "index_users_on_slug", unique: true
   add_index "users", ["username"], name: "index_users_on_username", unique: true
 
   create_table "users_roles", id: false, force: true do |t|
