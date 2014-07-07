@@ -1,5 +1,5 @@
 ActiveAdmin.register Location do
-  permit_params :name, :address, :longitude, :latitude, :discovered_at, :demolished_at
+  permit_params :name, :address, :longitude, :latitude, :discovered_at, :demolished_at, :slug
 
 
   # See permitted parameters documentation:
