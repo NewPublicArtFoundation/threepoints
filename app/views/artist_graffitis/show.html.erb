@@ -1,0 +1,14 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Artist:</strong>
+  <%= @artist_graffiti.artist %>
+</p>
+
+<p>
+  <strong>Graffiti:</strong>
+  <%= @artist_graffiti.graffiti %>
+</p>
+
+<%= link_to 'Edit', edit_artist_graffiti_path(@artist_graffiti) %> |
+<%= link_to 'Back', artist_graffitis_path %>

@@ -1,0 +1,2 @@
+module ArtistGraffitisHelper
+end

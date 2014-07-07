@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  resources :artist_graffitis
+
   get 'pages/home'
 
   get 'pages/about'
