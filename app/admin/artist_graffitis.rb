@@ -1,4 +1,4 @@
-ActiveAdmin.register ArtistGraffitis do
+ActiveAdmin.register ArtistGraffiti do
   permit_params :graffiti_id, :artist_id
 
   # See permitted parameters documentation:
