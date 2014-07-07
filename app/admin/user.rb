@@ -14,5 +14,9 @@ ActiveAdmin.register User do
   #  permitted << :other if resource.something?
   #  permitted
   # end
-
+  controller do
+    def find_resource
+      scoped_collection.friendly.find(params[:id])
+    end
+  end
 end

@@ -40,4 +40,8 @@ class User < ActiveRecord::Base
 
 
   devise authentication_keys: [:login]
+
+  extend FriendlyId
+  friendly_id :username, use: :slugged
+  validates_presence_of :name, :slug
 end
