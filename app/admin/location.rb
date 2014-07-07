@@ -1,7 +1,7 @@
 ActiveAdmin.register Location do
-  permit_params :city_name, :country_name, :address, :longitude, :latitude
+  permit_params :city_name, :country_name, :address, :longitude, :latitude, :discovered_at, :demolished_at
 
-  
+
   # See permitted parameters documentation:
   # https://github.com/gregbell/active_admin/blob/master/docs/2-resource-customization.md#setting-up-strong-parameters
   #
@@ -14,5 +14,5 @@ ActiveAdmin.register Location do
   #  permitted << :other if resource.something?
   #  permitted
   # end
-  
+
 end
