@@ -1,7 +1,7 @@
 ActiveAdmin.register Artist do
-  permit_params :name, :description, :began_at
+  permit_params :name, :description, :began_at, :slug
 
-  
+
   # See permitted parameters documentation:
   # https://github.com/gregbell/active_admin/blob/master/docs/2-resource-customization.md#setting-up-strong-parameters
   #
@@ -14,5 +14,9 @@ ActiveAdmin.register Artist do
   #  permitted << :other if resource.something?
   #  permitted
   # end
-  
+  controller do
+    def find_resource
+      scoped_collection.friendly.find(params[:id])
+    end
+  end
 end

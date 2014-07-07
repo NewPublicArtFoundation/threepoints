@@ -1,3 +1,5 @@
+
+
 ActiveAdmin.setup do |config|
 
   # == Site Title
@@ -239,5 +241,25 @@ ActiveAdmin.setup do |config|
   # You can enable or disable them for all resources here.
   #
   # config.filters = true
+  config.before_filter :revert_friendly_id, :if => -> { !devise_controller? && resource_controller? }
+end
 
+ActiveAdmin::BaseController.class_eval do
+  protected
+  def resource_controller?
+    self.class.superclass.name == "ActiveAdmin::ResourceController"
+  end
+
+  def revert_friendly_id
+    model_name = self.class.name.match(/::(.*)Controller$/)[1].singularize
+    # Will throw a NameError if the class does not exist
+    Module.const_get model_name
+
+    eval(model_name).class_eval do
+      def to_param
+        id.to_s
+      end
+    end
+  rescue NameError
+  end
 end

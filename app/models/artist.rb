@@ -5,4 +5,8 @@ class Artist < ActiveRecord::Base
   acts_as_votable
   has_paper_trail
   resourcify
+  extend FriendlyId
+  friendly_id :name, use: :slugged
+
 end
+
