@@ -1,5 +1,5 @@
 ActiveAdmin.register Location do
-  permit_params :city_name, :country_name, :address, :longitude, :latitude, :discovered_at, :demolished_at
+  permit_params :name, :address, :longitude, :latitude, :discovered_at, :demolished_at
 
 
   # See permitted parameters documentation:
@@ -14,5 +14,9 @@ ActiveAdmin.register Location do
   #  permitted << :other if resource.something?
   #  permitted
   # end
-
+  controller do
+    def find_resource
+      scoped_collection.friendly.find(params[:id])
+    end
+  end
 end

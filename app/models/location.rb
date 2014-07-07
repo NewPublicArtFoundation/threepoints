@@ -7,4 +7,6 @@ class Location < ActiveRecord::Base
   resourcify
   geocoded_by :address
   after_validation :geocode, :if => :address_changed?
+  extend FriendlyId
+  friendly_id :name, use: :slugged
 end
