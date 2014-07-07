@@ -10,8 +10,7 @@
 <table>
   <thead>
     <tr>
-      <th>City name</th>
-      <th>Country name</th>
+      <th>Name</th>
       <th>Address</th>
       <th>Longitude</th>
       <th>Latitude</th>
@@ -22,8 +21,7 @@
   <tbody>
     <% @locations.each do |location| %>
       <tr>
-        <td><%= location.city_name %></td>
-        <td><%= location.country_name %></td>
+        <td><%= location.name %></td>
         <td><%= location.address %></td>
         <td><%= location.longitude %></td>
         <td><%= location.latitude %></td>

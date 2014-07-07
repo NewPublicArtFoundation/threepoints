@@ -88,11 +88,11 @@ class LocationsController < ApplicationController
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_location
-      @location = Location.find(params[:id])
+      @location = Location.friendly.find(params[:id])
     end
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def location_params
-      params.require(:location).permit(:city_name, :country_name, :address, :longitude, :latitude)
+      params.require(:location).permit(:name, :address, :longitude, :latitude)
     end
 end
