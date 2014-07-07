@@ -9,4 +9,5 @@ class Location < ActiveRecord::Base
   after_validation :geocode, :if => :address_changed?
   extend FriendlyId
   friendly_id :name, use: :slugged
+  validates_presence_of :name, :slug
 end
