@@ -14,17 +14,17 @@
   </div>
   <div class="row white-back">
     <div class="large-8 column">
-      <img src="<%= @project.projectImage %>">
+      <img src="<%#= @project.projectImage %>">
       render sharing / short url
 
       <%= render 'projects/bitly_copy_link' %>
 
       <p>
-        <%= @project.projectDescription %>
+        <%#= @project.projectDescription %>
       </p>
       <h3>Risks and challenges</h3>
       <p>
-        <%= @project.risksChallenges %>
+        <%#= @project.risksChallenges %>
       </p>
     </div>
     <div class="large-4 column">
@@ -36,8 +36,8 @@
       <%= render 'projects/author_box' %>
     </div>
 
-    <p><%= @project.projectLocation %></p>
-    <p><%= @project.projectVideo %></p>
+    <p><%#= @project.projectLocation %></p>
+    <p><%#= @project.projectVideo %></p>
 
   </div>
 
