@@ -66,6 +66,7 @@ gem 'rolify'
 gem 'cancan'
 gem 'omniauth'
 gem 'omniauth-facebook'
+gem 'bitly'
 
 # Analytics
 gem 'newrelic_rpm'
@@ -75,26 +76,26 @@ group :development do
   gem 'better_errors'
 end
 
+
 group :development, :test do
   gem 'dotenv-rails'
   gem 'rspec-rails'
   gem 'factory_girl_rails'
   gem 'sqlite3'
-  gem 'rspec-rails', '2.13.1'
-  gem 'guard-rspec', '2.5.0'
-  gem 'spork-rails', '4.0.0'
-  gem 'guard-spork', '1.5.0'
-  gem 'childprocess', '0.3.6'
+  # gem 'guard-rspec', '2.5.0'
+  # gem 'spork-rails', '4.0.0'
+  # gem 'guard-spork', '1.5.0'
+  # gem 'childprocess', '0.3.6'
 
 group :production do
   gem 'pg'
   gem 'rails_12factor', '0.0.2'
 end
 
-group :test do
-  gem 'shoulda-matchers'
-  gem 'cucumber-rails', require: false
-  gem 'database_cleaner'
-  gem 'selenium-webdriver', '2.35.1'
-  gem 'capybara', '2.1.0'
-end
+# group :test do
+#   gem 'shoulda-matchers'
+#   gem 'cucumber-rails'
+#   gem 'database_cleaner'
+#   gem 'selenium-webdriver', '2.35.1'
+#   gem 'capybara', '2.1.0'
+# end
