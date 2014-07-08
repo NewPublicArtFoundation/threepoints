@@ -1,7 +1,7 @@
 ActiveAdmin.register Graffiti do
-  permit_params :description, :discovered_at, :painted_at, :buffed_at
+  permit_params :description, :discovered_at, :painted_at, :buffed_at, :location_id
 
-  
+
   # See permitted parameters documentation:
   # https://github.com/gregbell/active_admin/blob/master/docs/2-resource-customization.md#setting-up-strong-parameters
   #
@@ -14,5 +14,5 @@ ActiveAdmin.register Graffiti do
   #  permitted << :other if resource.something?
   #  permitted
   # end
-  
+
 end
