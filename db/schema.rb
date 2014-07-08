@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140707102239) do
+ActiveRecord::Schema.define(version: 20140708001347) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -134,6 +134,11 @@ ActiveRecord::Schema.define(version: 20140707102239) do
     t.datetime "updated_at"
     t.string   "graffiti"
     t.string   "slug"
+    t.string   "uploaded_image_file_name"
+    t.string   "uploaded_image_content_type"
+    t.integer  "uploaded_image_file_size"
+    t.datetime "uploaded_image_updated_at"
+    t.string   "image_url"
   end
 
   add_index "graffitis", ["slug"], name: "index_graffitis_on_slug", unique: true
