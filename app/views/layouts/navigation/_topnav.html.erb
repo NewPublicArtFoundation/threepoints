@@ -50,6 +50,13 @@
     <section class="top-bar-section">
       <!-- Left Nav Section -->
       <ul class="">
+        <% if !current_page?(root_url) %>
+        <li>
+          <%= link_to root_path do %>
+            Home
+          <% end %>
+        </li>
+        <% end %>
         <li>
           <%= link_to artists_path do %>
             Artists
