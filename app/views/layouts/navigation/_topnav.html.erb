@@ -1,45 +1,26 @@
-<div class="contain-to-grid">
+<div class="">
   <nav class="top-bar" data-topbar>
     <ul class="title-area">
       <li class="name">
         <h1><%= link_to root_path do %>
-          <%= image_tag 'threepoints-small.png' %>
+          <b>
+            ThreePoints
+          </b>
         <% end %></h1>
       </li>
       <li class="toggle-topbar menu-icon"><a href="#"><span>Menu</span></a></li>
     </ul>
-
     <section class="top-bar-section">
-      <!-- Right Nav Section -->
-      <%= link_to 'What is ThreePoints?', hello_path, :id => "what_is_ThreePoints_link" %>
-
       <!-- Left Nav Section -->
-      <ul class="left">
-        <li class="divider"></li>
-        <li class=""><%= link_to discover_path do %>
-          <strong>Discover</strong> <span>great projects</span>
-        <% end %></li>
-        <li class="divider"></li>
-        <li class=""><%= link_to missions_guidelines_path do %>
-          <strong>Start</strong> <span>a project</span>
-        <% end %></li>
-        <li class="divider"></li>
-        <li class="has-form">
-          <div class="row collapse">
-            <div class="large-12 small-12 columns">
-              <form>
-                <input type="text" id="right-label" placeholder="Search projects">
-              </form>
-            </div>
-          </div>
-        </li>
-        <li class="no-span divider"></li>
-        <li class="no-span"><%= link_to help_path do %>
-          <span>Help</span>
-        <% end %></li>
+      <div class="search-form-width column">
+        <form class="">
+          <input type="text" id="right-label" placeholder="">
+        </form>
+      </div>
+      <ul class="right">
         <% if signed_in? %>
           <li class="no-span login">
-            <%= link_to edit_user_registration_path do %>
+            <%= link_to edit_user_registration_path, :class=>'no-right-pad' do %>
               <span>Profile</span>
             <% end %>
           </li>
@@ -49,17 +30,46 @@
             <% end %>
           </li>
         <% else %>
-          <li class="no-span login">
-            <%= link_to new_user_registration_path do %>
-              <span>Sign up</span>
+          <li class="no-span login no-right-pad">
+            <%= link_to new_user_registration_path, :class=>'no-right-pad' do %>
+              <span>Join</span>
             <% end %>
           </li>
           <li class="no-span login">
             <%= link_to new_user_session_path do %>
-              <span>Sign in</span>
+              <span>Log In</span>
             <% end %>
           </li>
         <% end %>
+      </ul>
+    </section>
+  </nav>
+</div>
+<div class="">
+  <nav class="top-bar" data-topbar>
+    <section class="top-bar-section">
+      <!-- Left Nav Section -->
+      <ul class="">
+        <li>
+          <%= link_to artists_path do %>
+            Artists
+          <% end %>
+        </li>
+        <li>
+          <%= link_to locations_path do %>
+            Places
+          <% end %>
+        </li>
+        <li>
+          <%= link_to graffiti_pictures_path do %>
+            Photos
+          <% end %>
+        </li>
+        <li>
+          <%= link_to news_path do %>
+            News
+          <% end %>
+        </li>
       </ul>
     </section>
   </nav>
