@@ -23,7 +23,6 @@ end
   get '/missions', to: 'missions#index'
   get '/discover', to: 'pages#new_project'
 
-  get '/start', to: 'projects#new'
   get '/missions/guidelines', to: 'pages#project_guidelines'
   get '/hello', to: 'pages#about'
   get '/help', to: 'pages#help'
@@ -108,6 +107,7 @@ end
     get    "login"   => "devise/sessions#new",         as: :new_user_session
     post   "login"   => "devise/sessions#create",      as: :user_session
     delete "signout" => "devise/sessions#destroy",     as: :destroy_user_session
+    get '/start'     => 'devise/registrations#new'
 
     get    "signup"  => "devise/registrations#new",    as: :new_user_registration
     post   "signup"  => "devise/registrations#create", as: :user_registration

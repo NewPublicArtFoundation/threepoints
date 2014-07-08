@@ -12,7 +12,7 @@
 //
 //= require jquery
 //= require jquery_ujs
-//= require jquery.timepicker.js
+//= require jquery.datetimepicker
 //= require jquery-fileupload
 //= require foundation
 //= require turbolinks
