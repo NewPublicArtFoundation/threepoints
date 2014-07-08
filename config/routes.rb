@@ -10,7 +10,25 @@ Rails.application.routes.draw do
 
   get 'users/index'
 
-  resources :locations do
+resources :locations do
+  #->Prelang (voting/acts_as_votable)
+  member do
+    get "vote"
+  end
+end
+
+  resources :missions, only: [:create, :destroy]
+  resources :relationships, only: [:create, :destroy]
+  resources :projects#, only: [:new, :create, :destroy]
+  get '/missions', to: 'missions#index'
+  get '/discover', to: 'pages#new_project'
+
+  get '/start', to: 'projects#new'
+  get '/missions/guidelines', to: 'pages#project_guidelines'
+  get '/hello', to: 'pages#about'
+  get '/help', to: 'pages#help'
+
+resources :artists do
   #->Prelang (voting/acts_as_votable)
   member do
     get "vote"
@@ -18,15 +36,7 @@ Rails.application.routes.draw do
 end
 
 
-  resources :artists do
-  #->Prelang (voting/acts_as_votable)
-  member do
-    get "vote"
-  end
-end
-
-
-  resources :graffitis do
+resources :graffitis do
   #->Prelang (voting/acts_as_votable)
   member do
     get "vote"
