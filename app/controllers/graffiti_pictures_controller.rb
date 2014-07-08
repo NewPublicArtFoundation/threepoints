@@ -69,6 +69,6 @@ class GraffitiPicturesController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def graffiti_picture_params
-      params.require(:graffiti_picture).permit(:graffiti_id, :image_url, :image_description, :location_id)
+      params.require(:graffiti_picture).permit(:graffiti_id, :image_url, :image_description, :location_id, :uploaded_image)
     end
 end
