@@ -9,5 +9,6 @@ class Artist < ActiveRecord::Base
   friendly_id :name, use: :slugged
   validates_presence_of :name
   validates :slug, uniqueness: true
+  acts_as_taggable
 end
 
