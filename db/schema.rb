@@ -129,15 +129,17 @@ ActiveRecord::Schema.define(version: 20140708001718) do
 
   create_table "graffitis", force: true do |t|
     t.text     "description"
+    t.integer  "location_id"
     t.datetime "discovered_at"
     t.datetime "painted_at"
     t.datetime "buffed_at"
+    t.integer  "locations_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "graffiti"
     t.string   "slug"
   end
 
+  add_index "graffitis", ["locations_id"], name: "index_graffitis_on_locations_id"
   add_index "graffitis", ["slug"], name: "index_graffitis_on_slug", unique: true
 
   create_table "graffitis_locations", force: true do |t|

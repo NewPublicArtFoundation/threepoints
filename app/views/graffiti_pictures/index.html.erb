@@ -7,7 +7,6 @@
       <th>Image url</th>
       <th>uploaded_image</th>
       <th>Image description</th>
-      <th>Location</th>
       <th colspan="3"></th>
     </tr>
   </thead>
@@ -19,7 +18,6 @@
         <td><%= graffiti_picture.image_url %></td>
         <td><%= graffiti_picture.uploaded_image %></td>
         <td><%= graffiti_picture.image_description %></td>
-        <td><%= graffiti_picture.location %></td>
         <td><%= link_to 'Show', graffiti_picture %></td>
         <td><%= link_to 'Edit', edit_graffiti_picture_path(graffiti_picture) %></td>
         <td><%= link_to 'Destroy', graffiti_picture, method: :delete, data: { confirm: 'Are you sure?' } %></td>
