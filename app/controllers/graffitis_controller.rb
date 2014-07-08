@@ -89,6 +89,6 @@ class GraffitisController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def graffiti_params
-      params.require(:graffiti).permit(:description, :discovered_at, :painted_at, :buffed_at)
+      params.require(:graffiti).permit(:description, :discovered_at, :painted_at, :buffed_at, :location_id)
     end
 end
