@@ -1,0 +1,185 @@
+// Place all the styles related to the projects controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+@import 'colors';
+.bitly-copy{
+
+  .columns{
+    background: rgba(157, 188, 222, 0.3);
+  }
+  .row, .columns, .column{
+    width: auto;
+  }
+  .nopad{
+    padding-right:0em;
+    margin-right: 0.9375rem;
+    float:right;
+  }
+  .button{
+
+    border:1px solid rgb(204, 204, 204);
+    margin-bottom: 0em;
+    background: none;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .email{
+    margin-left: 0.9375rem;
+  }
+  .share,.email{
+    opacity: .3;
+    float: right;
+    background: rgba(157, 188, 222, 0.3);
+  }
+  .copy-link{
+    a{
+      border-right: none;
+    }
+  }
+  .button, .copy-link a{
+
+    z-index: 2;
+    text-align: center;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 0.875rem;
+    height: 2.3125rem;
+    line-height: 2.125rem;
+    color: $primary-color;
+    font-weight: 600 !important;
+    &:hover{
+      background: none;
+      opacity: .9;
+    }
+  }
+  &:hover{
+    .share,.email{
+      opacity: .9
+    }
+  }
+}
+
+.project-cta{
+
+  .button.large{
+    width: 100%;
+  }
+}
+.days-associated{
+  h5{
+    font-size: 4em;
+    font-weight: 600;
+    line-height: 1;
+    margin-top: .2em;
+    margin-bottom: 0em;
+  }
+  strong{
+  }
+  margin: 1.5em;
+  opacity: .94;
+}
+
+.white-back{
+  background: $white-background;
+}
+.user-profile{
+  .photo-box{
+    vertical-align: top;
+    margin-right: 1em;
+    margin-bottom: 2em;
+    display: inline-block;
+  }
+  .text-box{
+    p{
+      margin-bottom: .75em;
+    }
+    display: inline-block;
+    height:65px;
+    a{
+      color: $primary-color;
+    }
+  }
+  h1{
+    font-size: 2em;
+  }
+}
+
+.panel.user-profile{
+  section.border-top{
+    border-top: 1px dotted black;
+    padding-top:.5em;
+  }
+  section.border{
+    padding-top:.5em;
+    padding-bottom:.5em;
+    border-bottom: 1px dotted black;
+  }
+}
+
+.grey-back{
+  padding-bottom: 2em;
+  .sub-nav{
+    margin-left: 5%;
+    .active{
+      border-bottom: 4px solid #b0f0fc;
+      a, a:hover{
+        font-weight: 600;
+        color: #333;
+        background: none;
+      }
+    }
+  }
+  .sub-nav, dd{
+    margin-bottom: 0em;
+  }
+}
+.row.white-back{
+  border-radius: 10px;
+  padding: 30px 15px;
+}
+
+.seperator-right{
+  border-right: 1px solid rgb(207, 207, 207);
+  padding-right: 3em;
+  margin-top: 2em;
+  margin-bottom: 1em;
+}
+
+.field.row.row{
+  margin-bottom: 2em;
+  padding: 20px 10px;
+  label{
+    font-weight: 600;
+  }
+  input{
+    margin: 0;
+  }
+}
+
+.row.field{
+  background: rgb(238, 242, 234);
+  border-radius: 10px;
+}
+.grey-back{
+  background: $grey-background;
+}
+.light-bg{
+  background: $grey-background;
+  padding-top: 2em;
+  padding-bottom: 2em;
+}
+.progress-signup{
+  ul.inline-list{
+    text-align: center;
+    li{
+      background: rgb(77, 77, 77);
+      margin-left: 0em;
+      border: 1px solid rgb(55, 55, 55)
+    }
+  }
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  li{
+    padding: 10px;
+  }
+}

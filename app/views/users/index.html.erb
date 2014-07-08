@@ -1,7 +1,17 @@
-<h1>Users#index</h1>
-<p>Find me in app/views/users/index.html.erb</p>
+<% provide(:title, 'All users') %>
 
-<%= @user.avatar.url %>
-<%= image_tag @user.avatar.url %>
-<%= image_tag @user.avatar.url(:medium) %>
-<%= image_tag @user.avatar.url(:thumb) %>
+<div class="row">
+
+  <h1>All users</h1>
+
+  <%= will_paginate %>
+
+  <ul class="users no-bullet">
+    <% @users.each do |user| %>
+      <%= render user %>
+    <% end %>
+  </ul>
+
+  <%= will_paginate %>
+
+</div>
