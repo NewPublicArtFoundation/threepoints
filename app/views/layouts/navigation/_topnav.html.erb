@@ -38,20 +38,13 @@
           <span>Help</span>
         <% end %></li>
         <% if signed_in? %>
-          <li class="has-dropdown no-span login">
-            <%= link_to user_path(current_user) do %>
+          <li class="no-span login">
+            <%= link_to edit_user_registration_path do %>
               <span>Profile</span>
             <% end %>
-            <ul class="dropdown">
-              <li>
-                <%= link_to edit_user_path(current_user) do %>
-                  Edit Profile
-                <% end %>
-              </li>
-            </ul>
           </li>
           <li class="no-span login">
-            <%= link_to signout_path, method: "delete" do %>
+            <%= link_to destroy_user_session, method: "delete" do %>
               <span>Logout</span>
             <% end %>
           </li>
