@@ -103,4 +103,6 @@ end
     get    "account" => "devise/registrations#edit",   as: :edit_user_registration
   end
 
+  match "*missing" => redirect("/")
+
 end
