@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+
+  root 'pages#index'
+
   resources :artist_graffitis
 
   get 'pages/home'
@@ -40,7 +43,6 @@ end
   # See how all your routes lay out with "rake routes".
 
   # You can have the root of your site routed with "root"
-  root 'pages#home'
 
   # Example of regular route:
   #   get 'products/:id' => 'catalog#view'
@@ -103,6 +105,6 @@ end
     get    "account" => "devise/registrations#edit",   as: :edit_user_registration
   end
 
-  match "*missing" => redirect("/")
+  # match "*missing" => redirect("/")
 
 end
