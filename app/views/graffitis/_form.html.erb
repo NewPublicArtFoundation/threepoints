@@ -3,6 +3,7 @@
 
   <div class="form-inputs">
     <%= f.input :description %>
+    <%= f.association :location %>
     <%= f.input :discovered_at, prompt: "Unknown" %>
     <%= f.input :painted_at, prompt: "Unknown" %>
     <%= f.input :buffed_at, prompt: "Not Applicable" %>

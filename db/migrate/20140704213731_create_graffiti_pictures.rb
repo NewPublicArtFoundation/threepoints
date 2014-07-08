@@ -4,7 +4,6 @@ class CreateGraffitiPictures < ActiveRecord::Migration
       t.references :graffiti, index: true
       t.string :image_url
       t.text :image_description
-      t.references :location, index: true
 
       t.timestamps
     end

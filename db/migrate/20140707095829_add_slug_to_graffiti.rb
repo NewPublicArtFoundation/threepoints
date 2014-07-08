@@ -1,6 +1,5 @@
 class AddSlugToGraffiti < ActiveRecord::Migration
   def change
-    add_column :graffitis, :graffiti, :string
     add_column :graffitis, :slug, :string
     add_index :graffitis, :slug, unique: true
   end

@@ -117,7 +117,6 @@ ActiveRecord::Schema.define(version: 20140708001718) do
     t.integer  "graffiti_id"
     t.string   "image_url"
     t.text     "image_description"
-    t.integer  "location_id"
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "uploaded_image_file_name"
@@ -127,7 +126,6 @@ ActiveRecord::Schema.define(version: 20140708001718) do
   end
 
   add_index "graffiti_pictures", ["graffiti_id"], name: "index_graffiti_pictures_on_graffiti_id"
-  add_index "graffiti_pictures", ["location_id"], name: "index_graffiti_pictures_on_location_id"
 
   create_table "graffitis", force: true do |t|
     t.text     "description"
@@ -138,11 +136,6 @@ ActiveRecord::Schema.define(version: 20140708001718) do
     t.datetime "updated_at"
     t.string   "graffiti"
     t.string   "slug"
-    t.string   "uploaded_image_file_name"
-    t.string   "uploaded_image_content_type"
-    t.integer  "uploaded_image_file_size"
-    t.datetime "uploaded_image_updated_at"
-    t.string   "image_url"
   end
 
   add_index "graffitis", ["slug"], name: "index_graffitis_on_slug", unique: true
@@ -156,8 +149,6 @@ ActiveRecord::Schema.define(version: 20140708001718) do
   add_index "graffitis_locations", ["location_id"], name: "index_graffitis_locations_on_location_id"
 
   create_table "locations", force: true do |t|
-    t.text     "city_name"
-    t.text     "country_name"
     t.text     "address"
     t.float    "longitude"
     t.float    "latitude"
