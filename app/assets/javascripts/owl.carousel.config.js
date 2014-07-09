@@ -1,10 +1,7 @@
-(function(){
+$(document).ready(function(){
   if( $('.owl-carousel').length > 0){
-    var lazyLoadConfig = {
+    $('.owl-carousel').owlCarousel({
       items : 4,
-      lazyLoad : true,
-      navigation : true
-    }
-    $('.owl-carousel').owlCarousel( lazyLoadConfig )
+  })
   }
 })
