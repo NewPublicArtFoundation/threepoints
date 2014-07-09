@@ -12,8 +12,6 @@
 //
 //= require jquery
 //= require jquery_ujs
-//= require jquery.datetimepicker
-//= require jquery-fileupload
 //= require foundation
 //= require turbolinks
 //= require_tree .
