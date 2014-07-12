@@ -1,19 +1,49 @@
+<style>div{border: 1px solid black;}</style>
+
 <p id="notice"><%= notice %></p>
+<div class="row">
+  <div class="large-8 column">
+    <h1>
+      <%= @artist.name %>
+    </h1>
+    <p>
+      New York City, NY, USA
+    </p>
+  </div>
+  <div class="large-4 column">
+    <span class="label">Collaborator</span>
+    <span class="label">Artist</span>
+  </div>
+</div>
+<div class="row">
+  <div class="large-12 column">
+    <h3>
+      Locations
+    </h3>
+  </div>
+  <div class="large-6 column">
 
-<p>
-  <strong>Name:</strong>
-  <%= @artist.name %>
-</p>
+    <%= render 'artists/location_block' %>
 
-<p>
-  <strong>Slug:</strong>
-  <%= @artist.slug %>
-</p>
+  </div>
+  <div class="large-6 column location-block">
+  </div>
+</div>
 
-<p>
-  <strong>Description:</strong>
-  <%= @artist.description %>
-</p>
+<div class="row">
+  <div class="large-4 column">
+    <h3>
+      Associations
+    </h3>
+  </div>
+</div>
+
+
+
+  <% if @artist.description != '' %>
+  | <%= @artist.description %>
+  <% end %>
+
 
 <p>
   <strong>Began at:</strong>
