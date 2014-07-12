@@ -2,26 +2,24 @@
 
 <p id="notice"><%= notice %></p>
 <div class="row">
-  <div class="large-8 column">
+<div class="large-2 column">
     <h1>
       <%= @artist.name %>
     </h1>
     <p>
       New York City, NY, USA
     </p>
+    <div class="large-12 column">
+      <span class="label">Collaborator</span>
+      <span class="label">Artist</span>
+    </div>
   </div>
-  <div class="large-4 column">
-    <span class="label">Collaborator</span>
-    <span class="label">Artist</span>
-  </div>
-</div>
-<div class="row">
-  <div class="large-12 column">
-    <h3>
-      Locations
-    </h3>
-  </div>
-  <div class="large-6 column">
+  <div class="large-5 column">
+    <div class="large-12">
+      <h3>
+        Locations
+      </h3>
+    </div>
 
     <%= render 'artists/location_block' %>
     <%= render 'artists/location_block' %>
@@ -29,8 +27,12 @@
     <%= render 'artists/location_block' %>
 
   </div>
-  <div class="large-6 column location-block">
-
+  <div class="large-5 column location-block">
+    <div class="large-12">
+      <h3>
+        Stats
+      </h3>
+    </div>
     <%= render 'artists/visualization_block' %>
 
   </div>
