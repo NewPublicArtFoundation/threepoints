@@ -262,4 +262,12 @@ ActiveAdmin::BaseController.class_eval do
     end
   rescue NameError
   end
+
+  def find_resource
+    if scoped_collection.is_a? FriendlyId
+      scoped_collection.where(slug: params[:id]).first!
+    else
+      scoped_collection.where(id: params[:id]).first!
+    end
+  end
 end
