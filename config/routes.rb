@@ -10,6 +10,8 @@ Rails.application.routes.draw do
 
   get 'users/index'
 
+
+
 resources :locations do
   #->Prelang (voting/acts_as_votable)
   member do
@@ -25,8 +27,9 @@ end
 
   get '/missions/guidelines', to: 'pages#project_guidelines'
   get '/hello', to: 'pages#about'
-  get '/help', to: 'pages#help'
-  get '/news', to: 'pages#help'
+  get '/help',  to: 'pages#help'
+  get '/news',  to: 'pages#help'
+  get '/top',   to: 'curated#top_display'
 
 resources :artists do
   #->Prelang (voting/acts_as_votable)
