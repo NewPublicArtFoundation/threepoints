@@ -3,7 +3,6 @@ class Artist < ActiveRecord::Base
 
   has_many :artist_graffitis
   has_and_belongs_to_many :locations
-  acts_as_votable
   has_paper_trail
   resourcify
   extend FriendlyId
@@ -11,5 +10,6 @@ class Artist < ActiveRecord::Base
   validates_presence_of :name
   validates :slug, uniqueness: true
   acts_as_taggable
+  acts_as_votable
 end
 
