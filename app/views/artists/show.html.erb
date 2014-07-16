@@ -21,7 +21,10 @@
       <span class="label secondary">Artist Network</span>
     </div>
     <div class="hiredata-block">
-
+      <div class="">
+        <h3><%= @pieces.count %></h3><label> Pieces</label>
+        <h3><%= @unique_locations.count %></h3><label> Places</label>
+      </div>
     </div>
   </div>
   <div class="large-5 column">
@@ -57,10 +60,6 @@
     <%#= render 'artists/visualization_block' %>
     <div class="row">
       <canvas id="canvas" height="450" width="600"></canvas>
-    </div>
-    <div class="row">
-      <h2><%= @pieces.count %> Pieces</h2>
-      <h2><%= @unique_locations.count %> Places</h2>
     </div>
 
     <%= render 'artists/socialprint_block' %>
