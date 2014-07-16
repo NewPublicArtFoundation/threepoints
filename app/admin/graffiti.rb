@@ -1,5 +1,5 @@
 ActiveAdmin.register Graffiti do
-  permit_params :description, :discovered_at, :painted_at, :buffed_at, :location_id
+  permit_params :description, :discovered_at, :painted_at, :buffed_at, :location_id, :artist_id
 
 
   # See permitted parameters documentation:
