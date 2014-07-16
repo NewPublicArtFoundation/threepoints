@@ -17,15 +17,24 @@
     <!-- Location Block -->
     <% @pieces.each do |piece| %>
       <div class="row">
-        <%= link_to piece do %>
-          <%= image_tag piece.images, :class=>'large-3' %>
-          <%= piece.description %>
-        <% end %>
-        <%= link_to piece.location do %>
-          <%= piece.location.name %>
-          <%= piece.location.longitude %>
-          <%= piece.location.latitude %>
-        <% end %>
+        <div class="large-4 column">
+          <%= link_to piece do %>
+            <%= image_tag piece.images %>
+          <% end %>
+        </div>
+        <div class="large-8 column">
+          <h4>
+            <%= piece.description %>
+          </h4>
+          <div class="row column">
+            <%= link_to piece.location do %>
+              <%= piece.location.name %>
+              <%= piece.location.longitude %>
+              <%= piece.location.latitude %>
+            <% end %>
+          </div>
+
+        </div>
       </div>
     <% end %>
     <!-- Location Block End -->
