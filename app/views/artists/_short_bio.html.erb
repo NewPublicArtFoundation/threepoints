@@ -1,0 +1,35 @@
+<div class="artist-block">
+  <h1>
+    <%= @artist.name %>
+  </h1>
+  <% if @artist.description != '' %>
+   | <h2><%= @artist.description %></h2>
+  <% end %>
+  <p>
+    New York City, NY, USA
+  </p>
+</div>
+<div class="tagdata-block">
+  <span class="label">Verified</span>
+  <span class="label secondary">Artist Network</span>
+</div>
+<div class="hiredata-block">
+  <div class="">
+    <h3><%= @pieces.count %></h3><label> Pieces</label>
+    <h3><%= @unique_locations.count %></h3><label> Places</label>
+  </div>
+</div>
+
+<div class="location-block">
+  <div class="graph-wrapper">
+    This is a color
+  </div>
+  <div class="graph-details">
+    <ul>
+      <li>Tumblrs</li>
+      <li>Twitter</li>
+      <li>Instagram</li>
+    </ul>
+  </div>
+  <div class="image-block"></div>
+</div>

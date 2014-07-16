@@ -3,29 +3,9 @@
 <p id="notice"><%= notice %></p>
 <div class="row">
   <div class="large-2 column">
-    <div class="artist-block">
-      <h1>
-        <%= @artist.name %>
-      </h1>
-      <% if @artist.description != '' %>
-       | <h2><%= @artist.description %></h2>
-      <% end %>
 
+    <%= render 'artists/short_bio' %>
 
-      <p>
-        New York City, NY, USA
-      </p>
-    </div>
-    <div class="tagdata-block">
-      <span class="label">Verified</span>
-      <span class="label secondary">Artist Network</span>
-    </div>
-    <div class="hiredata-block">
-      <div class="">
-        <h3><%= @pieces.count %></h3><label> Pieces</label>
-        <h3><%= @unique_locations.count %></h3><label> Places</label>
-      </div>
-    </div>
   </div>
   <div class="large-5 column">
     <div class="large-12">
@@ -57,52 +37,8 @@
         Stats
       </h3>
     </div>
-    <%#= render 'artists/visualization_block' %>
-    <div class="row">
-      <canvas id="canvas" height="450" width="600"></canvas>
-    </div>
 
-    <%= render 'artists/socialprint_block' %>
-
-
-    <script>
-    var randomScalingFactor = function(){ return Math.round(Math.random()*100)};
-    var lineChartData = {
-      labels : ["January","February","March","April","May","June","July"],
-      datasets : [
-        {
-          label: "My First dataset",
-          fillColor : "rgba(220,220,220,0.2)",
-          strokeColor : "rgba(220,220,220,1)",
-          pointColor : "rgba(220,220,220,1)",
-          pointStrokeColor : "#fff",
-          pointHighlightFill : "#fff",
-          pointHighlightStroke : "rgba(220,220,220,1)",
-          data : [randomScalingFactor(),randomScalingFactor(),randomScalingFactor(),randomScalingFactor(),randomScalingFactor(),randomScalingFactor(),randomScalingFactor()]
-        },
-        {
-          label: "My Second dataset",
-          fillColor : "rgba(151,187,205,0.2)",
-          strokeColor : "rgba(151,187,205,1)",
-          pointColor : "rgba(151,187,205,1)",
-          pointStrokeColor : "#fff",
-          pointHighlightFill : "#fff",
-          pointHighlightStroke : "rgba(151,187,205,1)",
-          data : [randomScalingFactor(),randomScalingFactor(),randomScalingFactor(),randomScalingFactor(),randomScalingFactor(),randomScalingFactor(),randomScalingFactor()]
-        }
-      ]
-
-    }
-
-  window.onload = function(){
-    var ctx = document.getElementById("canvas").getContext("2d");
-    window.myLine = new Chart(ctx).Line(lineChartData, {
-      responsive: true
-    });
-  }
-
-
-  </script>
+    <%= render 'artists/visualization_block' %>
 
   </div>
 </div>
