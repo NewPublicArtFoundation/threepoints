@@ -31,6 +31,7 @@
       </h3>
     </div>
 
+    <!-- Location Block -->
     <% @pieces.each do |piece| %>
       <div class="row">
         <%= link_to piece do %>
@@ -42,9 +43,9 @@
           <%= piece.location.longitude %>
           <%= piece.location.latitude %>
         <% end %>
-
       </div>
     <% end %>
+    <!-- Location Block End -->
 
   </div>
   <div class="large-5 column location-block">
@@ -53,7 +54,12 @@
         Stats
       </h3>
     </div>
-    <%= render 'artists/visualization_block' %>
+    <%#= render 'artists/visualization_block' %>
+    <div class="row">
+      <h2><%= @pieces.count %> Pieces</h2>
+      <h2><%= @unique_locations.count %> Places</h2>
+    </div>
+
     <%= render 'artists/socialprint_block' %>
 
   </div>
