@@ -3,10 +3,9 @@
 <table>
   <thead>
     <tr>
+      <th>Artist</th>
       <th>Description</th>
-      <th>Discovered at</th>
-      <th>Painted at</th>
-      <th>Buffed at</th>
+      <th>Image</th>
       <th colspan="3"></th>
     </tr>
   </thead>
@@ -14,10 +13,9 @@
   <tbody>
     <% @graffitis.each do |graffiti| %>
       <tr>
+        <td><%= graffiti.artist.name %></td>
         <td><%= graffiti.description %></td>
-        <td><%= graffiti.discovered_at %></td>
-        <td><%= graffiti.painted_at %></td>
-        <td><%= graffiti.buffed_at %></td>
+        <td><%= graffiti.images %></td>
         <td><%= link_to 'Show', graffiti %></td>
         <td><%= link_to 'Edit', edit_graffiti_path(graffiti) %></td>
         <td><%= link_to 'Destroy', graffiti, method: :delete, data: { confirm: 'Are you sure?' } %></td>

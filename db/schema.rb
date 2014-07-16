@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140708022153) do
+ActiveRecord::Schema.define(version: 20140716010448) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -99,6 +99,10 @@ ActiveRecord::Schema.define(version: 20140708022153) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "slug"
+    t.string   "images_file_name"
+    t.string   "images_content_type"
+    t.integer  "images_file_size"
+    t.datetime "images_updated_at"
   end
 
   add_index "graffitis", ["artists_id"], name: "index_graffitis_on_artists_id"

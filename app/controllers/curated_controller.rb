@@ -1,6 +1,6 @@
 class CuratedController < ApplicationController
 
-  def top
+  def top_display
     @artists = Artist.all
   end
 end

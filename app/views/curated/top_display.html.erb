@@ -3,8 +3,12 @@
     <header>
       <h1>Most Popular Street Artists Now</h1>
     </header>
-    <% @curated_pieces.each do |curated_piece| %>
-
+    <% @artists.each do |artist| %>
+      <% artist.graffitis.each do |graffiti| %>
+        <%= link_to graffiti do %>
+          <%= graffiti.description %>
+        <% end %>
+      <% end %>
     <% end %>
 
   </div>
