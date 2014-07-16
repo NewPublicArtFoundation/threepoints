@@ -3,8 +3,6 @@ class Graffiti < ActiveRecord::Base
   validates_attachment_content_type :images, :content_type => /\Aimage\/.*\Z/
   belongs_to :location
   belongs_to :artist
-  has_many :graffiti_pictures
-  acts_as_votable
   has_paper_trail
   acts_as_taggable
   acts_as_votable
