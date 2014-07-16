@@ -7,6 +7,9 @@ $(document).ready(function(){
   if( $('.owl-carousel-profile').length > 0){
     $('.owl-carousel-profile').owlCarousel({
       items : 1,
+      loop:true,
+      nav: true
   })
   }
 })
+
