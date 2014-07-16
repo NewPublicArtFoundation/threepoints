@@ -15,35 +15,35 @@
 </div>
 <div class="hiredata-block">
   <div class="">
-    <h3><%= @pieces.count %></h3><label> Pieces</label>
-    <h3><%= @unique_locations.count %></h3><label> Places</label>
+    <h4><%= @pieces.count %></h4><label> Pieces</label>
+    <h4><%= @unique_locations.count %></h4><label> Places</label>
   </div>
 </div>
 
 <div class="location-block">
   <div class="graph-wrapper">
-    This is a color
+    <h3>Connected</h3>
   </div>
   <div class="graph-details">
     <ul class="no-bullet">
       <% if !@artist.tumblr_url.empty? %>
         <%= link_to @artist.tumblr_url do %>
-          <li>Tumblr</li>
+          <li class="social-link">Tumblr</li>
         <% end %>
       <% end %>
       <% if !@artist.twitter_url.empty? %>
         <%= link_to @artist.twitter_url do %>
-          <li>Twitter</li>
+          <li class="social-link">Twitter</li>
         <% end %>
       <% end %>
       <% if !@artist.instagram_url.empty? %>
         <%= link_to @artist.instagram_url do %>
-          <li>Instagram</li>
+          <li class="social-link">Instagram</li>
         <% end %>
       <% end %>
       <% if !@artist.flickr_url.empty? %>
         <%= link_to @artist.flickr_url do %>
-          <li>Flickr</li>
+          <li class="social-link">Flickr</li>
         <% end %>
       <% end %>
     </ul>
