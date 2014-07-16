@@ -26,22 +26,22 @@
   </div>
   <div class="graph-details">
     <ul class="no-bullet">
-      <% if !@artist.tumblr_url.empty? %>
+      <% if !@artist.tumblr_url.blank? %>
         <%= link_to @artist.tumblr_url do %>
           <li class="social-link">Tumblr</li>
         <% end %>
       <% end %>
-      <% if !@artist.twitter_url.empty? %>
+      <% if !@artist.twitter_url.blank? %>
         <%= link_to @artist.twitter_url do %>
           <li class="social-link">Twitter</li>
         <% end %>
       <% end %>
-      <% if !@artist.instagram_url.empty? %>
+      <% if !@artist.instagram_url.blank? %>
         <%= link_to @artist.instagram_url do %>
           <li class="social-link">Instagram</li>
         <% end %>
       <% end %>
-      <% if !@artist.flickr_url.empty? %>
+      <% if !@artist.flickr_url.blank? %>
         <%= link_to @artist.flickr_url do %>
           <li class="social-link">Flickr</li>
         <% end %>
