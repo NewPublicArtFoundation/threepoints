@@ -44,5 +44,5 @@ class User < ActiveRecord::Base
 
   extend FriendlyId
   friendly_id :username, use: :slugged
-  validates_presence_of :name, :slug
+  # validates_presence_of :name, :slug
 end
