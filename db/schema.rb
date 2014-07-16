@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140716010448) do
+ActiveRecord::Schema.define(version: 20140716120326) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -54,6 +54,10 @@ ActiveRecord::Schema.define(version: 20140716010448) do
     t.datetime "updated_at"
     t.string   "artist"
     t.string   "slug"
+    t.string   "flickr_url"
+    t.string   "instagram_url"
+    t.string   "tumblr_url"
+    t.string   "twitter_url"
   end
 
   add_index "artists", ["slug"], name: "index_artists_on_slug", unique: true
