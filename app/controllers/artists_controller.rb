@@ -12,6 +12,14 @@ class ArtistsController < ApplicationController
   def show
     @artist = Artist.friendly.find(params[:id])
     @pieces = @artist.graffitis
+
+    unique_locations = []
+
+    @pieces.each do |piece|
+      unique_locations.push(piece.location)
+    end
+
+    @unique_locations = unique_locations.uniq{|x| x.name}
   end
 
   # GET /artists/new
