@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140716000048) do
+ActiveRecord::Schema.define(version: 20140708022153) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -46,16 +46,6 @@ ActiveRecord::Schema.define(version: 20140716000048) do
   add_index "admin_users", ["email"], name: "index_admin_users_on_email", unique: true
   add_index "admin_users", ["reset_password_token"], name: "index_admin_users_on_reset_password_token", unique: true
 
-  create_table "artist_graffitis", force: true do |t|
-    t.integer  "artist_id"
-    t.integer  "graffiti_id"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  add_index "artist_graffitis", ["artist_id"], name: "index_artist_graffitis_on_artist_id"
-  add_index "artist_graffitis", ["graffiti_id"], name: "index_artist_graffitis_on_graffiti_id"
-
   create_table "artists", force: true do |t|
     t.string   "name"
     t.text     "description"
@@ -67,22 +57,6 @@ ActiveRecord::Schema.define(version: 20140716000048) do
   end
 
   add_index "artists", ["slug"], name: "index_artists_on_slug", unique: true
-
-  create_table "artists_graffitis", force: true do |t|
-    t.integer "artist_id"
-    t.integer "graffiti_id"
-  end
-
-  add_index "artists_graffitis", ["artist_id"], name: "index_artists_graffitis_on_artist_id"
-  add_index "artists_graffitis", ["graffiti_id"], name: "index_artists_graffitis_on_graffiti_id"
-
-  create_table "artists_locations", force: true do |t|
-    t.integer "artist_id"
-    t.integer "location_id"
-  end
-
-  add_index "artists_locations", ["artist_id"], name: "index_artists_locations_on_artist_id"
-  add_index "artists_locations", ["location_id"], name: "index_artists_locations_on_location_id"
 
   create_table "delayed_jobs", force: true do |t|
     t.integer  "priority",   default: 0, null: false
@@ -113,30 +87,23 @@ ActiveRecord::Schema.define(version: 20140716000048) do
   add_index "friendly_id_slugs", ["sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_id"
   add_index "friendly_id_slugs", ["sluggable_type"], name: "index_friendly_id_slugs_on_sluggable_type"
 
-  create_table "graffiti_pictures", force: true do |t|
-    t.integer  "graffiti_id"
-    t.string   "image_url"
-    t.text     "image_description"
+  create_table "graffitis", force: true do |t|
+    t.text     "description"
+    t.integer  "location_id"
+    t.integer  "artist_id"
+    t.datetime "discovered_at"
+    t.datetime "painted_at"
+    t.datetime "buffed_at"
+    t.integer  "locations_id"
+    t.integer  "artists_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "uploaded_image_file_name"
-    t.string   "uploaded_image_content_type"
-    t.integer  "uploaded_image_file_size"
-    t.datetime "uploaded_image_updated_at"
+    t.string   "slug"
   end
 
-  add_index "graffiti_pictures", ["graffiti_id"], name: "index_graffiti_pictures_on_graffiti_id"
-
-# Could not dump table "graffitis" because of following NoMethodError
-#   undefined method `[]' for nil:NilClass
-
-  create_table "graffitis_locations", force: true do |t|
-    t.integer "graffiti_id"
-    t.integer "location_id"
-  end
-
-  add_index "graffitis_locations", ["graffiti_id"], name: "index_graffitis_locations_on_graffiti_id"
-  add_index "graffitis_locations", ["location_id"], name: "index_graffitis_locations_on_location_id"
+  add_index "graffitis", ["artists_id"], name: "index_graffitis_on_artists_id"
+  add_index "graffitis", ["locations_id"], name: "index_graffitis_on_locations_id"
+  add_index "graffitis", ["slug"], name: "index_graffitis_on_slug", unique: true
 
   create_table "locations", force: true do |t|
     t.text     "address"
