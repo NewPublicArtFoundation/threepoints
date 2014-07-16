@@ -32,7 +32,10 @@
     </div>
 
     <% @pieces.each do |piece| %>
-
+      <%= link_to piece do %>
+      <%= image_tag piece.images, :class=>'large-3' %>
+      <%= piece.description %>
+      <% end %>
     <% end %>
 
   </div>
