@@ -4,11 +4,16 @@
       <h1>Most Popular Street Artists Now</h1>
     </header>
     <% @artists.each do |artist| %>
-      <% artist.graffitis.each do |graffiti| %>
-        <%= link_to graffiti do %>
-          <%= graffiti.description %>
+      <ul class="large-block-grid-3">
+        <% artist.graffitis.each do |graffiti| %>
+          <li>
+            <%= link_to graffiti do %>
+              <%= image_tag graffiti.images %>
+              <%= graffiti.description %>
+            <% end %>
+          </li>
         <% end %>
-      <% end %>
+      </ul>
     <% end %>
 
   </div>
