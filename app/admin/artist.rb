@@ -1,5 +1,5 @@
 ActiveAdmin.register Artist do
-  permit_params :name, :description, :began_at, :slug
+  permit_params :name, :description, :began_at, :slug, :twitter_url, :instagram_url, :flickr_url, :tumblr_url
 
 
   # See permitted parameters documentation:

@@ -25,10 +25,27 @@
     This is a color
   </div>
   <div class="graph-details">
-    <ul>
-      <li>Tumblrs</li>
-      <li>Twitter</li>
-      <li>Instagram</li>
+    <ul class="no-bullet">
+      <% if !@artist.tumblr_url.empty? %>
+        <%= link_to @artist.tumblr_url do %>
+          <li>Tumblr</li>
+        <% end %>
+      <% end %>
+      <% if !@artist.twitter_url.empty? %>
+        <%= link_to @artist.twitter_url do %>
+          <li>Twitter</li>
+        <% end %>
+      <% end %>
+      <% if !@artist.instagram_url.empty? %>
+        <%= link_to @artist.instagram_url do %>
+          <li>Instagram</li>
+        <% end %>
+      <% end %>
+      <% if !@artist.flickr_url.empty? %>
+        <%= link_to @artist.flickr_url do %>
+          <li>Flickr</li>
+        <% end %>
+      <% end %>
     </ul>
   </div>
   <div class="image-block"></div>
