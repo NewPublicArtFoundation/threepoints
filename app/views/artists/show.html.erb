@@ -32,10 +32,18 @@
     </div>
 
     <% @pieces.each do |piece| %>
-      <%= link_to piece do %>
-      <%= image_tag piece.images, :class=>'large-3' %>
-      <%= piece.description %>
-      <% end %>
+      <div class="row">
+        <%= link_to piece do %>
+          <%= image_tag piece.images, :class=>'large-3' %>
+          <%= piece.description %>
+        <% end %>
+        <%= link_to piece.location do %>
+          <%= piece.location.name %>
+          <%= piece.location.longitude %>
+          <%= piece.location.latitude %>
+        <% end %>
+
+      </div>
     <% end %>
 
   </div>
