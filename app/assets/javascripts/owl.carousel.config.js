@@ -4,4 +4,9 @@ $(document).ready(function(){
       items : 4,
   })
   }
+  if( $('.owl-carousel-profile').length > 0){
+    $('.owl-carousel-profile').owlCarousel({
+      items : 1,
+  })
+  }
 })

@@ -41,10 +41,10 @@
 
   </div>
   <div class="large-5 column location-block">
-    <div class="large-12">
-      <h3>
-        Stats
-      </h3>
+    <div class="large-12 owl-carousel-profile">
+      <% @pieces.each do |piece| %>
+        <%= image_tag piece.images %>
+      <% end %>
     </div>
 
   </div>
