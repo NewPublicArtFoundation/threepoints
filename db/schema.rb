@@ -52,7 +52,6 @@ ActiveRecord::Schema.define(version: 20140717111944) do
     t.datetime "began_at"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "artist"
     t.string   "slug"
     t.string   "flickr_url"
     t.string   "instagram_url"
@@ -113,8 +112,23 @@ ActiveRecord::Schema.define(version: 20140717111944) do
   add_index "graffitis", ["locations_id"], name: "index_graffitis_on_locations_id"
   add_index "graffitis", ["slug"], name: "index_graffitis_on_slug", unique: true
 
-# Could not dump table "locations" because of following NoMethodError
-#   undefined method `[]' for nil:NilClass
+  create_table "locations", force: true do |t|
+    t.text     "address"
+    t.string   "name"
+    t.float    "longitude"
+    t.float    "latitude"
+    t.datetime "discovered_at"
+    t.datetime "demolished_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.string   "slug"
+    t.string   "image_file_name"
+    t.string   "image_content_type"
+    t.integer  "image_file_size"
+    t.datetime "image_updated_at"
+  end
+
+  add_index "locations", ["slug"], name: "index_locations_on_slug", unique: true
 
   create_table "roles", force: true do |t|
     t.string   "name"
@@ -167,7 +181,6 @@ ActiveRecord::Schema.define(version: 20140717111944) do
     t.string   "avatar_content_type"
     t.integer  "avatar_file_size"
     t.datetime "avatar_updated_at"
-    t.string   "user"
     t.string   "slug"
   end
 
