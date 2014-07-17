@@ -17,6 +17,7 @@
       <% @locations.each do |location| %>
         <li>
           <%= link_to location do %>
+            <%= image_tag location.image %>
             <h2>
               <%= location.name %>
             </h2>
