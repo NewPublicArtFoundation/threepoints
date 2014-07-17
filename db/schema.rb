@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140716120326) do
+ActiveRecord::Schema.define(version: 20140717105308) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -113,20 +113,8 @@ ActiveRecord::Schema.define(version: 20140716120326) do
   add_index "graffitis", ["locations_id"], name: "index_graffitis_on_locations_id"
   add_index "graffitis", ["slug"], name: "index_graffitis_on_slug", unique: true
 
-  create_table "locations", force: true do |t|
-    t.text     "address"
-    t.float    "longitude"
-    t.float    "latitude"
-    t.datetime "discovered_at"
-    t.datetime "demolished_at"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.string   "location"
-    t.string   "slug"
-    t.string   "name"
-  end
-
-  add_index "locations", ["slug"], name: "index_locations_on_slug", unique: true
+# Could not dump table "locations" because of following NoMethodError
+#   undefined method `[]' for nil:NilClass
 
   create_table "roles", force: true do |t|
     t.string   "name"
