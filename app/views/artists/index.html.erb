@@ -15,6 +15,7 @@
         </div>
         <div class="user-works">
           <ul class="large-block-grid-4">
+          <!-- NEED TO PUT A LIMITER ON THE NUMBER OF ARTISTS CALLED -->
             <% artist.graffitis.each do |work| %>
               <li>
                 <%= image_tag work.images %>
