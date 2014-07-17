@@ -20,11 +20,15 @@
         <div class="user-works">
           <ul class="large-block-grid-6">
           <!-- NEED TO PUT A LIMITER ON THE NUMBER OF ARTISTS CALLED -->
+          <% if artist.graffitis.size > 0 %>
             <% artist.graffitis.each do |work| %>
               <li>
                 <%= image_tag work.images %>
               </li>
             <% end %>
+          <% else %>
+            <li>No images</li>
+          <% end %>
           </ul>
         </div>
       </div>
@@ -34,5 +38,10 @@
 
   </div>
 </div>
+<div class="row">
 
-<%= link_to 'New Artist', new_artist_path %>
+  <%= link_to new_artist_path do %>
+    <%= image_tag 'new-artist.png' %>
+    <p>Add a new artist</p>
+  <% end %>
+</div>
