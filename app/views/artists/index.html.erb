@@ -5,14 +5,23 @@
   <div class="large-8 column">
     <% @artists.each do |artist| %>
       <div class="artist-block">
-        <%= link_to artist do %>
-          <h3>
-            <%= artist.name %>
-          </h3>
-        <% end %>
-        <p>
-          <%= artist.description %>
-        </p>
+        <div class="user-info">
+          <%= link_to artist do %>
+            <h3>
+              <%= artist.name %>
+            </h3>
+          <% end %>
+          <p><%= artist.description %></p>
+        </div>
+        <div class="user-works">
+          <ul class="large-block-grid-4">
+            <% artist.graffitis.each do |work| %>
+              <li>
+                <%= image_tag work.images %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
       </div>
     <% end %>
   </div>
