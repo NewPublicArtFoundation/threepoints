@@ -17,7 +17,7 @@
       <% @locations.each do |location| %>
         <li>
           <%= link_to location do %>
-            <%= image_tag location.image %>
+            <%= image_tag location.image, :class=>'large-8 column large-centered' %>
             <h2>
               <%= location.name %>
             </h2>
