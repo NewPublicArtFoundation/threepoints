@@ -1,3 +1,7 @@
+<style>
+div{border: 1px solid black;}
+</style>
+
 <div class="row">
   <h1>Listing Worlds Best Artists</h1>
 </div>
@@ -7,14 +11,14 @@
       <div class="artist-block">
         <div class="user-info">
           <%= link_to artist do %>
-            <h3>
+            <h2>
               <%= artist.name %>
-            </h3>
+            </h2>
           <% end %>
           <p><%= artist.description %></p>
         </div>
         <div class="user-works">
-          <ul class="large-block-grid-4">
+          <ul class="large-block-grid-6">
           <!-- NEED TO PUT A LIMITER ON THE NUMBER OF ARTISTS CALLED -->
             <% artist.graffitis.each do |work| %>
               <li>
