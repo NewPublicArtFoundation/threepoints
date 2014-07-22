@@ -17,7 +17,7 @@
       <% @locations.each do |location| %>
         <li>
           <%= link_to location do %>
-            <%= image_tag location.image, :class=>'large-8 column large-centered' %>
+            <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{location.latitude}%2C#{location.longitude}" %>
             <h2>
               <%= location.name %>
             </h2>
@@ -25,21 +25,13 @@
           <p class="address">
             <%= location.address %>
           </p>
-          <p>
-            <span><%= location.longitude %></span>,
-            <span><%= location.latitude %></span>
-          </p>
         </li>
       <% end %>
-      <li class="text-center">
-        <%= link_to new_location_path do %>
-          <%= image_tag 'location-icon.png' %>
-        <% end %>
-        <%= link_to new_location_path do %>
-          <p>Add new location</p>
-        <% end %>
-      </li>
+
     </ul>
+    <%= link_to new_location_path,:class=>'button radius white large-12' do %>
+      Add new location
+    <% end %>
   </div>
 
 
