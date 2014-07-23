@@ -7,7 +7,7 @@ class LocationsController < ApplicationController
     if params[:search].present?
       @locations = Location.near(params[:search], 5000, :order => :distance)
     else
-      @locations = Location.all
+      @locations = Location.all.reverse
     end
   end
 
