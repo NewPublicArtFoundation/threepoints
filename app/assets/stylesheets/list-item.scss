@@ -5,20 +5,23 @@
   overflow: hidden;
   h2, p {
     color: white;
+    text-transform: capitalize;
   }
   .text-wrapper{
+    background: rgba(0,0,0,.5);
     position: absolute;
-    -webkit-transform: translate(0, 100%);
-    -ms-transform: translate(0, 100%);
-    transform: translate(0, 100%);
+    width: 100%;
+    bottom: 0;
+    // -webkit-transform: translate(0, 100%);
+    // -ms-transform: translate(0, 100%);
+    // transform: translate(0, 100%);
   }
   &:hover{
     .text-wrapper{
-      width: 100%;
-      -webkit-transform: translate(0, -100%);
-      -ms-transform: translate(0, -100%);
-      transform: translate(0, -100%);
-      background: rgba(0,0,0,.5);
+      // -webkit-transform: translate(0, -100%);
+      // -ms-transform: translate(0, -100%);
+      // transform: translate(0, -100%);
+
     }
   }
 }
