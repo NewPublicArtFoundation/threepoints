@@ -1,3 +1,13 @@
 .scroller{
+  position: relative;
   overflow: scroll;
+  .title{
+    position: absolute;
+    background: rgba(0,0,0,.3);
+    color: white;
+    bottom: 0;
+    font-size: 2em;
+    width: 100%;
+    margin: 0;
+  }
 }

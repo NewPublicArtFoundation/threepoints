@@ -26,12 +26,15 @@
 
 <%= link_to 'Back', locations_path, :class=>'button secondary small' %>
   </div>
-  <div class="large-6 column scroller">
-  <% if @location.instagram != nil %>
-    <% @instagram.each do |instagram| %>
-      <%= image_tag instagram.images.standard_resolution.url %>
-    <% end %>
-  <% end %>
+  <div class="large-6 column ">
+    <div class="scroller">
+      <h3 class="title">Instagram Feed</h3>
+      <% if @location.instagram != nil %>
+        <% @instagram.each do |instagram| %>
+          <%= image_tag instagram.images.standard_resolution.url %>
+        <% end %>
+      <% end %>
+    </div>
   </div>
 </div>
 
