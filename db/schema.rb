@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140717111944) do
+ActiveRecord::Schema.define(version: 20140723024305) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -126,6 +126,7 @@ ActiveRecord::Schema.define(version: 20140717111944) do
     t.string   "image_content_type"
     t.integer  "image_file_size"
     t.datetime "image_updated_at"
+    t.integer  "instagram"
   end
 
   add_index "locations", ["slug"], name: "index_locations_on_slug", unique: true
