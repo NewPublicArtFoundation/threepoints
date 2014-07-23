@@ -3,28 +3,31 @@
 <p id="notice"><%= notice %></p>
 <div class="row">
   <div class="large-6 column">
-<p>
-  <h1>
-    <%= @location.name %>
-  </h1>
-</p>
+    <p>
+      <h1>
+        <%= @location.name %>
+      </h1>
+    </p>
+    <% if @location.description != nil %>
+    <p>
+      <%= @location.description %>
+    </p>
+    <% end %>
 
-<div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
-  <strong>Address:</strong>
-  <span itemprop="streetAddress"><%= @location.address %></span>
-</div>
+    <div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+      <strong>Address:</strong>
+      <span itemprop="streetAddress"><%= @location.address %></span>
+    </div>
 
-<p>
-  Lon: <%= @location.longitude %>,
-  Lat: <%= @location.latitude %>
-</p>
-<% if @location.image = nil %>
-  <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{@location.latitude}%2C#{@location.longitude}" %>
-<% end %>
-<%#= render 'locations/nearby_block' %>
+    <p>
+      Lon: <%= @location.longitude %>,
+      Lat: <%= @location.latitude %>
+    </p>
+    <% if @location.image = nil %>
+      <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{@location.latitude}%2C#{@location.longitude}" %>
+    <% end %>
 
-
-<%= link_to 'Back', locations_path, :class=>'button secondary small' %>
+    <%= link_to 'Back', locations_path, :class=>'button secondary small' %>
   </div>
   <div class="large-6 column ">
     <div class="scroller">
