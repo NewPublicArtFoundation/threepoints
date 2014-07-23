@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140723033634) do
+ActiveRecord::Schema.define(version: 20140723043825) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -128,6 +128,10 @@ ActiveRecord::Schema.define(version: 20140723033634) do
     t.datetime "image_updated_at"
     t.integer  "instagram"
     t.string   "description"
+    t.string   "twitter_url"
+    t.string   "facebook_url"
+    t.string   "instagram_url"
+    t.string   "website"
   end
 
   add_index "locations", ["slug"], name: "index_locations_on_slug", unique: true
