@@ -23,8 +23,8 @@
 <% end %>
 <%#= render 'locations/nearby_block' %>
 
-<%#= link_to 'Edit', edit_location_path(@location) %> |
-<%= link_to 'Back', locations_path %>
+
+<%= link_to 'Back', locations_path, :class=>'button secondary small' %>
   </div>
   <div class="large-6 column scroller">
   <% if @location.instagram != nil %>
