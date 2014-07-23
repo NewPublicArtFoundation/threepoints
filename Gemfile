@@ -51,6 +51,8 @@ gem 'bundler'
 
 gem 'geocoder'
 
+gem 'instagram'
+
 gem 'validates_formatting_of'
 gem 'tzinfo-data'
 gem 'rails_config'

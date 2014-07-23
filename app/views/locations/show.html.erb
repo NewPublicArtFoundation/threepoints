@@ -29,7 +29,9 @@
 
 <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{@location.latitude}%2C#{@location.longitude}" %>
 
-<%#= render 'locations/nearby_block' %>
+
+
+<%= render 'locations/nearby_block' %>
 
 <%#= link_to 'Edit', edit_location_path(@location) %> |
 <%= link_to 'Back', locations_path %>
