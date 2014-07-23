@@ -18,8 +18,9 @@
   Lon: <%= @location.longitude %>,
   Lat: <%= @location.latitude %>
 </p>
-<%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{@location.latitude}%2C#{@location.longitude}" %>
-
+<% if @location.image = nil %>
+  <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{@location.latitude}%2C#{@location.longitude}" %>
+<% end %>
 <%#= render 'locations/nearby_block' %>
 
 <%#= link_to 'Edit', edit_location_path(@location) %> |
