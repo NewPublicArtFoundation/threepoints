@@ -14,16 +14,16 @@
     </p>
     <% end %>
     <% if @location.instagram_url %>
-      <%= link_to @location.instagram_url,'Instagram' :class=>'button secondary small' do %>
+      <%= link_to @location.instagram_url,'Instagram', :class=>'button secondary small' %>
     <% end %>
     <% if @location.facebook_url %>
-      <%= link_to @location.facebook_url,'Instagram' :class=>'button secondary small' do %>
+      <%= link_to @location.facebook_url,'Facebook', :class=>'button secondary small' %>
     <% end %>
     <% if @location.twitter_url %>
-      <%= link_to @location.twitter_url,'Instagram' :class=>'button secondary small' do %>
+      <%= link_to @location.twitter_url,'Twitter', :class=>'button secondary small' %>
     <% end %>
     <% if @location.website_url %>
-      <%= link_to @location.website_url,'Instagram' :class=>'button secondary small' do %>
+      <%= link_to @location.website,'Website', :class=>'button secondary small' %>
     <% end %>
     <div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
       <strong>Address:</strong>
