@@ -14,7 +14,7 @@ class LocationsController < ApplicationController
   # GET /locations/1
   # GET /locations/1.json
   def show
-    @instagram = Instagram.user_recent_media("215155593", {:count => 1})
+    @instagram = Instagram.user_recent_media("447711476", {:count => 10})
   end
 
   # GET /locations/new

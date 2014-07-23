@@ -1,15 +1,9 @@
 <p id="notice"><%= notice %></p>
-
-
+<div class="row">
+  <div class="large-6 column">
 <p>
   <strong>Name:</strong>
   <%= @location.name %>
-</p>
-
-
-<p>
-  <strong>Slug:</strong>
-  <%= @location.slug %>
 </p>
 
 <p>
@@ -17,21 +11,22 @@
   <%= @location.address %>
 </p>
 
-<p>
-  <strong>Longitude:</strong>
-  <%= @location.longitude %>
-</p>
-
-<p>
-  <strong>Latitude:</strong>
-  <%= @location.latitude %>
-</p>
-
 <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{@location.latitude}%2C#{@location.longitude}" %>
-
-<%= @instagram %>
 
 <%= render 'locations/nearby_block' %>
 
 <%#= link_to 'Edit', edit_location_path(@location) %> |
 <%= link_to 'Back', locations_path %>
+  </div>
+  <div class="large-6 column scroller">
+
+ <% @instagram.each do |instagram| %>
+    <%= image_tag instagram.images.standard_resolution.url %>
+  <% end %>
+  </div>
+</div>
+
+
+
+
+
