@@ -23,9 +23,10 @@
 <%= link_to 'Back', locations_path %>
   </div>
   <div class="large-6 column scroller">
-
-  <% @instagram.each do |instagram| %>
-    <%= image_tag instagram.images.standard_resolution.url %>
+  <% if @location.instagram != nil %>
+    <% @instagram.each do |instagram| %>
+      <%= image_tag instagram.images.standard_resolution.url %>
+    <% end %>
   <% end %>
   </div>
 </div>
