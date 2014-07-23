@@ -17,6 +17,12 @@ class LocationsController < ApplicationController
     if @location.instagram != nil
       @instagram = Instagram.location_recent_media(@location.instagram, {:count => 10})
     end
+
+    if @location.image != nil
+      @heroImage = @location.image
+    else
+      @heroImage = "http://maps.google.com/maps/api/staticmap?size=1200x300&sensor=false&zoom=16&markers=#{@location.latitude}%2C#{@location.longitude}"
+    end
   end
 
   # GET /locations/new

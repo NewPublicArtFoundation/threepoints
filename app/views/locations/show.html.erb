@@ -1,15 +1,18 @@
+<div class="large-12 hero-image-slice" style="background-image: url('<%= @heroImage %>'); ">
+</div>
 <p id="notice"><%= notice %></p>
 <div class="row">
   <div class="large-6 column">
 <p>
-  <strong>Name:</strong>
-  <%= @location.name %>
+  <h1>
+    <%= @location.name %>
+  </h1>
 </p>
 
-<p>
+<div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
   <strong>Address:</strong>
-  <%= @location.address %>
-</p>
+  <span itemprop="streetAddress"><%= @location.address %></span>
+</div>
 
 <p>
   Lon: <%= @location.longitude %>,

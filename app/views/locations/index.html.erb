@@ -17,7 +17,11 @@
       <% @locations.each do |location| %>
         <li>
           <%= link_to location do %>
-            <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{location.latitude}%2C#{location.longitude}" %>
+            <% if location.image != nil %>
+              <%= image_tag location.image %>
+            <% else %>
+              <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{location.latitude}%2C#{location.longitude}" %>
+            <% end %>
             <h2>
               <%= location.name %>
             </h2>
