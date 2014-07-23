@@ -16,19 +16,25 @@
     <ul class="large-block-grid-3">
       <% @locations.each do |location| %>
         <li>
-          <%= link_to location do %>
-            <% if location.image != nil %>
-              <%= image_tag location.image %>
-            <% else %>
-              <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{location.latitude}%2C#{location.longitude}" %>
+          <div class="block-container">
+            <%= link_to location do %>
+              <% if location.image != nil %>
+                <%= image_tag location.image %>
+              <% else %>
+                <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{location.latitude}%2C#{location.longitude}" %>
+              <% end %>
             <% end %>
-            <h2>
-              <%= location.name %>
-            </h2>
-          <% end %>
-          <p class="address">
-            <%= location.address %>
-          </p>
+            <div class="text-wrapper">
+              <%= link_to location do %>
+                <h2>
+                  <%= location.name %>
+                </h2>
+                <p class="address">
+                  <%= location.address %>
+                </p>
+              <% end %>
+            </div>
+          </div>
         </li>
       <% end %>
 
