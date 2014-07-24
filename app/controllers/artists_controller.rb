@@ -20,6 +20,10 @@ class ArtistsController < ApplicationController
     end
 
     @unique_locations = unique_locations.uniq{|x| x.name}
+
+    @commentable = @artist
+    @comments = @commentable.comments
+    @comment = Comment.new
   end
 
   # GET /artists/new

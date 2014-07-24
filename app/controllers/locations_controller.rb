@@ -23,6 +23,10 @@ class LocationsController < ApplicationController
     else
       @heroImage = "http://maps.google.com/maps/api/staticmap?size=1200x300&sensor=false&zoom=16&markers=#{@location.latitude}%2C#{@location.longitude}"
     end
+
+    @commentable = @location
+    @comments = @commentable.comments
+    @comment = Comment.new
   end
 
   # GET /locations/new
