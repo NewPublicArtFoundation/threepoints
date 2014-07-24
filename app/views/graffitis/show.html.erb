@@ -6,6 +6,9 @@
 
 <div class="row">
   <div class="large-6 column">
+    <% if @graffiti.location.latitude = nil %>
+      <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{@graffiti.location.latitude}%2C#{@graffiti.location.longitude}" %>
+    <% end %>
     <h3>Description</h3>
     <p>
       <%= @graffiti.description %>

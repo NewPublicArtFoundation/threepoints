@@ -13,16 +13,16 @@
       <%= @location.description %>
     </p>
     <% end %>
-    <% if @location.instagram_url %>
+    <% if @location.instagram_url != nil %>
       <%= link_to 'Instagram', @location.instagram_url,:class=>'button secondary small' %>
     <% end %>
-    <% if @location.facebook_url %>
+    <% if @location.facebook_url != nil %>
       <%= link_to 'Facebook', @location.facebook_url,:class=>'button secondary small' %>
     <% end %>
-    <% if @location.twitter_url %>
+    <% if @location.twitter_url != nil %>
       <%= link_to 'Twitter', @location.twitter_url,:class=>'button secondary small' %>
     <% end %>
-    <% if @location.website %>
+    <% if @location.website != nil %>
       <%= link_to 'Website', @location.website,:class=>'button secondary small' %>
     <% end %>
     <div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
