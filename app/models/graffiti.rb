@@ -3,6 +3,7 @@ class Graffiti < ActiveRecord::Base
   validates_attachment_content_type :images, :content_type => /\Aimage\/.*\Z/
   belongs_to :location
   belongs_to :artist
+
   extend FriendlyId
   friendly_id :name, use: :slugged
   validates_presence_of :name
@@ -12,4 +13,6 @@ class Graffiti < ActiveRecord::Base
   acts_as_votable
   resourcify
   has_many :comments, as: :commentable
+
+  after_create{ |graffiti| Activity.create! action: "create", trackable: recipe }
 end

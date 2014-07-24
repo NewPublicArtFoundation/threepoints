@@ -14,6 +14,9 @@ class ApplicationController < ActionController::Base
     devise_parameter_sanitizer.for(:account_update) { |u| u.permit(:username, :email, :password, :password_confirmation, :current_password, :avatar) }
   end
 
+  def track_activity(trackable, action = params[:action])
+    current_user.activities.create! action: action, trackable: trackable
+  end
 
   private
 

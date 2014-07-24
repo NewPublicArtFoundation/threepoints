@@ -33,6 +33,9 @@ class GraffitisController < ApplicationController
 
     respond_to do |format|
       if @graffiti.save
+
+        track_activity @graffiti
+
         format.html { redirect_to @graffiti, notice: 'Graffiti was successfully created.' }
         format.json { render :show, status: :created, location: @graffiti }
       else
@@ -47,6 +50,7 @@ class GraffitisController < ApplicationController
   def update
     respond_to do |format|
       if @graffiti.update(graffiti_params)
+        track_activity @graffiti
         format.html { redirect_to @graffiti, notice: 'Graffiti was successfully updated.' }
         format.json { render :show, status: :ok, location: @graffiti }
       else
@@ -60,6 +64,7 @@ class GraffitisController < ApplicationController
   # DELETE /graffitis/1.json
   def destroy
     @graffiti.destroy
+    track_activity @graffiti
     respond_to do |format|
       format.html { redirect_to graffitis_url, notice: 'Graffiti was successfully destroyed.' }
       format.json { head :no_content }
