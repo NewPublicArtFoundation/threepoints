@@ -1,7 +1,7 @@
 <h1>Listing graffitis</h1>
 
     <% @graffitis.each do |graffiti| %>
-      <div class="row">
+      <div class="row min-slide">
         <div class="large-6 column">
           <h3>
             <%= link_to graffiti.name, graffiti %>
@@ -10,11 +10,10 @@
             <%= link_to graffiti.description, graffiti %>
           </p>
         </div>
-        <div class="large-6 column">
-          <%= link_to graffiti do %>
-            <%= image_tag graffiti.images %>
-          <% end %>
+        <%= link_to graffiti, :class=>'large-6 column' do %>
+        <div class="large-12" style="background-image:url('<%= graffiti.images %>');">
         </div>
+        <% end %>
       </div>
     <% end %>
 <br>
