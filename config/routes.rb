@@ -14,7 +14,8 @@ Rails.application.routes.draw do
 
   get 'pages/about'
 
-  get   "/user/:id"   => "users#show",   as: :user
+  get "/user/:id"   => "users#show",   as: :user
+  get "/user/"      => redirect("/")
 
 
 resources :locations do
