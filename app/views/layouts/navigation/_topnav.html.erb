@@ -52,22 +52,27 @@
         <!-- Left Nav Section -->
         <ul class="">
           <% if !current_page?(root_url) %>
-          <li>
-            <%= link_to root_path do %>
-              Home
-            <% end %>
-          </li>
+            <li>
+              <%= link_to root_path do %>
+                Home
+              <% end %>
+            </li>
           <% end %>
-          <li>
-            <%= link_to artists_path do %>
+          <%= link_to artists_path do %>
+            <li>
               Artists
-            <% end %>
-          </li>
-          <li>
-            <%= link_to locations_path do %>
+            </li>
+          <% end %>
+          <%= link_to graffitis_path do %>
+            <li>
+              Pieces
+            </li>
+          <% end %>
+          <%= link_to locations_path do %>
+            <li>
               Places
-            <% end %>
-          </li>
+            </li>
+          <% end %>
         </ul>
       </section>
     </nav>
