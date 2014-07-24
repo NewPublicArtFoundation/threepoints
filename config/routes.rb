@@ -14,9 +14,7 @@ Rails.application.routes.draw do
 
   get 'pages/about'
 
-  # get '/user', to: 'users#show'
-  # match 'user' '/user/:id', to: 'users#show'
-  get   "/user/:id"   => "users#show",         as: :user
+  get   "/user/:id"   => "users#show",   as: :user
 
 
 resources :locations do

@@ -5,7 +5,7 @@ class UsersController < ApplicationController
 
   def show
     @user = User.friendly.find(params[:id])
-    @activities = Activity.order("created_at desc")
+    @activities = @user.activities.order("created_at desc")
   end
 
 end
