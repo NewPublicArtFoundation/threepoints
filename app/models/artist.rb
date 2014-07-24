@@ -9,5 +9,6 @@ class Artist < ActiveRecord::Base
   validates :slug, uniqueness: true
   acts_as_taggable
   acts_as_votable
+  has_many :comments, as: :commentable
 end
 

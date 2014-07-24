@@ -11,4 +11,5 @@ class Graffiti < ActiveRecord::Base
   acts_as_taggable
   acts_as_votable
   resourcify
+  has_many :comments, as: :commentable
 end
