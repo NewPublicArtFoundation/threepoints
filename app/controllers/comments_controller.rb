@@ -30,4 +30,7 @@ private
   #   klass = [Artist, Graffiti, Location].detect { |c| params["#{c.name.underscore}_id"] }
   #   @commentable = klass.find(params["#{klass.name.underscore}_id"])
   # end
+  def graffiti_params
+    params.require(:graffiti).permit(:name, :slug, :description, :discovered_at, :painted_at, :buffed_at, :location_id, :artist_id, :images)
+  end
 end
