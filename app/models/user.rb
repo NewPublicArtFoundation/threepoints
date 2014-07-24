@@ -28,7 +28,6 @@ class User < ActiveRecord::Base
                 password: Devise.friendly_token[0,20])
   end
 
-
   attr_accessor :login
 
   #->Prelang (user_login:devise/username_login_support)

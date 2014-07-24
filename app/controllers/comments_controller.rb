@@ -11,12 +11,17 @@ class CommentsController < ApplicationController
 
   def create
     @comment = @commentable.comments.new(comment_params)
-    @comment.user_id = current_user.id
-    if @comment.save
-      track_activity @comment
-      redirect_to @commentable, notice: "Comment created."
+    if !user_signed_in?
+      redirect_to new_user_session_path, notice: 'Please login'
     else
-      render :new
+      @comment.user_id = current_user.id
+
+      if @comment.save
+        track_activity @comment
+        redirect_to @commentable, notice: "Comment created."
+      else
+        render :new
+      end
     end
   end
 
