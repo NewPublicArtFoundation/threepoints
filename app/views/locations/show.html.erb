@@ -25,16 +25,18 @@
     <% if @location.website != nil %>
       <%= link_to 'Website', @location.website,:class=>'button secondary small' %>
     <% end %>
+    <div>
+      <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{@location.latitude}%2C#{@location.longitude}" %>
+    </div>
     <div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
       <strong>Address:</strong>
-      <span itemprop="streetAddress"><%= @location.address %></span>
+      <p>
+        <span itemprop="streetAddress"><%= @location.address %></span>
+      </p>
     </div>
 
-    <% if @location.image = nil %>
-      <%= image_tag "http://maps.google.com/maps/api/staticmap?size=450x300&sensor=false&zoom=16&markers=#{@location.latitude}%2C#{@location.longitude}" %>
-    <% end %>
 
-    <%= link_to 'Back', locations_path, :class=>'button secondary small' %>
+    <%= link_to 'Back', locations_path, :class=>'button secondary tiny' %>
   </div>
   <div class="large-6 column ">
     <div class="scroller">
