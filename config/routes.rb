@@ -23,6 +23,24 @@ resources :locations do
   member do
     get "vote"
   end
+  resources :comments
+end
+
+resources :artists do
+  #->Prelang (voting/acts_as_votable)
+  member do
+    get "vote"
+  end
+  resources :comments
+end
+
+
+resources :graffitis do
+  #->Prelang (voting/acts_as_votable)
+  member do
+    get "vote"
+  end
+  resources :comments
 end
 
   resources :missions, only: [:create, :destroy]
@@ -36,21 +54,6 @@ end
   get '/help',  to: 'pages#help'
   get '/news',  to: 'pages#help'
   get '/top',   to: 'curated#top_display'
-
-resources :artists do
-  #->Prelang (voting/acts_as_votable)
-  member do
-    get "vote"
-  end
-end
-
-
-resources :graffitis do
-  #->Prelang (voting/acts_as_votable)
-  member do
-    get "vote"
-  end
-end
 
 
   resources :graffiti_pictures
