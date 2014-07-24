@@ -14,8 +14,9 @@ Rails.application.routes.draw do
 
   get 'pages/about'
 
-  get '/user', to: 'users#show'
-
+  # get '/user', to: 'users#show'
+  # match 'user' '/user/:id', to: 'users#show'
+  get   "/user/:id"   => "users#show",         as: :user
 
 
 resources :locations do
@@ -120,7 +121,7 @@ end
     get    "login"   => "devise/sessions#new",         as: :new_user_session
     post   "login"   => "devise/sessions#create",      as: :user_session
     delete "signout" => "devise/sessions#destroy",     as: :destroy_user_session
-    get '/start'     => 'devise/registrations#new'
+    get    '/start'     => 'devise/registrations#new'
 
     get    "signup"  => "devise/registrations#new",    as: :new_user_registration
     post   "signup"  => "devise/registrations#create", as: :user_registration
