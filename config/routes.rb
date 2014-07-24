@@ -1,5 +1,9 @@
 Rails.application.routes.draw do
 
+  get 'comments/index'
+
+  get 'comments/new'
+
   resources :activities
 
   root 'pages#index'
