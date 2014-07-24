@@ -1,5 +1,6 @@
 class User < ActiveRecord::Base
   has_many :activities
+  has_many :comments
   rolify
   acts_as_voter
   has_attached_file :avatar, :styles => { :medium => "300x300>", :thumb => "100x100>" }, :default_url => "/images/:style/missing.png"
