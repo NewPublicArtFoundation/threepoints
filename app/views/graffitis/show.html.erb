@@ -1,17 +1,23 @@
 <% if @graffiti.images != nil %>
-<div class="row">
-  <%= image_tag @graffiti.images %>
+<div class="large-12 hero-image-slice" style="background-image: url('<%= @graffiti.images %>'); ">
+  <h1 class="text-center"><%= @graffiti.name %></h1>
 </div>
 <% end %>
 
 <div class="row">
-  <p>
-    <%= @graffiti.description %>
-  </p>
+  <div class="large-6 column">
+    <h3>Description</h3>
+    <p>
+      <%= @graffiti.description %>
+    </p>
+  </div>
+  <div class="large-6 column">
+    <h3>Comments</h3>
+    <%= render "comments/comments" %>
+    <%= render "comments/form" %>
+  </div>
 </div>
 
-<%= render "comments/comments" %>
-<%= render "comments/form" %>
 
 <%#= link_to 'Edit', edit_graffiti_path(@graffiti) %> |
 <%= link_to 'Back', graffitis_path %>
