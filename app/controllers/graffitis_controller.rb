@@ -11,6 +11,9 @@ class GraffitisController < ApplicationController
   # GET /graffitis/1.json
   def show
     @graffiti = Graffiti.friendly.find(params[:id])
+    @commentable = @graffiti
+    @comments = @commentable.comments
+    @comment = Comment.new
   end
 
   # GET /graffitis/new
