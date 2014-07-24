@@ -27,6 +27,6 @@ private
     @commentable = klass.friendly.find(params["#{klass.name.underscore}_id"])
   end
   def comment_params
-    params.require(:comment).permit(:content)
+    params.require(:comment).permit(:content, :user_id)
   end
 end
