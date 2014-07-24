@@ -14,5 +14,4 @@ class Graffiti < ActiveRecord::Base
   resourcify
   has_many :comments, as: :commentable
 
-  after_create{ |graffiti| Activity.create! action: "create", trackable: recipe }
 end

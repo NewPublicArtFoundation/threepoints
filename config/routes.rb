@@ -14,7 +14,7 @@ Rails.application.routes.draw do
 
   get 'pages/about'
 
-  get 'users/index'
+  get '/user', to: 'users#show'
 
 
 
