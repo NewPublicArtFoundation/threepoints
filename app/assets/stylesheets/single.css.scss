@@ -7,6 +7,11 @@
 }
 
 .min-slide{
+  .image-container{
+    height: 300px;
+    background-position: center;
+    background-size: cover;
+  }
   max-height: 240px;
   overflow: hidden;
 }
