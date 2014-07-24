@@ -1,8 +1,14 @@
 <div class="row">
-  <div id="comments" class="large-12 column panel">
+  <div id="comments" class="large-12 column">
     <% @comments.each do |comment| %>
-      <div class="comment">
+      <div class="comment  panel">
         <%= simple_format comment.content %>
+        <% if comment.user_id != nil %>
+          -<%= link_to User.find(comment.user_id).username, User.find(comment.user_id) %>
+
+        <% else  %>
+          -Anonymous
+        <% end %>
       </div>
     <% end %>
   </div>
