@@ -12,6 +12,8 @@ class GraffitisController < ApplicationController
   def show
     @graffiti = Graffiti.friendly.find(params[:id])
 
+    @location = @graffiti.location
+
     @commentable = @graffiti
     @comments = @commentable.comments
     @comment = Comment.new
