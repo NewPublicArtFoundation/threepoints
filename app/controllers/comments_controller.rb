@@ -20,16 +20,11 @@ class CommentsController < ApplicationController
 
 private
 
-  def load_commentable
-    resource, id = request.path.split('/')[1, 2]
-    @commentable = resource.singularize.classify.constantize.find(id)
-  end
-
   # alternative option:
-  # def load_commentable
-  #   klass = [Artist, Graffiti, Location].detect { |c| params["#{c.name.underscore}_id"] }
-  #   @commentable = klass.find(params["#{klass.name.underscore}_id"])
-  # end
+  def load_commentable
+    klass = [Artist, Graffiti, Location].detect { |c| params["#{c.name.underscore}_id"] }
+    @commentable = klass.friendly.find(params["#{klass.name.underscore}_id"])
+  end
   def comment_params
     params.require(:comment).permit(:content)
   end
