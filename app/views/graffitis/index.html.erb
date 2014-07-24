@@ -1,29 +1,22 @@
 <h1>Listing graffitis</h1>
 
-<table>
-  <thead>
-    <tr>
-      <th>Artist</th>
-      <th>Description</th>
-      <th>Image</th>
-      <th colspan="3"></th>
-    </tr>
-  </thead>
-
-  <tbody>
     <% @graffitis.each do |graffiti| %>
-      <tr>
-        <td><%= graffiti.name %></td>
-        <td><%= graffiti.description %></td>
-        <td><%= graffiti.images %></td>
-        <td><%= link_to 'Show', graffiti %></td>
-        <td><%#= link_to 'Edit', edit_graffiti_path(graffiti) %></td>
-        <td><%#= link_to 'Destroy', graffiti, method: :delete, data: { confirm: 'Are you sure?' } %></td>
-      </tr>
+      <div class="row">
+        <div class="large-6 column">
+          <h3>
+            <%= link_to graffiti.name, graffiti %>
+          </h3>
+          <p>
+            <%= link_to graffiti.description, graffiti %>
+          </p>
+        </div>
+        <div class="large-6 column">
+          <%= link_to graffiti do %>
+            <%= image_tag graffiti.images %>
+          <% end %>
+        </div>
+      </div>
     <% end %>
-  </tbody>
-</table>
-
 <br>
 
 <%= link_to 'New Graffiti', new_graffiti_path %>
