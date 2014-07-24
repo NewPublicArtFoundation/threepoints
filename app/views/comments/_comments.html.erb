@@ -1,8 +1,11 @@
-<div id="comments">
-  <% @comments.each do |comment| %>
-    <div class="comment">
-      <%= simple_format comment.content %>
+<div class="row">
+  <div id="comments" class="large-12 column panel">
+    <% @comments.each do |comment| %>
+      <div class="comment">
+        <%= simple_format comment.content %>
+      </div>
+        <%= comment.user  %>
 
-    </div>
-  <% end %>
+    <% end %>
+  </div>
 </div>
