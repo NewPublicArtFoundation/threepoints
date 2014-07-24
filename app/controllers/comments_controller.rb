@@ -12,10 +12,9 @@ class CommentsController < ApplicationController
   def create
     @comment = @commentable.comments.new(comment_params)
     if !user_signed_in?
-      redirect_to new_user_session_path, notice: 'Please login'
+      redirect_to new_user_session_path, notice: 'Please register first'
     else
       @comment.user_id = current_user.id
-
       if @comment.save
         track_activity @comment
         redirect_to @commentable, notice: "Comment created."
