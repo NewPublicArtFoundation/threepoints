@@ -34,12 +34,12 @@
                 </p>
               <% end %>
             </div>
-            <div class="like-box">
-              <%= pluralize location.get_likes.size, 'like' %>
-              <% if current_user && !current_user.voted_for?(location) %>
-                | <%= link_to "like", vote_location_path(location) %>
-              <% end %>
-            </div>
+          </div>
+          <div class="like-box">
+            <%= pluralize location.get_likes.size, 'like' %>
+            <% if current_user && !current_user.voted_for?(location) %>
+              | <%= link_to "like", vote_location_path(location) %>
+            <% end %>
           </div>
         </li>
       <% end %>
