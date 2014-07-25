@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140724230408) do
+ActiveRecord::Schema.define(version: 20140724041205) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -82,6 +82,8 @@ ActiveRecord::Schema.define(version: 20140724230408) do
     t.integer  "user_id"
   end
 
+  add_index "comments", ["commentable_id", "commentable_type"], name: "index_comments_on_commentable_id_and_commentable_type"
+
   create_table "delayed_jobs", force: true do |t|
     t.integer  "priority",   default: 0, null: false
     t.integer  "attempts",   default: 0, null: false
@@ -149,7 +151,7 @@ ActiveRecord::Schema.define(version: 20140724230408) do
     t.integer  "image_file_size"
     t.datetime "image_updated_at"
     t.integer  "instagram"
-    t.string   "description"
+    t.text     "description"
     t.string   "twitter_url"
     t.string   "facebook_url"
     t.string   "instagram_url"
@@ -168,50 +170,6 @@ ActiveRecord::Schema.define(version: 20140724230408) do
 
   add_index "roles", ["name", "resource_type", "resource_id"], name: "index_roles_on_name_and_resource_type_and_resource_id"
   add_index "roles", ["name"], name: "index_roles_on_name"
-
-  create_table "rs_evaluations", force: true do |t|
-    t.string   "reputation_name"
-    t.integer  "source_id"
-    t.string   "source_type"
-    t.integer  "target_id"
-    t.string   "target_type"
-    t.float    "value",           default: 0.0
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  add_index "rs_evaluations", ["reputation_name", "source_id", "source_type", "target_id", "target_type"], name: "index_rs_evaluations_on_reputation_name_and_source_and_target", unique: true
-  add_index "rs_evaluations", ["reputation_name"], name: "index_rs_evaluations_on_reputation_name"
-  add_index "rs_evaluations", ["source_id", "source_type"], name: "index_rs_evaluations_on_source_id_and_source_type"
-  add_index "rs_evaluations", ["target_id", "target_type"], name: "index_rs_evaluations_on_target_id_and_target_type"
-
-  create_table "rs_reputation_messages", force: true do |t|
-    t.integer  "sender_id"
-    t.string   "sender_type"
-    t.integer  "receiver_id"
-    t.float    "weight",      default: 1.0
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  add_index "rs_reputation_messages", ["receiver_id", "sender_id", "sender_type"], name: "index_rs_reputation_messages_on_receiver_id_and_sender", unique: true
-  add_index "rs_reputation_messages", ["receiver_id"], name: "index_rs_reputation_messages_on_receiver_id"
-  add_index "rs_reputation_messages", ["sender_id", "sender_type"], name: "index_rs_reputation_messages_on_sender_id_and_sender_type"
-
-  create_table "rs_reputations", force: true do |t|
-    t.string   "reputation_name"
-    t.float    "value",           default: 0.0
-    t.string   "aggregated_by"
-    t.integer  "target_id"
-    t.string   "target_type"
-    t.boolean  "active",          default: true
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  add_index "rs_reputations", ["reputation_name", "target_id", "target_type"], name: "index_rs_reputations_on_reputation_name_and_target", unique: true
-  add_index "rs_reputations", ["reputation_name"], name: "index_rs_reputations_on_reputation_name"
-  add_index "rs_reputations", ["target_id", "target_type"], name: "index_rs_reputations_on_target_id_and_target_type"
 
   create_table "taggings", force: true do |t|
     t.integer  "tag_id"
@@ -278,5 +236,20 @@ ActiveRecord::Schema.define(version: 20140724230408) do
   end
 
   add_index "versions", ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
+
+  create_table "votes", force: true do |t|
+    t.integer  "votable_id"
+    t.string   "votable_type"
+    t.integer  "voter_id"
+    t.string   "voter_type"
+    t.boolean  "vote_flag"
+    t.string   "vote_scope"
+    t.integer  "vote_weight"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "votes", ["votable_id", "votable_type", "vote_scope"], name: "index_votes_on_votable_id_and_votable_type_and_vote_scope"
+  add_index "votes", ["voter_id", "voter_type", "vote_scope"], name: "index_votes_on_voter_id_and_voter_type_and_vote_scope"
 
 end

@@ -15,6 +15,12 @@
         </div>
         <% end %>
       </div>
+      | <%= pluralize graffiti.get_likes.size, 'like' %>
+      <% if current_user && !current_user.voted_for?(graffiti) %>
+        | <%= link_to "like", vote_graffiti_path(graffiti) %>
+      <% end %>
+
+
     <% end %>
 <br>
 
