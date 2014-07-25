@@ -1,11 +1,26 @@
 <div class="row">
   <div class="owl-carousel">
-    <%= render 'layouts/modules/supportListItem' %>
-    <%= render 'layouts/modules/supportListItem' %>
-    <%= render 'layouts/modules/supportListItem' %>
-    <%= render 'layouts/modules/supportListItem' %>
-    <%= render 'layouts/modules/supportListItem' %>
-    <%= render 'layouts/modules/supportListItem' %>
+
+    <% @users.each do |user| %>
+
+      <div class="item">
+        <div class="large-10 text-center">
+          <img src="http://fakeimg.pl/300x140" alt="">
+          <h3>user.name</h3>
+          <span class="label secondary">Galleries In</span>
+          <ul class="no-bullet">
+            <li>
+              New York
+            </li>
+            <li>
+              San Francisco
+            </li>
+          </ul>
+        </div>
+      </div>
+
+    <% end %>
+
   </div>
 </div>
 <hr>
