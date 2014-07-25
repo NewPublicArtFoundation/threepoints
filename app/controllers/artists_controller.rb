@@ -79,20 +79,14 @@ class ArtistsController < ApplicationController
   #->Prelang (voting/acts_as_votable)
   def vote
 
-    direction = params[:direction]
-
-    # Make sure we've specified a direction
-    raise "No direction parameter specified to #vote action." unless direction
-
-    # Make sure the direction is valid
-    unless ["like", "bad"].member? direction
-      raise "Direction '#{direction}' is not a valid direction for vote method."
+    @artist = Artist.friendly.find(params[:id])
+    @artist.liked_by current_user
+    respond_to do |format|
+      format.html { redirect_to action: :index }
     end
 
-    @artist.vote_by voter: current_user, vote: direction
-
-    redirect_to action: :index
   end
+
 
 
   private
