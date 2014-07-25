@@ -1,47 +1,38 @@
 Rails.application.routes.draw do
 
   get 'comments/index'
-
   get 'comments/new'
-
   resources :activities
-
   root 'pages#index'
-
   resources :artist_graffitis
-
   get 'pages/home'
-
   get 'pages/about'
-
   get "/user/:id"   => "users#show",   as: :user
   get "/user/"      => redirect("/")
-
-
-resources :locations do
-  #->Prelang (voting/acts_as_votable)
-  member do
-    get "vote"
+  resources :locations do
+    #->Prelang (voting/acts_as_votable)
+    member do
+      get "vote"
+    end
+    resources :comments
   end
-  resources :comments
-end
 
-resources :artists do
-  #->Prelang (voting/acts_as_votable)
-  member do
-    get "vote"
+  resources :artists do
+    #->Prelang (voting/acts_as_votable)
+    member do
+      get "vote"
+    end
+    resources :comments
   end
-  resources :comments
-end
 
 
-resources :graffitis do
-  #->Prelang (voting/acts_as_votable)
-  member do
-    get "vote"
+  resources :graffitis do
+    #->Prelang (voting/acts_as_votable)
+    member do
+      get "vote"
+    end
+    resources :comments
   end
-  resources :comments
-end
 
   resources :missions, only: [:create, :destroy]
   resources :relationships, only: [:create, :destroy]
