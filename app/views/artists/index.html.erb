@@ -16,6 +16,12 @@
             </h2>
           <% end %>
           <p><%= artist.description %></p>
+          <div class="like-box">
+            <%= pluralize artist.get_likes.size, 'like' %>
+            <% if current_user && !current_user.voted_for?(artist) %>
+              | <%= link_to "like", vote_artist_path(artist) %>
+            <% end %>
+          </div>
         </div>
         <div class="user-works">
           <ul class="large-block-grid-6">
