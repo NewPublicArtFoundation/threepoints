@@ -29,10 +29,12 @@
             <%= piece.description %>
           </h4>
           <div class="row column">
-            <%= link_to piece.location do %>
-              <%= piece.location.name %>
-              <%= piece.location.longitude %>
-              <%= piece.location.latitude %>
+            <% if piece.location  != nil %>
+              <%= link_to piece.location do %>
+                <%= piece.location.name %>
+                <%= piece.location.longitude %>
+                <%= piece.location.latitude %>
+              <% end %>
             <% end %>
           </div>
 
