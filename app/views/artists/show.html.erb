@@ -25,9 +25,10 @@
           <% end %>
         </div>
         <div class="large-8 column">
-          <h4>
+          <h4><%= piece.name %></h4>
+          <p>
             <%= content_excerpt(piece.description) %>
-          </h4>
+          </p>
           <div class="row column">
             <% if piece.location  != nil %>
               <%= link_to piece.location do %>
