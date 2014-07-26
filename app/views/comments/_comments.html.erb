@@ -1,10 +1,11 @@
 <div class="row">
   <div id="comments" class="large-12 column">
     <% @comments.each do |comment| %>
-      <div class="comment  panel">
-        <% if comment.inputType != nil %>
-          <%= comment.inputType %>
-        <% end %>
+      <% commentClass = [] %>
+      <% if comment.inputType != nil %>
+        <% commentClass << comment.inputType %>
+      <% end %>
+      <div class="comment  panel <%= commentClass.join(' ') %>">
 
         <%= simple_format comment.content %>
         <% if comment.user_id != nil %>
