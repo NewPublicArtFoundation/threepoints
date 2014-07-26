@@ -2,7 +2,7 @@
   <div id="comments" class="large-12 column">
     <% @comments.each do |comment| %>
       <% commentClass = [] %>
-      <% if comment.inputType != nil %>
+      <% if comment.respond_to?('inputType') %>
         <% commentClass << comment.inputType %>
       <% end %>
       <div class="comment  panel <%= commentClass.join(' ') %>">
