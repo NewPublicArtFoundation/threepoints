@@ -6,15 +6,17 @@
         <% commentClass << comment.inputType %>
       <% end %>
       <div class="comment  panel <%= commentClass.join(' ') %>">
-
         <%= simple_format comment.content %>
-        <% if comment.user_id != nil %>
-          -<%= link_to User.find(comment.user_id).username, User.find(comment.user_id) %>
-
-        <% else  %>
-          -Anonymous
+        <% if comment.inputType %>
+          <% if comment.user_id != nil %>
+            -<%= link_to User.find(comment.user_id).username, User.find(comment.user_id) %>
+          <% else  %>
+            -Anonymous
+          <% end %>
+          <span class="time">
+            <%= comment.created_at %>
+          </span>
         <% end %>
-        <%= comment.created_at %>
       </div>
     <% end %>
   </div>
