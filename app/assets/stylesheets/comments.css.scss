@@ -1,3 +1,12 @@
 // Place all the styles related to the comments controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+.press:before {
+  content: "Press";
+  background: #ccc;
+  padding: .2em 1.7em;
+  border-bottom: 2px solid darken(#ccc, 20%);
+  position: absolute;
+  top: -10px;
+  left: 15px;
+}
