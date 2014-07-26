@@ -5,7 +5,7 @@
       <% if comment.respond_to?('inputType') %>
         <% commentClass << comment.inputType %>
       <% end %>
-      <div class="comment  panel <%= commentClass.join(' ') %>">
+      <div class="comment submitted-content panel <%= commentClass.join(' ') %>">
         <%= simple_format comment.content %>
         <% if comment.inputType %>
           <% if comment.user_id != nil %>
