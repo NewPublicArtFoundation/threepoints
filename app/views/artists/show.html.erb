@@ -25,7 +25,7 @@
           <% end %>
         </div>
         <div class="large-8 column">
-          <h4><%= piece.name %></h4>
+          <h4><%= link_to piece.name, piece %></h4>
           <p>
             <%= content_excerpt(piece.description) %>
           </p>
