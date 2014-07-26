@@ -2,6 +2,10 @@
   <div id="comments" class="large-12 column">
     <% @comments.each do |comment| %>
       <div class="comment  panel">
+        <% if comment.inputType != nil %>
+          <%= comment.inputType %>
+        <% end %>
+
         <%= simple_format comment.content %>
         <% if comment.user_id != nil %>
           -<%= link_to User.find(comment.user_id).username, User.find(comment.user_id) %>
