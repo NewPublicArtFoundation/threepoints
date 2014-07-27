@@ -1,0 +1,17 @@
+.block-grid-single{
+  position: relative;
+
+  .block-grid-description{
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    -webkit-transform: translate(0, -100%);
+    transform: translate(0, -100%);
+  }
+  &:hover{
+    .block-grid-description{
+        -webkit-transform: translate(0, 0%);
+        transform: translate(0, 0%);
+    }
+  }
+}

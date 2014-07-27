@@ -2,28 +2,33 @@
 
     <% @graffitis.each do |graffiti| %>
       <div class="row min-slide">
-        <div class="large-6 column">
-          <h3>
-            <%= link_to graffiti.name, graffiti %>
-          </h3>
-
-          <div class="like-box">
-            <%= pluralize graffiti.get_likes.size, 'like' %>
-            <% if current_user && !current_user.voted_for?(graffiti) %>
-              | <%= link_to "like", vote_graffiti_path(graffiti) %>
+        <ul class="large-block-grid-3 medium-block-grid-2 small-block-grid-1">
+          <li class="block-grid-single">
+            <%= link_to graffiti, :class=>'large-6 column' do %>
+              <div class="large-12 image-container" style="background-image:url('<%= graffiti.images %>');">
+              </div>
             <% end %>
+            <div class="block-grid-description">
+
+              <h3>
+                <%= link_to graffiti.name, graffiti %>
+              </h3>
+
+              <div class="like-box">
+                <%= pluralize graffiti.get_likes.size, 'like' %>
+                <% if current_user && !current_user.voted_for?(graffiti) %>
+                  | <%= link_to "like", vote_graffiti_path(graffiti) %>
+                <% end %>
+              </div>
+
+              <p>
+                <%= link_to graffiti.description, graffiti %>
+              </p>
+
+            </div>
           </div>
-
-          <p>
-            <%= link_to graffiti.description, graffiti %>
-          </p>
-
-        </div>
-        <%= link_to graffiti, :class=>'large-6 column' do %>
-        <div class="large-12 image-container" style="background-image:url('<%= graffiti.images %>');">
-        </div>
-        <% end %>
-      </div>
+          </li>
+        </ul>
     <% end %>
 <br>
 
