@@ -1,35 +1,37 @@
 <h1>Listing graffitis</h1>
 
-    <% @graffitis.each do |graffiti| %>
-      <div class="row min-slide">
-        <ul class="large-block-grid-3 medium-block-grid-2 small-block-grid-1">
+    <div class="row min-slide">
+      <ul class="large-block-grid-3 medium-block-grid-2 small-block-grid-1">
+        <% @graffitis.each do |graffiti| %>
           <li class="block-grid-single">
-            <%= link_to graffiti, :class=>'large-6 column' do %>
-              <div class="large-12 image-container" style="background-image:url('<%= graffiti.images %>');">
+            <div class="">
+              <%= link_to graffiti do %>
+                <div class="large-12 image-container" style="background-image:url('<%= graffiti.images %>');">
+                </div>
+              <% end %>
+              <div class="block-grid-description">
+
+                <h3>
+                  <%= link_to graffiti.name, graffiti %>
+                </h3>
+
+                <div class="like-box">
+                  <%= pluralize graffiti.get_likes.size, 'like' %>
+                  <% if current_user && !current_user.voted_for?(graffiti) %>
+                    | <%= link_to "like", vote_graffiti_path(graffiti) %>
+                  <% end %>
+                </div>
+
+                <p>
+                  <%= link_to graffiti.description, graffiti %>
+                </p>
+
               </div>
-            <% end %>
-            <div class="block-grid-description">
-
-              <h3>
-                <%= link_to graffiti.name, graffiti %>
-              </h3>
-
-              <div class="like-box">
-                <%= pluralize graffiti.get_likes.size, 'like' %>
-                <% if current_user && !current_user.voted_for?(graffiti) %>
-                  | <%= link_to "like", vote_graffiti_path(graffiti) %>
-                <% end %>
-              </div>
-
-              <p>
-                <%= link_to graffiti.description, graffiti %>
-              </p>
-
             </div>
-          </div>
           </li>
-        </ul>
-    <% end %>
+        <% end %>
+      </ul>
+    </div>
 <br>
 
 <%= link_to 'New Graffiti', new_graffiti_path %>
