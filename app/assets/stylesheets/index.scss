@@ -1,7 +1,7 @@
 .block-grid-single{
   position: relative;
-  min-height: 350px;
-  overflow: hidden;
+  min-height: 350px !important;
+  overflow: hidden !important;
 
   .image-container{
     min-height: 350px;
