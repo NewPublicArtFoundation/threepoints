@@ -1,6 +1,9 @@
 .block-grid-single{
   position: relative;
 
+  .image-container{
+    min-height: 350px;
+  }
   .block-grid-description{
     -webkit-transform: translate(0, 100%);
     transform: translate(0, 100%);
