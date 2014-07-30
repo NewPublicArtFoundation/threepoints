@@ -5,10 +5,10 @@
     <%= f.input :name %>
     <%= f.input :slug %>
     <%= f.input :description %>
-    <%= f.input :attribution %>
     <%= f.association :location %>
     <%= f.association :artist %>
     <%= f.input :images, :class => "form-control" %>
+    <%= f.input :attribution %>
     <%= f.input :tag_list %>
     <%= f.input :discovered_at, prompt: "Unknown" %>
     <%= f.input :painted_at, prompt: "Unknown" %>
