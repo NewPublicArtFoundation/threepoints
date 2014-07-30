@@ -1,0 +1,18 @@
+<div class="block-grid-description">
+
+  <h3>
+    <%= link_to graffiti.name, graffiti %>
+  </h3>
+
+  <div class="like-box">
+    <%= pluralize graffiti.get_likes.size, 'like' %>
+    <% if current_user && !current_user.voted_for?(graffiti) %>
+      | <%= link_to "like", vote_graffiti_path(graffiti) %>
+    <% end %>
+  </div>
+
+  <p>
+    <%= link_to content_excerpt(graffiti.description), graffiti %>
+  </p>
+
+</div>
