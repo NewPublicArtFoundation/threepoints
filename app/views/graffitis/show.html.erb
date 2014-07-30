@@ -15,6 +15,9 @@
     <p>
       <%= @graffiti.description %>
     </p>
+    <% if @graffiti.attribution != nil %>
+    <%= @graffiti.attribution %>
+    <% end %>
   </div>
   <div class="large-6 column">
     <h3>Comments</h3>
