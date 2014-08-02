@@ -1,17 +1,14 @@
 <% if signed_in? %>
 
   <%= render 'layouts/signed/dashboard' %>
+  <%= render 'layouts/modules/employmentBlock' %>
+  <%= render 'layouts/modules/curratorBlock' %>
+  <%= render 'layouts/modules/trendingBlock' %>
+  <%= render 'layouts/about/projectSource' %>
 
 <% else %>
 
   <%= render 'layouts/hero/heroslider' %>
 
-  <%= render 'layouts/modules/employmentBlock' %>
-
-  <%= render 'layouts/modules/curratorBlock' %>
-
-  <%= render 'layouts/modules/trendingBlock' %>
-
-  <%= render 'layouts/about/projectSource' %>
 
 <% end %>
