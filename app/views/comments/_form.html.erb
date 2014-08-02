@@ -1,16 +1,19 @@
-<%= simple_form_for [@commentable, @comment] do |f| %>
-  <%= f.error_notification %>
+<div class="row">
 
-  <div class="form-inputs">
-   <%= f.collection_radio_buttons :inputType, [['comment', 'Comment'] ,['press', 'Press URL']], :first, :last, prompt: "Select your age", :checked => ['comment', 'Comment'] %>
-  </div>
+  <%= simple_form_for [@commentable, @comment] do |f| %>
+    <%= f.error_notification %>
+
+    <div class="form-inputs">
+     <%= f.collection_radio_buttons :inputType, [['comment', 'Comment'] ,['press', 'Press URL']], :first, :last, prompt: "Select your age", :checked => ['comment', 'Comment'] %>
+    </div>
 
 
-  <div class="form-inputs">
-    <%= f.input :content %>
-  </div>
+    <div class="form-inputs">
+      <%= f.input :content %>
+    </div>
 
-  <div class="form-actions">
-    <%= f.button :submit %>
-  </div>
-<% end %>
+    <div class="form-actions">
+      <%= f.button :submit %>
+    </div>
+  <% end %>
+</div>

@@ -1,80 +1,83 @@
-<div id="topnavwrapper">
-  <div class="">
-    <nav class="top-bar" data-topbar>
-      <ul class="title-area">
-        <li class="name">
-          <h1><%= link_to root_path do %>
-            <b>
-              Public Art Found
-            </b>
-          <% end %></h1>
-        </li>
-        <li class="toggle-topbar menu-icon"><a href="#"><span>Menu</span></a></li>
-      </ul>
-      <section class="top-bar-section">
-        <!-- Left Nav Section -->
-        <div class="search-form-width column">
-          <form class="">
-            <input type="text" id="right-label" placeholder="">
-          </form>
-        </div>
-        <ul class="right">
-          <% if signed_in? %>
-            <li class="no-span login">
-              <%= link_to edit_user_registration_path, :class=>'no-right-pad' do %>
-                <span>Profile</span>
-              <% end %>
-            </li>
-            <li class="no-span login">
-              <%= link_to destroy_user_session_path, method: "delete" do %>
-                <span>Logout</span>
-              <% end %>
-            </li>
-          <% else %>
-            <li class="no-span login no-right-pad">
-              <%= link_to new_user_registration_path, :class=>'no-right-pad' do %>
-                <span>Join</span>
-              <% end %>
-            </li>
-            <li class="no-span login">
-              <%= link_to new_user_session_path do %>
-                <span>Log In</span>
-              <% end %>
-            </li>
-          <% end %>
+  <div id="topnavwrapper">
+    <div class="">
+      <nav class="top-bar" data-topbar>
+        <ul class="title-area">
+          <li class="name">
+            <h1><%= link_to root_path do %>
+              <b>
+                Public Art Found
+              </b>
+            <% end %></h1>
+          </li>
+          <li class="toggle-topbar menu-icon"><a href="#"><span>Menu</span></a></li>
         </ul>
-      </section>
-    </nav>
+        <section class="top-bar-section">
+          <!-- Left Nav Section -->
+          <div class="search-form-width column">
+            <form class="">
+              <input type="text" id="right-label" placeholder="">
+            </form>
+          </div>
+          <ul class="right">
+            <% if signed_in? %>
+              <li class="no-span login">
+                <%= link_to edit_user_registration_path, :class=>'no-right-pad' do %>
+                  <span>Profile</span>
+                <% end %>
+              </li>
+              <li class="no-span login">
+                <%= link_to destroy_user_session_path, method: "delete" do %>
+                  <span>Logout</span>
+                <% end %>
+              </li>
+            <% else %>
+              <li class="no-span login no-right-pad">
+                <%= link_to new_user_registration_path, :class=>'no-right-pad' do %>
+                  <span>Join</span>
+                <% end %>
+              </li>
+              <li class="no-span login">
+                <%= link_to new_user_session_path do %>
+                  <span>Log In</span>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        </section>
+      </nav>
+    </div>
+  <% if current_user != nil %>
+    <div class="">
+      <nav class="top-bar" data-topbar>
+        <section class="top-bar-section">
+          <!-- Left Nav Section -->
+          <ul class="">
+            <% if !current_page?(root_url) %>
+              <li>
+                <%= link_to root_path do %>
+                  Home
+                <% end %>
+              </li>
+            <% end %>
+              <li>
+                <%= link_to artists_path do %>
+                  Artists
+                <% end %>
+              </li>
+              <li>
+                <%= link_to graffitis_path do %>
+                  Pieces
+                <% end %>
+              </li>
+              <li>
+                <%= link_to locations_path do %>
+                  Places
+                <% end %>
+              </li>
+          </ul>
+        </section>
+      </nav>
+    </div>
+  <% end %>
+
   </div>
-  <div class="">
-    <nav class="top-bar" data-topbar>
-      <section class="top-bar-section">
-        <!-- Left Nav Section -->
-        <ul class="">
-          <% if !current_page?(root_url) %>
-            <li>
-              <%= link_to root_path do %>
-                Home
-              <% end %>
-            </li>
-          <% end %>
-            <li>
-              <%= link_to artists_path do %>
-                Artists
-              <% end %>
-            </li>
-            <li>
-              <%= link_to graffitis_path do %>
-                Pieces
-              <% end %>
-            </li>
-            <li>
-              <%= link_to locations_path do %>
-                Places
-              <% end %>
-            </li>
-        </ul>
-      </section>
-    </nav>
-  </div>
-</div>
