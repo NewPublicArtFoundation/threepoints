@@ -18,7 +18,8 @@
 
 $(function(){ $(document).foundation(); });
 
-$('.hero-container .success').on('click', function(){
+$('.hero-container .success').on('click', function(e){
+  e.preventDefault();
   $('html, body').animate({
     scrollTop: $('.hero-explain').offset().top
   }, 2000);
