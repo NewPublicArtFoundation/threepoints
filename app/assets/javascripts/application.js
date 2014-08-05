@@ -17,3 +17,9 @@
 //= require_tree .
 
 $(function(){ $(document).foundation(); });
+
+$('.hero-container .success').on('click', function(){
+  $('html, body').animate({
+    scrollTop: $('.hero-explain').offset().top
+  }, 2000);
+});
