@@ -26,7 +26,7 @@ class ApiController < ApplicationController
       end
     respond_to do |f|
       f.json {
-        render json: the_image
+        render :json => @g
       }
     end
   end
