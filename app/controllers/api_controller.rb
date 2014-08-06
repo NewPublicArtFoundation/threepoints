@@ -5,12 +5,11 @@ class ApiController < ApplicationController
     i = 0
     bucket.objects.each do |object|
       i = i+1
-      if(i < 1000)
-        url = 'https://s3.amazonaws.com/lkbg-aws-box/'+ object.key #=> no data is fetched from s3, just a list of keys
-        g = Graffiti.new('image_url' => url)
-        g.save
-        puts 'Created ' + g.image_url
-      end
+      break if i < 1000
+      url = 'https://s3.amazonaws.com/lkbg-aws-box/'+ object.key #=> no data is fetched from s3, just a list of keys
+      g = Graffiti.new('image_url' => url)
+      g.save
+      puts 'Created ' + g.image_url
     end
   end
 end
