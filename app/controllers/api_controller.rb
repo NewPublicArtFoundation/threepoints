@@ -12,4 +12,16 @@ class ApiController < ApplicationController
       puts 'Created ' + g.image_url
     end
   end
+
+  def return_a_graffiti
+    num = rand(0..Graffiti.count)
+    @g = Graffiti.find(num)
+    if @g.images != nil
+      return @g.images
+    elsif @g.image_url != nil
+      return @g.image_url
+    else
+      return 'No images.'
+    end
+  end
 end
