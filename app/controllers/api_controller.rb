@@ -17,12 +17,17 @@ class ApiController < ApplicationController
     range_high = Graffiti.count - 1
     num = rand(0..range_high)
     @g = Graffiti.find(num)
-    if @g.images != nil
-      return @g.images
-    elsif @g.image_url != nil
-      return @g.image_url
-    else
-      return 'No images.'
+      if @g.image_url != nil
+        the_image = @g.image_url
+      elsif @g.images != nil
+        the_image = @g.images
+      else
+        return 'No images.'
+      end
+    respond_to do |f|
+      f.json {
+        render json: the_image
+      }
     end
   end
 end
