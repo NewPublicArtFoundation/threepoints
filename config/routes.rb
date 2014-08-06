@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
 
   get 'api/aws'
+  get 'api/return_a_graffiti'
 
   get 'comments/index'
   get 'comments/new'

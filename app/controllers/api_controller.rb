@@ -1,8 +1,8 @@
 class ApiController < ApplicationController
   def aws
     s3 = AWS::S3.new(access_key_id: ENV['AWS_ACCESS_KEY_ID'], secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'], region: 'us-east-1')
-    bucket = s3.buckets['lkbg-aws-box']
     i = 0
+    bucket = s3.buckets['lkbg-aws-box']
     bucket.objects.each do |object|
       i = i+1
       break if i > 1000
@@ -14,7 +14,8 @@ class ApiController < ApplicationController
   end
 
   def return_a_graffiti
-    num = rand(0..Graffiti.count)
+    range_high = Graffiti.count - 1
+    num = rand(0..range_high)
     @g = Graffiti.find(num)
     if @g.images != nil
       return @g.images
