@@ -1,5 +1,7 @@
 Rails.application.routes.draw do
 
+  get 'api/aws'
+
   get 'comments/index'
   get 'comments/new'
   resources :activities
