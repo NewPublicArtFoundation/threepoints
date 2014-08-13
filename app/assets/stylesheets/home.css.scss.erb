@@ -131,6 +131,9 @@
     .appear &{
       opacity: 0;
     }
+    .appear-final &{
+      opacity: 1;
+    }
   }
   &.second{
     opacity: 0;
@@ -152,8 +155,11 @@
   }
   &.fourth{
     opacity: 0;
-    .appear-final &{
+    .appear-timeline &{
       opacity: 1;
+    }
+    .appear-final &{
+      opacity: 0;
     }
   }
 }
