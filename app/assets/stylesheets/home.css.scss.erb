@@ -4,8 +4,20 @@
   }
 }
 
-.dragged-graffiti{
+.dragged-graffiti,
+.ex-location-map,
+.ex-location-pin,
+.ex-timeline,
+.ex-start,
+.ex-end,
+.ex-wrapper{
+  -moz-transition: all 2s ease-out;
+  -ms-transition: all 2s ease-out;
   -webkit-transition: all 2s ease-out;
+  transition: all 2s ease-out;
+}
+
+.dragged-graffiti{
   transform: translate(0px, 0);
   position: absolute;
   left: 0;
