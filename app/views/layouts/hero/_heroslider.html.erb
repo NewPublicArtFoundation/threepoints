@@ -1,5 +1,25 @@
 <div class="full-image-wrap home-hero-wrap hero-image-slice">
     <div class="text-center hero-container">
+      <div class="border-drag">
+        <div class="vert-cent">
+          Drag image here
+        </div>
+        <div class="dragged-graffiti">
+          <%= image_tag 'GIFT.jpg' %>
+        </div>
+      </div>
+      <div class="ex-location-pin">
+        <%= image_tag 'location-pin.png' %>
+      </div>
+      <div class="ex-location-map">
+        <%= image_tag 'location-map.jpg' %>
+      </div>
+      <div class="ex-timeline">
+        <div class="ex-time-wrapper">
+          <div class="ex-start"></div>
+          <div class="ex-end"></div>
+        </div>
+      </div>
       <%= render 'layouts/hero/home_content' %>
     </div>
 </div>
