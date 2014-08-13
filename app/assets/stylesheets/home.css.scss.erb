@@ -26,6 +26,7 @@
   right: 0;
   transform: translate(-21000px, 0);
   .appear &{
+    opacity: 1;
     transform: translate(0px, 0);
   }
   .appear-loc &{
@@ -44,15 +45,26 @@
 .ex-location-map{
   z-index: 10;
   top: 180px;
+  transform: translate(21000px, 0px);
+  .appear-map &{
+    transform: translate(0px, 0);
+    opacity: 1;
+  }
 }
 
 .ex-location-pin{
   z-index: 11;
   top: 270px;
+  .appear-loc &{
+    opacity: 1;
+  }
 }
 
 .ex-time-wrapper{
   position: relative;
+  .appear-timeline &{
+    opacity: 1;
+  }
   .ex-end{
     right: 0;
   }

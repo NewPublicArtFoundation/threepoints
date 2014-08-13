@@ -24,3 +24,22 @@ $('.hero-container .success').on('click', function(e){
     scrollTop: $('.hero-explain').offset().top
   }, 2000);
 });
+
+setTimeout(function(){
+  $('.home-hero-wrap').addClass('appear');
+  setTimeout(function(){
+    $('.home-hero-wrap').addClass('appear-map');
+    setTimeout(function(){
+      $('.home-hero-wrap').addClass('appear-loc');
+      setTimeout(function(){
+        $('.home-hero-wrap').addClass('appear-timeline');
+        setTimeout(function(){
+          $('.home-hero-wrap').addClass('appear-settime');
+          setTimeout(function(){
+            $('.home-hero-wrap').addClass('appear-final');
+          }, 2000)
+        }, 2000)
+      }, 1000)
+    }, 2000)
+  }, 2000)
+}, 2000)
