@@ -12,10 +12,10 @@
 .ex-end,
 .ex-wrapper{
   opacity: 0;
-  -moz-transition: all 2s ease-out;
-  -ms-transition: all 2s ease-out;
-  -webkit-transition: all 2s ease-out;
-  transition: all 2s ease-out;
+  -moz-transition: all 1.5s ease-out;
+  -ms-transition: all 1.5s ease-out;
+  -webkit-transition: all 1.5s ease-out;
+  transition: all 1.5s ease-out;
 }
 
 .dragged-graffiti{
@@ -30,7 +30,7 @@
     transform: translate(0px, 0);
   }
   .appear-loc &{
-    opacity: .6;
+    opacity: 0;
   }
 }
 
@@ -42,6 +42,12 @@
   right: 0;
 }
 
+.vert-cent{
+  .appear &{
+    opacity: 0;
+  }
+}
+
 .ex-location-map{
   z-index: 10;
   top: 180px;
@@ -50,13 +56,21 @@
     transform: translate(0px, 0);
     opacity: 1;
   }
+  .appear-timeline &{
+    opacity: 0;
+  }
 }
 
 .ex-location-pin{
   z-index: 11;
   top: 270px;
+  transform: translate(0px, -300px);
   .appear-loc &{
+    transform: translate(0px, 0px);
     opacity: 1;
+  }
+  .appear-timeline &{
+    opacity: 0;
   }
 }
 
