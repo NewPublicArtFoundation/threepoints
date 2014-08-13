@@ -32,6 +32,7 @@ setTimeout(function(){
     setTimeout(function(){
       $('.home-hero-wrap').addClass('appear-loc');
       setTimeout(function(){
+      setTimeout(function(){
         $('.home-hero-wrap').addClass('appear-timeline');
         setTimeout(function(){
           $('.home-hero-wrap').addClass('appear-settime');
@@ -39,6 +40,7 @@ setTimeout(function(){
             $('.home-hero-wrap').addClass('appear-final');
           }, 2000)
         }, 2000)
+      }, 2000)
       }, 1000)
     }, 2000)
   }, 2000)
