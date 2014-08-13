@@ -67,9 +67,15 @@
   }
   .ex-end{
     right: 0;
+    .appear-settime &{
+      right: 140px;
+    }
   }
   .ex-start{
     left: 0;
+    .appear-settime &{
+      left: 220px;
+    }
   }
   .ex-start,
   .ex-end{
@@ -80,6 +86,10 @@
     position: absolute;
     height: 30px;
     width: 30px;
+    .appear-timeline &{
+      opacity: 1;
+    }
+
   }
 }
 
@@ -91,6 +101,9 @@
   background: white;
   margin: 0 auto;
   border-radius: 20px;
+  .appear-timeline &{
+    opacity: 1;
+  }
 }
 
 .border-drag{
