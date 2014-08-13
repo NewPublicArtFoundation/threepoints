@@ -36,6 +36,8 @@ setTimeout(function(){
         $('.home-hero-wrap').addClass('appear-timeline');
         setTimeout(function(){
           $('.home-hero-wrap').addClass('appear-settime');
+          $(".number-start").animateNumbers(430, true, 1000)
+          $(".number-end").animateNumbers(770, true, 1000)
           setTimeout(function(){
             $('.home-hero-wrap').addClass('appear-final');
           }, 2000)
