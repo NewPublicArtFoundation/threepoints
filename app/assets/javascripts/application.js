@@ -35,10 +35,8 @@ setTimeout(function(){
       setTimeout(function(){
         $('.home-hero-wrap').addClass('appear-timeline');
         setTimeout(function(){
-          $(".number-start-year").animateNumbers(2000, true, 1500);
-          $(".number-end-year").animateNumbers(2008, true, 1500);
-        }, 500)
-        setTimeout(function(){
+          $(".number-start-year").animateNumbers(2000, true, 1000);
+          $(".number-end-year").animateNumbers(2008, true, 1000);
           $('.home-hero-wrap').addClass('appear-settime');
           setTimeout(function(){
             $('.home-hero-wrap').addClass('appear-final');
