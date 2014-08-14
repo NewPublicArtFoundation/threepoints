@@ -4,6 +4,41 @@
   }
 }
 
+.home-hero-wrap{
+  position: relative;
+}
+
+.hero-explain-box{
+  width: 600px;
+  height: 400px;
+  // background: white;
+  margin: 30px auto;
+}
+
+.example-section{
+  position: absolute;
+  top: 0;
+  h1.hero-white{
+    position: absolute;
+    bottom: 0em;
+  }
+}
+
+.hero-explain-box{
+  position: relative;
+}
+
+.hero-example-text{
+  position: relative;
+  h1.hero-white{
+    position: absolute;
+    top: 0;
+  }
+}
+h2.hero-white{
+  margin-top: 120px;
+}
+
 .dragged-graffiti,
 .ex-location-map,
 .ex-location-pin,
@@ -28,19 +63,29 @@ h1.hero-white{
   transform: translate(-21000px, 0);
   .appear &{
     opacity: 1;
-    transform: translate(0px, 0);
+    transform: translate(-180px, 0);
   }
   .appear-loc &{
-    opacity: 0;
   }
 }
 
-.ex-location-map,
+.step-time{
+  width: 200px;
+}
+
+.step-place{
+  width: 60%;
+  right: -160px;
+  top: 120px;
+}
+
+.ex-location-pin{
+  right: 0;
+}
 .ex-location-pin,
 .ex-timeline{
   position: absolute;
   left: 0;
-  right: 0;
 }
 
 .vert-cent{
@@ -57,22 +102,19 @@ h1.hero-white{
     transform: translate(0px, 0);
     opacity: 1;
   }
-  .appear-timeline &{
-    opacity: 0;
-  }
 }
 
 .ex-location-pin{
   z-index: 11;
-  top: 270px;
   transform: translate(0px, -300px);
   .appear-loc &{
     transform: translate(0px, 0px);
     opacity: 1;
   }
-  .appear-timeline &{
-    opacity: 0;
-  }
+}
+
+.ex-timeline{
+  left: 395px;
 }
 
 .ex-time-wrapper{
@@ -83,13 +125,13 @@ h1.hero-white{
   .ex-end{
     right: 0;
     .appear-settime &{
-      right: 140px;
+      right: 10px;
     }
   }
   .ex-start{
     left: 0;
     .appear-settime &{
-      left: 220px;
+      left: 80px;
     }
   }
   .number-start,
@@ -124,8 +166,8 @@ h1.hero-white{
 
 .ex-timeline{
   z-index: 12;
-  top: 200px;
-  width: 600px;
+  top: 360px;
+  width: 370px;
   height: 10px;
   background: white;
   margin: 0 auto;
@@ -134,13 +176,11 @@ h1.hero-white{
     opacity: 1;
   }
   .appear-final &{
-    transform: translate(10000px, 0px);
+
   }
 }
 
 h1.hero-white{
-  position: absolute !important;
-  top: 11em !important;
   &.first{
     opacity: 1;
     .appear &{
@@ -181,10 +221,6 @@ h1.hero-white{
 
 .border-drag{
   -webkit-transition: all 1s ease-out 2.5s;
-  .appear &{
-    border: 10px dashed rgba(255,255,255,0);
-  }
-  border: 10px dashed rgba(255,255,255,1);
   width: 400px;
   height: 300px;
   margin: 110px auto 0px;
