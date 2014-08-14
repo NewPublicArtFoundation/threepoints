@@ -1,11 +1,11 @@
   <div id="topnavwrapper">
-    <div class="">
+    <div class="contain-to-grid">
       <nav class="top-bar" data-topbar>
         <ul class="title-area">
           <li class="name">
             <h1><%= link_to root_path do %>
               <b>
-                <img src="https://s3.amazonaws.com/at-fidget/static_images/logo-small-white.png"> Public Art Found
+                <%= image_tag 'logo-small.png' %>
               </b>
             <% end %></h1>
           </li>
@@ -35,7 +35,7 @@
             <% else %>
               <li class="no-span login no-right-pad">
                 <%= link_to new_user_registration_path, :class=>'no-right-pad' do %>
-                  <span>Join</span>
+                  <span>Join the Experiment</span>
                 <% end %>
               </li>
               <li class="no-span login">
@@ -43,6 +43,12 @@
                   <span>Log In</span>
                 <% end %>
               </li>
+              <li class="no-span login">
+                <%= link_to new_user_session_path do %>
+                  <span>Search</span>
+                <% end %>
+              </li>
+
             <% end %>
           </ul>
         </section>
