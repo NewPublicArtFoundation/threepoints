@@ -39,9 +39,11 @@ $('.upload-trigger, .upload-notice').on('click', function(e){
   e.preventDefault();
   var $body = $('body');
   if( $body.hasClass('upload-ready') && isUploadClicked != false ){
+    $('.upload-trigger').removeClass('active');
     $body.removeClass('upload-ready');
     isUploadClicked = false;
   } else {
+    $('.upload-trigger').addClass('active');
     $body.addClass('upload-ready');
     isUploadClicked = true;
   }

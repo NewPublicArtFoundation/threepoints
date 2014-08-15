@@ -1,5 +1,6 @@
 .upload-wrapper,
-.upload-slot{
+.upload-slot,
+.upload-trigger{
   -moz-transition: all 0.3s ease;
   -ms-transition: all 0.3s ease;
   -webkit-transition: all 0.3s ease;
@@ -12,7 +13,11 @@
   .upload-ready &{
     height: 200px;
   }
+}
 
+a.upload-trigger{
+  &.active{
+  }
 }
 
 .upload-wrapper{
