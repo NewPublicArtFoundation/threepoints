@@ -39,7 +39,7 @@ $('.upload-trigger').on('mouseenter', function(e){
   makeItBounce('.upload-trigger');
 });
 
-$('.upload-trigger').on('click', function(e){
+$('.upload-trigger, .upload-notice').on('click', function(e){
   e.preventDefault();
   var $body = $('body');
   if( $body.hasClass('upload-ready') && isUploadClicked != false ){
