@@ -36,13 +36,7 @@ $('.scroll-to-top').on('click', function(e){
 var isUploadClicked = false;
 
 $('.upload-trigger').on('mouseenter', function(e){
-  $('body').addClass('upload-ready');
-});
-
-$('.upload-trigger').on('mouseleave', function(e){
-  if(!isUploadClicked){
-    $('body').removeClass('upload-ready');
-  }
+  makeItBounce('.upload-trigger');
 });
 
 $('.upload-trigger').on('click', function(e){
@@ -56,3 +50,17 @@ $('.upload-trigger').on('click', function(e){
     isUploadClicked = true;
   }
 });
+
+makeItBounce('.upload-notice');
+
+function makeItBounce(bounceTarget){
+  $(bounceTarget).on('mouseenter', function(){
+    $('.upload-slot').removeClass('appear-bounce');
+    setTimeout(function(){
+      $('.upload-slot').addClass('appear-bounce');
+    }, 50);
+  });
+  $(bounceTarget).on('mouseleave', function(e){
+    $('.upload-slot').removeClass('appear-bounce');
+  });
+}
