@@ -33,12 +33,26 @@ $('.scroll-to-top').on('click', function(e){
   }, 1000);
 });
 
+var isUploadClicked = false;
+
+$('.upload-trigger').on('mouseenter', function(e){
+  $('body').addClass('upload-ready');
+});
+
+$('.upload-trigger').on('mouseleave', function(e){
+  if(!isUploadClicked){
+    $('body').removeClass('upload-ready');
+  }
+});
+
 $('.upload-trigger').on('click', function(e){
   e.preventDefault();
   var $body = $('body');
-  if( $body.hasClass('upload-ready') ){
+  if( $body.hasClass('upload-ready') && isUploadClicked != false ){
     $body.removeClass('upload-ready');
+    isUploadClicked = false;
   } else {
     $body.addClass('upload-ready');
+    isUploadClicked = true;
   }
 });
