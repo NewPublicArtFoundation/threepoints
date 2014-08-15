@@ -35,10 +35,6 @@ $('.scroll-to-top').on('click', function(e){
 
 var isUploadClicked = false;
 
-$('.upload-trigger').on('mouseenter', function(e){
-  makeItBounce('.upload-trigger');
-});
-
 $('.upload-trigger, .upload-notice').on('click', function(e){
   e.preventDefault();
   var $body = $('body');
