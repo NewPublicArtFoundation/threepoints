@@ -13,7 +13,6 @@ gem 'coffee-rails', '~> 4.0.0'
 # See https://github.com/sstephenson/execjs#readme for more supported runtimes
 # gem 'therubyracer',  platforms: :ruby
 
-# gem 'aws-s3', :require => 'aws/s3'
 gem 'acts-as-taggable-on'
 gem 'paperclip', github: 'thoughtbot/paperclip'
 gem 'aws-sdk'
@@ -46,13 +45,9 @@ gem 'friendly_id', '~> 5.0.0'
 
 # Use debugger
 gem 'debugger', group: [:development, :test]
-
 gem 'bundler'
-
 gem 'geocoder'
-
 gem 'instagram'
-
 gem 'validates_formatting_of'
 gem 'tzinfo-data'
 gem 'rails_config'
