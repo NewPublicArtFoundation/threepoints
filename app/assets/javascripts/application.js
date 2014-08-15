@@ -30,5 +30,5 @@ $('.scroll-to-top').on('click', function(e){
   $('html, body').animate({
     scrollTop: $('#topnavwrapper').offset().top
 
-  }, 2000);
+  }, 1000);
 });
