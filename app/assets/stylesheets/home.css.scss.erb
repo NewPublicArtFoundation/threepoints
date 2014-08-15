@@ -1,3 +1,20 @@
+
+.hero-example-text{
+  h1, p{
+    display: inline;
+    background: rgba(255,255,255,.8);
+    clear: both;
+    @media (min-width: 64em) {
+      background: none;
+      display: block;
+    }
+    &:before{
+      content: '';
+      display: block;
+    }
+  }
+}
+
 .hero-image-slice{
   .hero-white{
     position: relative;
