@@ -6,8 +6,9 @@ Rails.application.routes.draw do
   get 'comments/index'
   get 'comments/new'
   resources :activities
-  root 'pages#index'
+  root 'graffitis#index'
   resources :artist_graffitis
+  get 'about'       => "pages#index"
   get 'pages/home'
   get 'pages/about'
   get "/user/:id"   => "users#show",   as: :user
