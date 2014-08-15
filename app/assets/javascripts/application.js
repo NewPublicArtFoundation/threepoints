@@ -24,26 +24,3 @@ $('.hero-container .success').on('click', function(e){
     scrollTop: $('.hero-explain').offset().top
   }, 2000);
 });
-
-setTimeout(function(){
-  $('.home-hero-wrap').addClass('appear');
-  setTimeout(function(){
-    $('.home-hero-wrap').addClass('appear-map');
-    setTimeout(function(){
-      $('.home-hero-wrap').addClass('appear-loc');
-      setTimeout(function(){
-      setTimeout(function(){
-        $('.home-hero-wrap').addClass('appear-timeline');
-        setTimeout(function(){
-          $(".number-start-year").animateNumbers(2000, true, 1000);
-          $(".number-end-year").animateNumbers(2008, true, 1000);
-          $('.home-hero-wrap').addClass('appear-settime');
-          setTimeout(function(){
-            $('.home-hero-wrap').addClass('appear-final');
-          }, 2000)
-        }, 2000)
-      }, 2000)
-      }, 1000)
-    }, 2000)
-  }, 2000)
-}, 2000)

@@ -4,24 +4,12 @@
   }
 }
 
-.home-hero-wrap{
+.home-hero-wrap.hero-image-slice{
   position: relative;
-}
-
-.hero-explain-box{
-  width: 600px;
-  height: 400px;
-  // background: white;
-  margin: 30px auto;
-}
-
-.example-section{
-  position: absolute;
-  top: 0;
-  h1.hero-white{
-    position: absolute;
-    bottom: 0em;
-  }
+  background: url(image_path('background-blurred.jpg'));
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: top;
 }
 
 .hero-explain-box{
@@ -29,20 +17,11 @@
 }
 
 .hero-example-text{
-  position: relative;
-  h1.hero-white{
-    position: absolute;
-    top: 0;
+  margin-top: 34%;
+  text-align: left;
+  .second{
+    font-size: 1.5em;
   }
-}
-h2.hero-white{
-  margin-top: 120px;
-}
-
-.home-hero-wrap{
-  background: url('https://s3.amazonaws.com/at-fidget/static_images/background-blurred.jpg');
-  background-repeat: no-repeat;
-  background-size: cover;
 }
 
 .dragged-graffiti,
@@ -53,189 +32,10 @@ h2.hero-white{
 .ex-end,
 .ex-wrapper,
 h1.hero-white{
-  opacity: 0;
   -moz-transition: all 1.5s ease-out;
   -ms-transition: all 1.5s ease-out;
   -webkit-transition: all 1.5s ease-out;
   transition: all 1.5s ease-out;
-}
-
-.dragged-graffiti{
-  // opacity: 1;
-  transform: translate(0px, 0);
-  position: absolute;
-  left: 0;
-  right: 0;
-  transform: translate(-21000px, 0);
-  .appear &{
-    opacity: 1;
-    transform: translate(-180px, 0);
-  }
-  .appear-loc &{
-  }
-}
-
-.step-time{
-  width: 200px;
-}
-
-.step-place{
-  width: 60%;
-  right: -160px;
-  top: 120px;
-}
-
-.ex-location-pin{
-  right: 0;
-}
-.ex-location-pin,
-.ex-timeline{
-  position: absolute;
-  left: 0;
-}
-
-.vert-cent{
-  .appear-loc &{
-    opacity: 0;
-  }
-}
-
-.ex-location-map{
-  z-index: 10;
-  top: 80px;
-  transform: translate(21000px, 0px);
-  .appear-map &{
-    transform: translate(0px, 0);
-    opacity: 1;
-  }
-}
-
-.ex-location-pin{
-  z-index: 11;
-  transform: translate(0px, -300px);
-  .appear-loc &{
-    transform: translate(0px, 0px);
-    opacity: 1;
-  }
-}
-
-.ex-timeline{
-  left: 395px;
-}
-
-.ex-time-wrapper{
-  position: relative;
-  .appear-timeline &{
-    opacity: 1;
-  }
-  .ex-end{
-    right: 0;
-    .appear-settime &{
-      right: 10px;
-    }
-  }
-  .ex-start{
-    left: 0;
-    .appear-settime &{
-      left: 80px;
-    }
-  }
-  .number-start,
-  .number-end{
-     position: absolute;
-     top: 30px;
-     color: white;
-     font-size: 1.5em;
-     font-size: 1000;
-    .number-start-month,
-    .number-start-year,
-    .number-end-month,
-    .number-end-year{
-      display: inline;
-    }
-  }
-  .ex-start,
-  .ex-end{
-    margin-top: -10px;
-    top: 0;
-    background: #ddd;
-    border-radius: 30px;
-    position: absolute;
-    height: 30px;
-    width: 30px;
-    .appear-timeline &{
-      opacity: 1;
-    }
-
-  }
-}
-
-.ex-timeline{
-  z-index: 12;
-  top: 360px;
-  width: 370px;
-  height: 10px;
-  background: white;
-  margin: 0 auto;
-  border-radius: 20px;
-  .appear-timeline &{
-    opacity: 1;
-  }
-  .appear-final &{
-
-  }
-}
-
-h1.hero-white{
-  &.first{
-    opacity: 1;
-    .appear &{
-      opacity: 0;
-    }
-  }
-  &.second{
-    opacity: 0;
-    .appear &{
-      opacity: 1;
-    }
-    .appear-map &{
-      opacity: 0;
-    }
-  }
-  &.third{
-    opacity: 0;
-    .appear-map &{
-      opacity: 1;
-    }
-    .appear-timeline &{
-      opacity: 0;
-    }
-  }
-  &.fourth{
-    opacity: 0;
-    .appear-timeline &{
-      opacity: 1;
-    }
-    .appear-final &{
-      opacity: 0;
-    }
-  }
-  &.fifth{
-    opacity: 0;
-   .appear-final &{
-      opacity: 1;
-    }
-  }
-}
-
-.border-drag{
-  -webkit-transition: all 1s ease-out 2.5s;
-  width: 400px;
-  height: 300px;
-  margin: 110px auto 0px;
-  color: white;
-  margin-bottom: 5%;
-  position: relative;
 }
 
 .vert-cent{
@@ -251,7 +51,6 @@ h1.hero-white{
 
 .hero-white{
   color: white;
-  font-weight: 200;
 }
 
 .input-height{
