@@ -21,6 +21,13 @@
             </div>
           <% end %>
           <ul class="left">
+
+            <li class="no-span login ">
+              <%= link_to about_path do %>
+                <span>About</span>
+              <% end %>
+            </li>
+
             <li class="no-span login">
               <%= link_to upload_path do %>
                 Upload Art Pieces
@@ -40,22 +47,16 @@
                 <% end %>
               </li>
             <% else %>
-              <li class="no-span login no-right-pad">
-                <%= link_to new_user_registration_path, :class=>'no-right-pad' do %>
-                  <span>Join the Experiment</span>
-                <% end %>
-              </li>
               <li class="no-span login">
                 <%= link_to new_user_session_path, :class=>'no-right-pad' do %>
-                  <span>Log In</span>
+                  <span>Sign In</span>
                 <% end %>
               </li>
-              <li class="no-span login">
-                <%= link_to about_path do %>
-                  <span>About</span>
+              <li class="no-span login no-right-pad">
+                <%= link_to new_user_registration_path, :class=>'no-right-pad' do %>
+                  <span>Sign Up</span>
                 <% end %>
               </li>
-
             <% end %>
           </ul>
         </section>
