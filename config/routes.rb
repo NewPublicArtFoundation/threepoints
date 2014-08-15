@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  root 'pages#index'
 
   get 'api/aws'
   get 'api/return_a_graffiti'
@@ -6,7 +7,6 @@ Rails.application.routes.draw do
   get 'comments/index'
   get 'comments/new'
   resources :activities
-  root 'graffitis#index'
   resources :artist_graffitis
   get 'about'       => "pages#index"
   get 'pages/home'
