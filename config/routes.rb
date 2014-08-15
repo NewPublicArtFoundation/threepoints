@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   resources :artist_graffitis
   get 'about'       => "pages#index"
   get 'pages/home'
+  get 'upload'      => "pages#upload"
   get 'pages/about'
   get "/user/:id"   => "users#show",   as: :user
   get "/user/"      => redirect("/")
