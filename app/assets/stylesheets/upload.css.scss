@@ -1,9 +1,13 @@
+.upload-wrapper,
 .upload-slot{
-  position: relative;
   -moz-transition: all 0.3s ease;
   -ms-transition: all 0.3s ease;
   -webkit-transition: all 0.3s ease;
   transition: all 0.3s ease;
+}
+
+.upload-slot{
+  position: relative;
   height: 0;
   .upload-ready &{
     height:200px;
@@ -12,6 +16,11 @@
 }
 
 .upload-wrapper{
+  opacity: 0;
+  .upload-ready &{
+    opacity: 1;
+  }
+
   position: relative;
   height: 160px;
   margin-top: 20px;
