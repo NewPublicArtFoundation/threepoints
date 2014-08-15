@@ -1,0 +1,6 @@
+.upload-slot{
+  height: 0;
+  .upload-ready &{
+    height:200px;
+  }
+}

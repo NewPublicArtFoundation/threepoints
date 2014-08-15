@@ -32,3 +32,13 @@ $('.scroll-to-top').on('click', function(e){
 
   }, 1000);
 });
+
+$('.upload-trigger').on('click', function(e){
+  e.preventDefault();
+  var $body = $('body');
+  if( $body.hasClass('upload-ready') ){
+    $body.removeClass('upload-ready');
+  } else {
+    $body.addClass('upload-ready');
+  }
+});
