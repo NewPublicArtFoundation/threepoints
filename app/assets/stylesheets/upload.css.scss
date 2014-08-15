@@ -46,8 +46,34 @@ a.upload-trigger{
   }
 }
 
+.upload-slot{
+  p{
+    -moz-transition: all 0.5s ease .5s;
+    -ms-transition: all 0.5s ease .5s;
+    -webkit-transition: all 0.5s ease .5s;
+    transition: all 0.5s ease .5s;
+    opacity: 0;
+    position: absolute;
+    left: 0;
+    right: 0;
+  }
+  &.appear-bounce{
+    p{
+      color: white;
+      margin-top: .2em;
+      font-size: .8em;
+      opacity: .5;
+    }
+  }
+  body.upload-ready &{
+    p{
+      opacity: 0;
+    }
+  }
+}
+
 .appear-bounce{
-  height: 10px;
+  height: 25px;
 }
 
 .home-hero-wrap{
