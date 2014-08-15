@@ -7,7 +7,7 @@
           <% if(graffiti.image_url != nil) %>
             <% @background_image = graffiti.image_url %>
           <% else %>
-            <% @background_image = graffiti.images %>
+            <% @background_image = graffiti.images.url(:medium) %>
           <% end %>
           <li class="block-grid-single">
             <div class="">
