@@ -4,7 +4,7 @@ class GraffitisController < ApplicationController
   # GET /graffitis
   # GET /graffitis.json
   def index
-    @graffitis = Graffiti.all
+    @graffitis = Graffiti.limit(20).all
   end
 
   # GET /graffitis/1
