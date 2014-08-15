@@ -3,7 +3,6 @@
 <head>
   <title>Public Art Found</title>
   <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
-  <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
   <%= javascript_include_tag "vendor/modernizr" %>
   <meta name="google-site-verification" content="yk_WwSKAD1CGutpmR4yQbvhOmsOE8zr3NjQXp4narwo" />
   <%= csrf_meta_tags %>
@@ -37,8 +36,6 @@
 
     <%= render 'layouts/footer/footerCase' %>
 
-    <%= javascript_include_tag "application" %>
-
     <div id="myModal" class="reveal-modal" data-reveal>
       <button class="close-reveal-modal" id="close-reveal-modal">×</button>
         <div class="video-player-contain" style="margin-bottom: 1em;"></div>
@@ -49,6 +46,10 @@
           <a style="margin-bottom: 0em; float:right;" class="button secondary" href="http://www.pace.edu/dyson/academic-departments-and-programs/performing-arts/auditions">How to Audition</a>
         </p>
     </div>
+
+    <div class="dropdown_button"></div>
+
+    <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
 
 </body>
 </html>
