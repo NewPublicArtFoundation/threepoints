@@ -12,13 +12,8 @@
     <%= render 'layouts/tracking/mixpanel' %>
     <%= render 'layouts/tracking/googleanalytics' %>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/Chart.js/0.2.0/Chart.min.js"></script>
-
   </head>
-
   <body>
-
-
-
     <%= render 'layouts/navigation/topnav' %>
       <div class="row alert-container">
         <% flash.each do |name, msg| %>
@@ -29,22 +24,19 @@
         <% end %>
       </div>
 
-
-    <%= yield %>
-
-
+      <%= yield %>
 
     <%= render 'layouts/footer/footerCase' %>
 
     <div id="myModal" class="reveal-modal" data-reveal>
       <button class="close-reveal-modal" id="close-reveal-modal">×</button>
-        <div class="video-player-contain" style="margin-bottom: 1em;"></div>
-        <p style="margin-bottom: 0em;">
-          <ul class="button-group" style="float:left">
-            <li><a style="margin-bottom: 0em;" class="button secondary" href="http://www.pace.edu/admission-aid/undergraduate-admission/special-interest-tours">Schedule a tour</a></li>
-          </ul>
-          <a style="margin-bottom: 0em; float:right;" class="button secondary" href="http://www.pace.edu/dyson/academic-departments-and-programs/performing-arts/auditions">How to Audition</a>
-        </p>
+      <div class="video-player-contain" style="margin-bottom: 1em;"></div>
+      <p style="margin-bottom: 0em;">
+        <ul class="button-group" style="float:left">
+          <li><a style="margin-bottom: 0em;" class="button secondary" href="http://www.pace.edu/admission-aid/undergraduate-admission/special-interest-tours">Schedule a tour</a></li>
+        </ul>
+        <a style="margin-bottom: 0em; float:right;" class="button secondary" href="http://www.pace.edu/dyson/academic-departments-and-programs/performing-arts/auditions">How to Audition</a>
+      </p>
     </div>
 
     <div class="dropdown_button"></div>
