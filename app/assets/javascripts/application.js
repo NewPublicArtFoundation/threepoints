@@ -24,3 +24,11 @@ $('.hero-container .success').on('click', function(e){
     scrollTop: $('.hero-explain').offset().top
   }, 2000);
 });
+
+$('.scroll-to-top').on('click', function(e){
+  e.preventDefault();
+  $('html, body').animate({
+    scrollTop: $('#topnavwrapper').offset().top
+
+  }, 2000);
+});
