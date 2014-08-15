@@ -20,6 +20,13 @@
               </form>
             </div>
           <% end %>
+          <ul class="left">
+            <li class="no-span login">
+              <%= link_to new_graffiti_path do %>
+                Upload
+              <% end %>
+            </li>
+          </ul>
           <ul class="right">
             <% if signed_in? %>
               <li class="no-span login">
