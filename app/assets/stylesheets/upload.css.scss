@@ -8,8 +8,13 @@
     border-right: 1px solid #111;
 }
 
-.upload-option{
+.hidden-vis{
+  visibility: hidden;
+  height: 0px;
+  overflow: hidden;
+}
 
+.upload-option{
   overflow: hidden;
   background: #45484d;
   p{

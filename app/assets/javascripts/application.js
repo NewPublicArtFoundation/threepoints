@@ -67,3 +67,9 @@ function makeItBounce(bounceTarget){
 $('.upload-wrapper a').on('click', function(e){
   e.preventDefault();
 });
+
+
+$('.browse-you-files').click(function(){
+  $('.graffiti_images input[type=file]').click();
+  return false;
+});
