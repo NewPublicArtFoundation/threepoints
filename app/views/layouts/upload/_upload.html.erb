@@ -1,41 +1,42 @@
 <div class="upload-slot-wrapper">
-<% @graffiti = Graffiti.new %>
-<%= simple_form_for(@graffiti, html: {multipart: true}) do |f| %>
-  <%= f.error_notification %>
-  <div class="row upload-slot">
-    <p class="text-center click-notice">Click button to expand</p>
-    <div class="upload-wrapper">
-      <div class="large-9 large-centered column">
-        <h4 class="header-upload">Upload images
-        <span class="right "><a href="" class="white">X</a></span>
-        </h4>
+  <% @graffiti = Graffiti.new %>
+  <%= simple_form_for(@graffiti, html: {multipart: true}) do |f| %>
+    <%= f.error_notification %>
+    <div class="row upload-slot">
+      <p class="text-center click-notice">Click button to expand</p>
+      <div class="upload-wrapper">
+        <div class="large-9 large-centered column">
+          <h4 class="header-upload">Upload images
+          <span class="right "><a href="" class="white">X</a></span>
+          </h4>
+        </div>
+        <div class="hidden-vis"><%= f.input :images, :class => "form-control hidden-vis" %></div>
+        <div class="large-9 column large-centered">
+          <a href="" class="">
+            <div class="large-4 browse-you-files column text-center white gradient-black upload-option border-left-upload">
+              <%= image_tag 'computer-icon.png', :class=>'icon-80' %>
+              <p class="white">browse your computer</p>
+            </div>
+          </a>
+            <div class="large-4 column text-center white upload-option border-left-upload">
+              <%= image_tag 'internet-icon.png', :class=>'icon-80' %>
+              <p><input class="" placeholder="enter URLS to upload from web"></input></p>
+            </div>
+          <a href="" class="">
+            <div class="large-4 column text-center white upload-option">
+              <%= image_tag 'dragndrop-icon.png', :class=>'icon-80' %>
+              <p class="white">drag and drop here</p>
+            </div>
+          </a>
+        </div>
+        <div class="large-9 column large-centered post-load-view">
+          <%= f.button :submit, :class=>'large-12' %>
+        </div>
       </div>
-      <div class="hidden-vis"><%= f.input :images, :class => "form-control hidden-vis" %></div>
-      <div class="large-9 column large-centered">
-        <a href="" class="">
-          <div class="large-4 browse-you-files column text-center white gradient-black upload-option border-left-upload">
-            <%= image_tag 'computer-icon.png', :class=>'icon-80' %>
-            <p class="white">browse your computer</p>
-          </div>
-        </a>
-          <div class="large-4 column text-center white upload-option border-left-upload">
-            <%= image_tag 'internet-icon.png', :class=>'icon-80' %>
-            <p><input class="" placeholder="enter URLS to upload from web"></input></p>
-          </div>
-        <a href="" class="">
-          <div class="large-4 column text-center white upload-option">
-            <%= image_tag 'dragndrop-icon.png', :class=>'icon-80' %>
-            <p class="white">drag and drop here</p>
-          </div>
-        </a>
-
+      <div class="top-notice upload-notice">
+        Upload
       </div>
     </div>
-    <div class="top-notice upload-notice">
-      Upload
-    </div>
-  </div>
+  <% end %>
 </div>
 
-  <%= f.button :submit %>
-<% end %>
