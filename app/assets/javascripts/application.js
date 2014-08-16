@@ -62,3 +62,7 @@ function makeItBounce(bounceTarget){
     $('.upload-slot').removeClass('appear-bounce');
   });
 }
+
+$('.upload-wrapper a').on('click', function(e){
+  e.preventDefault();
+});
