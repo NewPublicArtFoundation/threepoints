@@ -1,3 +1,28 @@
+.icon-80{
+  width: 70px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+
+.upload-option{
+  max-height: 104px;
+  overflow: hidden;
+  background: #45484d;
+  p{
+    input{
+      width: 90%;
+    }
+    margin-bottom: 0em;
+    font-size: .8em;
+    padding-bottom: .3em;
+    border-right: 1px solid #111;
+    &:last-child{
+      border-right: none;
+    }
+  }
+}
+
 .upload-wrapper,
 .upload-slot,
 .upload-trigger{
@@ -7,15 +32,24 @@
   transition: all 0.3s ease;
 }
 
+.header-upload{
+  font-size: 15px;
+  color: white;
+  background: #333;
+  padding: 5px 10px;
+  margin-bottom: 0em;
+  border-bottom: 1px solid #111;
+}
+
 .upload-slot-wrapper{
-  background: #666;
+  background: #121211;
 }
 
 .upload-slot{
   position: relative;
   height: 0;
   .upload-ready &{
-    height: 200px;
+    height: 140px;
   }
 }
 
@@ -26,14 +60,13 @@ a.upload-trigger{
 
 .upload-wrapper{
   opacity: 0;
+  overflow: hidden;
   .upload-ready &{
     opacity: 1;
+    height: 140px;
   }
 
   position: relative;
-  height: 130px;
-  margin-top: 35px;
-  border: 5px dashed white;
   h3{
     color: darken(white, 10%);
     font-weight: 200;
@@ -48,7 +81,7 @@ a.upload-trigger{
 
 
 .upload-slot{
-  p{
+  p.click-notice{
     -moz-transition: all 0.2s ease;
     -ms-transition: all 0.2s ease;
     -webkit-transition: all 0.2s ease;
@@ -59,7 +92,7 @@ a.upload-trigger{
     right: 0;
   }
   &.appear-bounce{
-    p{
+    p.click-notice{
       color: white;
       margin-top: .2em;
       font-size: .8em;
@@ -67,7 +100,7 @@ a.upload-trigger{
     }
   }
   body.upload-ready &{
-    p{
+    p.click-notice{
       opacity: 0;
     }
   }
