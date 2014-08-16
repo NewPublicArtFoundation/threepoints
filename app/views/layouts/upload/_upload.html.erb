@@ -1,4 +1,7 @@
 <div class="upload-slot-wrapper">
+<% @graffiti = Graffiti.new %>
+<%= simple_form_for(@graffiti, html: {multipart: true}) do |f| %>
+  <%= f.error_notification %>
   <div class="row upload-slot">
     <p class="text-center click-notice">Click button to expand</p>
     <div class="upload-wrapper">
@@ -8,6 +11,7 @@
         </h4>
       </div>
       <div class="large-9 column large-centered">
+        <%= f.input :images, :class => "form-control" %>
         <a href="" class="">
           <div class="large-4 column text-center white gradient-black upload-option border-left-upload">
             <%= image_tag 'computer-icon.png', :class=>'icon-80' %>
@@ -32,3 +36,6 @@
     </div>
   </div>
 </div>
+
+  <%= f.button :submit %>
+<% end %>

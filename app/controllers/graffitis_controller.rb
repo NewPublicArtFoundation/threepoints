@@ -11,9 +11,7 @@ class GraffitisController < ApplicationController
   # GET /graffitis/1.json
   def show
     @graffiti = Graffiti.friendly.find(params[:id])
-
     @location = @graffiti.location
-
     @commentable = @graffiti
     @comments = @commentable.comments
     @comment = Comment.new
@@ -94,6 +92,6 @@ class GraffitisController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def graffiti_params
-      params.require(:graffiti).permit(:name, :slug, :description, :attribution, :discovered_at, :painted_at, :buffed_at, :location_id, :artist_id, :images, comments_attributes: [:graffiti_id, :content] )
+      params.require(:graffiti).permit(:images)
     end
 end

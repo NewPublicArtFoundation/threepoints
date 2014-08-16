@@ -15,7 +15,9 @@ class ApplicationController < ActionController::Base
   end
 
   def track_activity(trackable, action = params[:action])
-    current_user.activities.create! action: action, trackable: trackable
+    if(current_user != nil)
+      current_user.activities.create! action: action, trackable: trackable
+    end
   end
 
   private
@@ -36,6 +38,10 @@ class ApplicationController < ActionController::Base
 
       redirect_to fallback_redirect, flash: {error: "You must be signed in to view this page."}
     end
+  end
+
+  def setup_upload
+    @graffiti = Graffiti.new
   end
 
   def user_for_paper_trail
