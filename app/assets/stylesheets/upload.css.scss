@@ -4,9 +4,12 @@
   margin-bottom: 5px;
 }
 
+.border-left-upload{
+    border-right: 1px solid #111;
+}
 
 .upload-option{
-  max-height: 104px;
+
   overflow: hidden;
   background: #45484d;
   p{
@@ -14,12 +17,7 @@
       width: 90%;
     }
     margin-bottom: 0em;
-    font-size: .8em;
-    padding-bottom: .3em;
-    border-right: 1px solid #111;
-    &:last-child{
-      border-right: none;
-    }
+    padding-bottom: 1em;
   }
 }
 
@@ -49,7 +47,7 @@
   position: relative;
   height: 0;
   .upload-ready &{
-    height: 140px;
+    height: auto;
   }
 }
 
@@ -63,7 +61,7 @@ a.upload-trigger{
   overflow: hidden;
   .upload-ready &{
     opacity: 1;
-    height: 140px;
+    height: auto;
   }
 
   position: relative;
