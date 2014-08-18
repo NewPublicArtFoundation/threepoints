@@ -15,3 +15,32 @@
     </div>
   </li>
 <% end %>
+<script>
+var geoJSON = [
+<% @graffitis.each do |graffiti| %>
+  {
+    "type": "Feature",
+    <% if graffiti.location != nil%>
+    "geometry": {
+      "type": "Point",
+      "coordinates": [<%= graffiti.location.latitude %>, <%= graffiti.location.longitude %>]
+    },
+    <% end %>
+    "properties": {
+      <% if graffiti.name != nil%>
+      "title": "<%= graffiti.name %>",
+      <% end %>
+      <% if graffiti.name != nil%>
+        "description": "<%= graffiti.description %>",
+      <% end %>
+      "marker-color": "#fc4353",
+      "marker-size": "large",
+      "marker-symbol": "monument"
+    }
+  }
+  <% if graffiti != @graffitis.last %>
+    ,
+  <% end %>
+<% end %>
+]
+</script>

@@ -15,6 +15,8 @@ gem 'coffee-rails', '~> 4.0.0'
 
 gem 'pace-rails'
 
+gem 'rgeo-geojson'
+
 gem 'acts-as-taggable-on'
 gem 'paperclip', github: 'thoughtbot/paperclip'
 gem 'aws-sdk'
