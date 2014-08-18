@@ -233,6 +233,8 @@ GEM
       oauth2 (~> 0.9.3)
       omniauth (~> 1.2)
     orm_adapter (0.5.0)
+    pace-rails (0.1.0)
+      jquery-rails
     paper_trail (3.0.3)
       activerecord (>= 3.0, < 5.0)
       activesupport (>= 3.0, < 5.0)
@@ -393,6 +395,7 @@ DEPENDENCIES
   newrelic_rpm
   omniauth
   omniauth-facebook
+  pace-rails
   paper_trail (~> 3.0.3)
   paperclip!
   pg

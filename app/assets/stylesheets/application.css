@@ -14,5 +14,5 @@
 *= stub active_admin
 *= require_self
 *= require foundation_and_overrides
-
+*= require pace/pace-theme-minimal
 */
