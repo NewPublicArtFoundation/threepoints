@@ -15,6 +15,7 @@
 //= require jquery-fileupload/basic
 //= require foundation
 //= require pace/pace
+//= require timelineJS/embed
 //= require turbolinks
 //= require_tree .
 

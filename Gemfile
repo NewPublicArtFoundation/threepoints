@@ -15,6 +15,8 @@ gem 'coffee-rails', '~> 4.0.0'
 
 gem 'pace-rails'
 
+gem 'timelineJS-rails', '~> 1.1.5'
+
 gem 'acts-as-taggable-on'
 gem 'paperclip', github: 'thoughtbot/paperclip'
 gem 'aws-sdk'
