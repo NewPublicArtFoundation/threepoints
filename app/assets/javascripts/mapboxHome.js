@@ -12,3 +12,13 @@ L.mapbox.accessToken = 'pk.eyJ1IjoibGtiZ2lmdCIsImEiOiJyTERaTml3In0.y2wd_Fi58ux53
           };
       });
   });
+
+$(window).scroll(function(){
+  var isMapTop = $(window).scrollTop() >= $('#map').offset().top - 25  && $('#map').offset().top + 25 >= $(window).scrollTop();
+  var isMapBottom = $(window).scrollTop() <= $('#map').offset().top + $('#map').height();
+  if(isMapTop){
+    $('body').addClass('map-inview');
+  } else {
+    $('body').removeClass('map-inview');
+  }
+});

@@ -1,4 +1,6 @@
 
+<div class="row"></div>
+
 <style>
   body { margin:0; padding:0; }
   #map-wrapper{
@@ -6,25 +8,20 @@
     height: 100%;
   }
   #map { position:absolute; top:0; bottom:0; width:100%; }
-  #marker-list {
-      position:absolute;
-      top:0; right:0; width:200px;
-      bottom:0;
-      overflow-x:auto;
-      background:#fff;
-      margin:0;
-      padding:5px;
-  }
-  #marker-list li {
-      padding:5px;
-      margin:0;
-      list-style-type:none;
-  }
   #marker-list li:hover {
       background:#eee;
   }
 </style>
-<div id="map-wrapper">
-  <div id='map'></div>
-  <ul id='marker-list'></ul>
+
+<div id="map-wrapper" >
+  <div class="large-5 column home-grid-wrap">
+    <ul id='marker-list' class="center-block large-block-grid-3 medium-block-grid-4 small-block-grid-2">
+      <%= render 'graffitis/graffiti_home_index' %>
+    </ul>
+  </div>
+  <div class="large-7 column height-100">
+    <div id='map'></div>
+  </div>
 </div>
+
+<div class="row"></div>

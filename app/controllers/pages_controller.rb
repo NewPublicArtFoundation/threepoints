@@ -2,7 +2,7 @@ class PagesController < ApplicationController
   def index
     @users = User.all
     @locations = Location.all
-    @graffitis = Graffiti.limit(20).all
+    @graffitis = Graffiti.limit(15).all
 
   end
 
