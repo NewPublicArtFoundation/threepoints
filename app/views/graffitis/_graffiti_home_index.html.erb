@@ -23,7 +23,7 @@ var geoJSON = [
     <% if graffiti.location != nil%>
     "geometry": {
       "type": "Point",
-      "coordinates": [<%= graffiti.location.latitude %>, <%= graffiti.location.longitude %>]
+      "coordinates": [<%= graffiti.location.longitude %>, <%= graffiti.location.latitude %>]
     },
     <% end %>
     "properties": {
