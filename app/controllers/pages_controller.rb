@@ -24,9 +24,13 @@ class PagesController < ApplicationController
   end
 
   def mapExample
-    @artist = Artist.friendly.find('jr')
-    @pieces = @artist.graffitis
-    @graffitis = @pieces.all
+    if(Artist.exists?(:slug => 'jr'))
+      @artist = Artist.friendly.find('jr')
+      @pieces = @artist.graffitis
+      @graffitis = @pieces.all
+    else
+      @graffitis = Graffiti.limit(20).all
+    end
   end
 
   def timelineExample

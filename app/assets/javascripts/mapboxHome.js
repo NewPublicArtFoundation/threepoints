@@ -2,7 +2,7 @@ if($('#map').length > 0){
   L.mapbox.accessToken = 'pk.eyJ1IjoibGtiZ2lmdCIsImEiOiJyTERaTml3In0.y2wd_Fi58ux53Wm1Ur1qCg';
   var map = L.mapbox.map('map', 'examples.map-h67hf2ic', {
     zoomControl: false
-  }).setView([geoJSON[0].geometry.coordinates[1], geoJSON[0].geometry.coordinates[0]], 7);
+  }).setView([geoJSON[0].geometry.coordinates[1], geoJSON[0].geometry.coordinates[0]], 4);
 
   // Disable drag and zoom handlers.
   // map.dragging.disable();
