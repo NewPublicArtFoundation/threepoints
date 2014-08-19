@@ -1,16 +1,18 @@
-var mapConfig = {
-  zoomControl: false
-}
-
 L.mapbox.accessToken = 'pk.eyJ1IjoibGtiZ2lmdCIsImEiOiJyTERaTml3In0.y2wd_Fi58ux53Wm1Ur1qCg';
-  var map = L.mapbox.map('map', 'examples.map-i86nkdio', mapConfig)
-    .setView([geoJSON[0].geometry.coordinates[1], geoJSON[0].geometry.coordinates[0]], 12)
-    .featureLayer.setGeoJSON(geoJSON);
+var map = L.mapbox.map('map', 'examples.map-h67hf2ic', {
+  zoomControl: false
+}).setView([geoJSON[0].geometry.coordinates[1], geoJSON[0].geometry.coordinates[0]], 12);
 
-    map.dragging.disable();
-    map.touchZoom.disable();
-    map.doubleClickZoom.disable();
-    map.scrollWheelZoom.disable();
+// Disable drag and zoom handlers.
+map.dragging.disable();
+map.touchZoom.disable();
+map.doubleClickZoom.disable();
+map.scrollWheelZoom.disable();
+
+// Disable tap handler, if present.
+if (map.tap) map.tap.disable();
+
+map.featureLayer.setGeoJSON(geoJSON);
 
   // var markerList = document.getElementById('marker-list');
   // map.featureLayer.on('ready', function(e) {
