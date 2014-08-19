@@ -8,7 +8,7 @@ if($('#map').length > 0){
   // map.dragging.disable();
   map.touchZoom.disable();
   map.doubleClickZoom.disable();
-  map.scrollWheelZoom.disable();
+  // map.scrollWheelZoom.disable();
 
   // Disable tap handler, if present.
   if (map.tap) map.tap.disable();
