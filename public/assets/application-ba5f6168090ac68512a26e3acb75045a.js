@@ -10753,6 +10753,1892 @@ return jQuery;
 
 })( jQuery );
 /*
+ * jQuery UI Widget 1.10.0+amd
+ * https://github.com/blueimp/jQuery-File-Upload
+ *
+ * Copyright 2013 jQuery Foundation and other contributors
+ * Released under the MIT license.
+ * http://jquery.org/license
+ *
+ * http://api.jqueryui.com/jQuery.widget/
+ */
+
+
+(function (factory) {
+    if (typeof define === "function" && define.amd) {
+        // Register as an anonymous AMD module:
+        define(["jquery"], factory);
+    } else {
+        // Browser globals:
+        factory(jQuery);
+    }
+}(function( $, undefined ) {
+
+var uuid = 0,
+	slice = Array.prototype.slice,
+	_cleanData = $.cleanData;
+$.cleanData = function( elems ) {
+	for ( var i = 0, elem; (elem = elems[i]) != null; i++ ) {
+		try {
+			$( elem ).triggerHandler( "remove" );
+		// http://bugs.jquery.com/ticket/8235
+		} catch( e ) {}
+	}
+	_cleanData( elems );
+};
+
+$.widget = function( name, base, prototype ) {
+	var fullName, existingConstructor, constructor, basePrototype,
+		// proxiedPrototype allows the provided prototype to remain unmodified
+		// so that it can be used as a mixin for multiple widgets (#8876)
+		proxiedPrototype = {},
+		namespace = name.split( "." )[ 0 ];
+
+	name = name.split( "." )[ 1 ];
+	fullName = namespace + "-" + name;
+
+	if ( !prototype ) {
+		prototype = base;
+		base = $.Widget;
+	}
+
+	// create selector for plugin
+	$.expr[ ":" ][ fullName.toLowerCase() ] = function( elem ) {
+		return !!$.data( elem, fullName );
+	};
+
+	$[ namespace ] = $[ namespace ] || {};
+	existingConstructor = $[ namespace ][ name ];
+	constructor = $[ namespace ][ name ] = function( options, element ) {
+		// allow instantiation without "new" keyword
+		if ( !this._createWidget ) {
+			return new constructor( options, element );
+		}
+
+		// allow instantiation without initializing for simple inheritance
+		// must use "new" keyword (the code above always passes args)
+		if ( arguments.length ) {
+			this._createWidget( options, element );
+		}
+	};
+	// extend with the existing constructor to carry over any static properties
+	$.extend( constructor, existingConstructor, {
+		version: prototype.version,
+		// copy the object used to create the prototype in case we need to
+		// redefine the widget later
+		_proto: $.extend( {}, prototype ),
+		// track widgets that inherit from this widget in case this widget is
+		// redefined after a widget inherits from it
+		_childConstructors: []
+	});
+
+	basePrototype = new base();
+	// we need to make the options hash a property directly on the new instance
+	// otherwise we'll modify the options hash on the prototype that we're
+	// inheriting from
+	basePrototype.options = $.widget.extend( {}, basePrototype.options );
+	$.each( prototype, function( prop, value ) {
+		if ( !$.isFunction( value ) ) {
+			proxiedPrototype[ prop ] = value;
+			return;
+		}
+		proxiedPrototype[ prop ] = (function() {
+			var _super = function() {
+					return base.prototype[ prop ].apply( this, arguments );
+				},
+				_superApply = function( args ) {
+					return base.prototype[ prop ].apply( this, args );
+				};
+			return function() {
+				var __super = this._super,
+					__superApply = this._superApply,
+					returnValue;
+
+				this._super = _super;
+				this._superApply = _superApply;
+
+				returnValue = value.apply( this, arguments );
+
+				this._super = __super;
+				this._superApply = __superApply;
+
+				return returnValue;
+			};
+		})();
+	});
+	constructor.prototype = $.widget.extend( basePrototype, {
+		// TODO: remove support for widgetEventPrefix
+		// always use the name + a colon as the prefix, e.g., draggable:start
+		// don't prefix for widgets that aren't DOM-based
+		widgetEventPrefix: existingConstructor ? basePrototype.widgetEventPrefix : name
+	}, proxiedPrototype, {
+		constructor: constructor,
+		namespace: namespace,
+		widgetName: name,
+		widgetFullName: fullName
+	});
+
+	// If this widget is being redefined then we need to find all widgets that
+	// are inheriting from it and redefine all of them so that they inherit from
+	// the new version of this widget. We're essentially trying to replace one
+	// level in the prototype chain.
+	if ( existingConstructor ) {
+		$.each( existingConstructor._childConstructors, function( i, child ) {
+			var childPrototype = child.prototype;
+
+			// redefine the child widget using the same prototype that was
+			// originally used, but inherit from the new version of the base
+			$.widget( childPrototype.namespace + "." + childPrototype.widgetName, constructor, child._proto );
+		});
+		// remove the list of existing child constructors from the old constructor
+		// so the old child constructors can be garbage collected
+		delete existingConstructor._childConstructors;
+	} else {
+		base._childConstructors.push( constructor );
+	}
+
+	$.widget.bridge( name, constructor );
+};
+
+$.widget.extend = function( target ) {
+	var input = slice.call( arguments, 1 ),
+		inputIndex = 0,
+		inputLength = input.length,
+		key,
+		value;
+	for ( ; inputIndex < inputLength; inputIndex++ ) {
+		for ( key in input[ inputIndex ] ) {
+			value = input[ inputIndex ][ key ];
+			if ( input[ inputIndex ].hasOwnProperty( key ) && value !== undefined ) {
+				// Clone objects
+				if ( $.isPlainObject( value ) ) {
+					target[ key ] = $.isPlainObject( target[ key ] ) ?
+						$.widget.extend( {}, target[ key ], value ) :
+						// Don't extend strings, arrays, etc. with objects
+						$.widget.extend( {}, value );
+				// Copy everything else by reference
+				} else {
+					target[ key ] = value;
+				}
+			}
+		}
+	}
+	return target;
+};
+
+$.widget.bridge = function( name, object ) {
+	var fullName = object.prototype.widgetFullName || name;
+	$.fn[ name ] = function( options ) {
+		var isMethodCall = typeof options === "string",
+			args = slice.call( arguments, 1 ),
+			returnValue = this;
+
+		// allow multiple hashes to be passed on init
+		options = !isMethodCall && args.length ?
+			$.widget.extend.apply( null, [ options ].concat(args) ) :
+			options;
+
+		if ( isMethodCall ) {
+			this.each(function() {
+				var methodValue,
+					instance = $.data( this, fullName );
+				if ( !instance ) {
+					return $.error( "cannot call methods on " + name + " prior to initialization; " +
+						"attempted to call method '" + options + "'" );
+				}
+				if ( !$.isFunction( instance[options] ) || options.charAt( 0 ) === "_" ) {
+					return $.error( "no such method '" + options + "' for " + name + " widget instance" );
+				}
+				methodValue = instance[ options ].apply( instance, args );
+				if ( methodValue !== instance && methodValue !== undefined ) {
+					returnValue = methodValue && methodValue.jquery ?
+						returnValue.pushStack( methodValue.get() ) :
+						methodValue;
+					return false;
+				}
+			});
+		} else {
+			this.each(function() {
+				var instance = $.data( this, fullName );
+				if ( instance ) {
+					instance.option( options || {} )._init();
+				} else {
+					$.data( this, fullName, new object( options, this ) );
+				}
+			});
+		}
+
+		return returnValue;
+	};
+};
+
+$.Widget = function( /* options, element */ ) {};
+$.Widget._childConstructors = [];
+
+$.Widget.prototype = {
+	widgetName: "widget",
+	widgetEventPrefix: "",
+	defaultElement: "<div>",
+	options: {
+		disabled: false,
+
+		// callbacks
+		create: null
+	},
+	_createWidget: function( options, element ) {
+		element = $( element || this.defaultElement || this )[ 0 ];
+		this.element = $( element );
+		this.uuid = uuid++;
+		this.eventNamespace = "." + this.widgetName + this.uuid;
+		this.options = $.widget.extend( {},
+			this.options,
+			this._getCreateOptions(),
+			options );
+
+		this.bindings = $();
+		this.hoverable = $();
+		this.focusable = $();
+
+		if ( element !== this ) {
+			$.data( element, this.widgetFullName, this );
+			this._on( true, this.element, {
+				remove: function( event ) {
+					if ( event.target === element ) {
+						this.destroy();
+					}
+				}
+			});
+			this.document = $( element.style ?
+				// element within the document
+				element.ownerDocument :
+				// element is window or document
+				element.document || element );
+			this.window = $( this.document[0].defaultView || this.document[0].parentWindow );
+		}
+
+		this._create();
+		this._trigger( "create", null, this._getCreateEventData() );
+		this._init();
+	},
+	_getCreateOptions: $.noop,
+	_getCreateEventData: $.noop,
+	_create: $.noop,
+	_init: $.noop,
+
+	destroy: function() {
+		this._destroy();
+		// we can probably remove the unbind calls in 2.0
+		// all event bindings should go through this._on()
+		this.element
+			.unbind( this.eventNamespace )
+			// 1.9 BC for #7810
+			// TODO remove dual storage
+			.removeData( this.widgetName )
+			.removeData( this.widgetFullName )
+			// support: jquery <1.6.3
+			// http://bugs.jquery.com/ticket/9413
+			.removeData( $.camelCase( this.widgetFullName ) );
+		this.widget()
+			.unbind( this.eventNamespace )
+			.removeAttr( "aria-disabled" )
+			.removeClass(
+				this.widgetFullName + "-disabled " +
+				"ui-state-disabled" );
+
+		// clean up events and states
+		this.bindings.unbind( this.eventNamespace );
+		this.hoverable.removeClass( "ui-state-hover" );
+		this.focusable.removeClass( "ui-state-focus" );
+	},
+	_destroy: $.noop,
+
+	widget: function() {
+		return this.element;
+	},
+
+	option: function( key, value ) {
+		var options = key,
+			parts,
+			curOption,
+			i;
+
+		if ( arguments.length === 0 ) {
+			// don't return a reference to the internal hash
+			return $.widget.extend( {}, this.options );
+		}
+
+		if ( typeof key === "string" ) {
+			// handle nested keys, e.g., "foo.bar" => { foo: { bar: ___ } }
+			options = {};
+			parts = key.split( "." );
+			key = parts.shift();
+			if ( parts.length ) {
+				curOption = options[ key ] = $.widget.extend( {}, this.options[ key ] );
+				for ( i = 0; i < parts.length - 1; i++ ) {
+					curOption[ parts[ i ] ] = curOption[ parts[ i ] ] || {};
+					curOption = curOption[ parts[ i ] ];
+				}
+				key = parts.pop();
+				if ( value === undefined ) {
+					return curOption[ key ] === undefined ? null : curOption[ key ];
+				}
+				curOption[ key ] = value;
+			} else {
+				if ( value === undefined ) {
+					return this.options[ key ] === undefined ? null : this.options[ key ];
+				}
+				options[ key ] = value;
+			}
+		}
+
+		this._setOptions( options );
+
+		return this;
+	},
+	_setOptions: function( options ) {
+		var key;
+
+		for ( key in options ) {
+			this._setOption( key, options[ key ] );
+		}
+
+		return this;
+	},
+	_setOption: function( key, value ) {
+		this.options[ key ] = value;
+
+		if ( key === "disabled" ) {
+			this.widget()
+				.toggleClass( this.widgetFullName + "-disabled ui-state-disabled", !!value )
+				.attr( "aria-disabled", value );
+			this.hoverable.removeClass( "ui-state-hover" );
+			this.focusable.removeClass( "ui-state-focus" );
+		}
+
+		return this;
+	},
+
+	enable: function() {
+		return this._setOption( "disabled", false );
+	},
+	disable: function() {
+		return this._setOption( "disabled", true );
+	},
+
+	_on: function( suppressDisabledCheck, element, handlers ) {
+		var delegateElement,
+			instance = this;
+
+		// no suppressDisabledCheck flag, shuffle arguments
+		if ( typeof suppressDisabledCheck !== "boolean" ) {
+			handlers = element;
+			element = suppressDisabledCheck;
+			suppressDisabledCheck = false;
+		}
+
+		// no element argument, shuffle and use this.element
+		if ( !handlers ) {
+			handlers = element;
+			element = this.element;
+			delegateElement = this.widget();
+		} else {
+			// accept selectors, DOM elements
+			element = delegateElement = $( element );
+			this.bindings = this.bindings.add( element );
+		}
+
+		$.each( handlers, function( event, handler ) {
+			function handlerProxy() {
+				// allow widgets to customize the disabled handling
+				// - disabled as an array instead of boolean
+				// - disabled class as method for disabling individual parts
+				if ( !suppressDisabledCheck &&
+						( instance.options.disabled === true ||
+							$( this ).hasClass( "ui-state-disabled" ) ) ) {
+					return;
+				}
+				return ( typeof handler === "string" ? instance[ handler ] : handler )
+					.apply( instance, arguments );
+			}
+
+			// copy the guid so direct unbinding works
+			if ( typeof handler !== "string" ) {
+				handlerProxy.guid = handler.guid =
+					handler.guid || handlerProxy.guid || $.guid++;
+			}
+
+			var match = event.match( /^(\w+)\s*(.*)$/ ),
+				eventName = match[1] + instance.eventNamespace,
+				selector = match[2];
+			if ( selector ) {
+				delegateElement.delegate( selector, eventName, handlerProxy );
+			} else {
+				element.bind( eventName, handlerProxy );
+			}
+		});
+	},
+
+	_off: function( element, eventName ) {
+		eventName = (eventName || "").split( " " ).join( this.eventNamespace + " " ) + this.eventNamespace;
+		element.unbind( eventName ).undelegate( eventName );
+	},
+
+	_delay: function( handler, delay ) {
+		function handlerProxy() {
+			return ( typeof handler === "string" ? instance[ handler ] : handler )
+				.apply( instance, arguments );
+		}
+		var instance = this;
+		return setTimeout( handlerProxy, delay || 0 );
+	},
+
+	_hoverable: function( element ) {
+		this.hoverable = this.hoverable.add( element );
+		this._on( element, {
+			mouseenter: function( event ) {
+				$( event.currentTarget ).addClass( "ui-state-hover" );
+			},
+			mouseleave: function( event ) {
+				$( event.currentTarget ).removeClass( "ui-state-hover" );
+			}
+		});
+	},
+
+	_focusable: function( element ) {
+		this.focusable = this.focusable.add( element );
+		this._on( element, {
+			focusin: function( event ) {
+				$( event.currentTarget ).addClass( "ui-state-focus" );
+			},
+			focusout: function( event ) {
+				$( event.currentTarget ).removeClass( "ui-state-focus" );
+			}
+		});
+	},
+
+	_trigger: function( type, event, data ) {
+		var prop, orig,
+			callback = this.options[ type ];
+
+		data = data || {};
+		event = $.Event( event );
+		event.type = ( type === this.widgetEventPrefix ?
+			type :
+			this.widgetEventPrefix + type ).toLowerCase();
+		// the original event may come from any element
+		// so we need to reset the target on the new event
+		event.target = this.element[ 0 ];
+
+		// copy original event properties over to the new event
+		orig = event.originalEvent;
+		if ( orig ) {
+			for ( prop in orig ) {
+				if ( !( prop in event ) ) {
+					event[ prop ] = orig[ prop ];
+				}
+			}
+		}
+
+		this.element.trigger( event, data );
+		return !( $.isFunction( callback ) &&
+			callback.apply( this.element[0], [ event ].concat( data ) ) === false ||
+			event.isDefaultPrevented() );
+	}
+};
+
+$.each( { show: "fadeIn", hide: "fadeOut" }, function( method, defaultEffect ) {
+	$.Widget.prototype[ "_" + method ] = function( element, options, callback ) {
+		if ( typeof options === "string" ) {
+			options = { effect: options };
+		}
+		var hasOptions,
+			effectName = !options ?
+				method :
+				options === true || typeof options === "number" ?
+					defaultEffect :
+					options.effect || defaultEffect;
+		options = options || {};
+		if ( typeof options === "number" ) {
+			options = { duration: options };
+		}
+		hasOptions = !$.isEmptyObject( options );
+		options.complete = callback;
+		if ( options.delay ) {
+			element.delay( options.delay );
+		}
+		if ( hasOptions && $.effects && $.effects.effect[ effectName ] ) {
+			element[ method ]( options );
+		} else if ( effectName !== method && element[ effectName ] ) {
+			element[ effectName ]( options.duration, options.easing, callback );
+		} else {
+			element.queue(function( next ) {
+				$( this )[ method ]();
+				if ( callback ) {
+					callback.call( element[ 0 ] );
+				}
+				next();
+			});
+		}
+	};
+});
+
+}));
+/*
+ * jQuery Iframe Transport Plugin 1.6.1
+ * https://github.com/blueimp/jQuery-File-Upload
+ *
+ * Copyright 2011, Sebastian Tschan
+ * https://blueimp.net
+ *
+ * Licensed under the MIT license:
+ * http://www.opensource.org/licenses/MIT
+ */
+
+/*jslint unparam: true, nomen: true */
+/*global define, window, document */
+
+
+(function (factory) {
+    'use strict';
+    if (typeof define === 'function' && define.amd) {
+        // Register as an anonymous AMD module:
+        define(['jquery'], factory);
+    } else {
+        // Browser globals:
+        factory(window.jQuery);
+    }
+}(function ($) {
+    'use strict';
+
+    // Helper variable to create unique names for the transport iframes:
+    var counter = 0;
+
+    // The iframe transport accepts three additional options:
+    // options.fileInput: a jQuery collection of file input fields
+    // options.paramName: the parameter name for the file form data,
+    //  overrides the name property of the file input field(s),
+    //  can be a string or an array of strings.
+    // options.formData: an array of objects with name and value properties,
+    //  equivalent to the return data of .serializeArray(), e.g.:
+    //  [{name: 'a', value: 1}, {name: 'b', value: 2}]
+    $.ajaxTransport('iframe', function (options) {
+        if (options.async) {
+            var form,
+                iframe,
+                addParamChar;
+            return {
+                send: function (_, completeCallback) {
+                    form = $('<form style="display:none;"></form>');
+                    form.attr('accept-charset', options.formAcceptCharset);
+                    addParamChar = /\?/.test(options.url) ? '&' : '?';
+                    // XDomainRequest only supports GET and POST:
+                    if (options.type === 'DELETE') {
+                        options.url = options.url + addParamChar + '_method=DELETE';
+                        options.type = 'POST';
+                    } else if (options.type === 'PUT') {
+                        options.url = options.url + addParamChar + '_method=PUT';
+                        options.type = 'POST';
+                    } else if (options.type === 'PATCH') {
+                        options.url = options.url + addParamChar + '_method=PATCH';
+                        options.type = 'POST';
+                    }
+                    // javascript:false as initial iframe src
+                    // prevents warning popups on HTTPS in IE6.
+                    // IE versions below IE8 cannot set the name property of
+                    // elements that have already been added to the DOM,
+                    // so we set the name along with the iframe HTML markup:
+                    iframe = $(
+                        '<iframe src="javascript:false;" name="iframe-transport-' +
+                            (counter += 1) + '"></iframe>'
+                    ).bind('load', function () {
+                        var fileInputClones,
+                            paramNames = $.isArray(options.paramName) ?
+                                    options.paramName : [options.paramName];
+                        iframe
+                            .unbind('load')
+                            .bind('load', function () {
+                                var response;
+                                // Wrap in a try/catch block to catch exceptions thrown
+                                // when trying to access cross-domain iframe contents:
+                                try {
+                                    response = iframe.contents();
+                                    // Google Chrome and Firefox do not throw an
+                                    // exception when calling iframe.contents() on
+                                    // cross-domain requests, so we unify the response:
+                                    if (!response.length || !response[0].firstChild) {
+                                        throw new Error();
+                                    }
+                                } catch (e) {
+                                    response = undefined;
+                                }
+                                // The complete callback returns the
+                                // iframe content document as response object:
+                                completeCallback(
+                                    200,
+                                    'success',
+                                    {'iframe': response}
+                                );
+                                // Fix for IE endless progress bar activity bug
+                                // (happens on form submits to iframe targets):
+                                $('<iframe src="javascript:false;"></iframe>')
+                                    .appendTo(form);
+                                form.remove();
+                            });
+                        form
+                            .prop('target', iframe.prop('name'))
+                            .prop('action', options.url)
+                            .prop('method', options.type);
+                        if (options.formData) {
+                            $.each(options.formData, function (index, field) {
+                                $('<input type="hidden"/>')
+                                    .prop('name', field.name)
+                                    .val(field.value)
+                                    .appendTo(form);
+                            });
+                        }
+                        if (options.fileInput && options.fileInput.length &&
+                                options.type === 'POST') {
+                            fileInputClones = options.fileInput.clone();
+                            // Insert a clone for each file input field:
+                            options.fileInput.after(function (index) {
+                                return fileInputClones[index];
+                            });
+                            if (options.paramName) {
+                                options.fileInput.each(function (index) {
+                                    $(this).prop(
+                                        'name',
+                                        paramNames[index] || options.paramName
+                                    );
+                                });
+                            }
+                            // Appending the file input fields to the hidden form
+                            // removes them from their original location:
+                            form
+                                .append(options.fileInput)
+                                .prop('enctype', 'multipart/form-data')
+                                // enctype must be set as encoding for IE:
+                                .prop('encoding', 'multipart/form-data');
+                        }
+                        form.submit();
+                        // Insert the file input fields at their original location
+                        // by replacing the clones with the originals:
+                        if (fileInputClones && fileInputClones.length) {
+                            options.fileInput.each(function (index, input) {
+                                var clone = $(fileInputClones[index]);
+                                $(input).prop('name', clone.prop('name'));
+                                clone.replaceWith(input);
+                            });
+                        }
+                    });
+                    form.append(iframe).appendTo(document.body);
+                },
+                abort: function () {
+                    if (iframe) {
+                        // javascript:false as iframe src aborts the request
+                        // and prevents warning popups on HTTPS in IE6.
+                        // concat is used to avoid the "Script URL" JSLint error:
+                        iframe
+                            .unbind('load')
+                            .prop('src', 'javascript'.concat(':false;'));
+                    }
+                    if (form) {
+                        form.remove();
+                    }
+                }
+            };
+        }
+    });
+
+    // The iframe transport returns the iframe content document as response.
+    // The following adds converters from iframe to text, json, html, and script:
+    $.ajaxSetup({
+        converters: {
+            'iframe text': function (iframe) {
+                return iframe && $(iframe[0].body).text();
+            },
+            'iframe json': function (iframe) {
+                return iframe && $.parseJSON($(iframe[0].body).text());
+            },
+            'iframe html': function (iframe) {
+                return iframe && $(iframe[0].body).html();
+            },
+            'iframe script': function (iframe) {
+                return iframe && $.globalEval($(iframe[0].body).text());
+            }
+        }
+    });
+
+}));
+/*
+ * jQuery File Upload Plugin 5.21
+ * https://github.com/blueimp/jQuery-File-Upload
+ *
+ * Copyright 2010, Sebastian Tschan
+ * https://blueimp.net
+ *
+ * Licensed under the MIT license:
+ * http://www.opensource.org/licenses/MIT
+ */
+
+/*jslint nomen: true, unparam: true, regexp: true */
+/*global define, window, document, File, Blob, FormData, location */
+
+
+(function (factory) {
+    'use strict';
+    if (typeof define === 'function' && define.amd) {
+        // Register as an anonymous AMD module:
+        define([
+            'jquery',
+            'jquery.ui.widget'
+        ], factory);
+    } else {
+        // Browser globals:
+        factory(window.jQuery);
+    }
+}(function ($) {
+    'use strict';
+
+    // The FileReader API is not actually used, but works as feature detection,
+    // as e.g. Safari supports XHR file uploads via the FormData API,
+    // but not non-multipart XHR file uploads:
+    $.support.xhrFileUpload = !!(window.XMLHttpRequestUpload && window.FileReader);
+    $.support.xhrFormDataFileUpload = !!window.FormData;
+
+    // The form.elements propHook is added to filter serialized elements
+    // to not include file inputs in jQuery 1.9.0.
+    // This hooks directly into jQuery.fn.serializeArray.
+    // For more info, see http://bugs.jquery.com/ticket/13306
+    $.propHooks.elements = {
+        get: function (form) {
+            if ($.nodeName(form, 'form')) {
+                return $.grep(form.elements, function (elem) {
+                    return !$.nodeName(elem, 'input') || elem.type !== 'file';
+                });
+            }
+            return null;
+        }
+    };
+
+    // The fileupload widget listens for change events on file input fields defined
+    // via fileInput setting and paste or drop events of the given dropZone.
+    // In addition to the default jQuery Widget methods, the fileupload widget
+    // exposes the "add" and "send" methods, to add or directly send files using
+    // the fileupload API.
+    // By default, files added via file input selection, paste, drag & drop or
+    // "add" method are uploaded immediately, but it is possible to override
+    // the "add" callback option to queue file uploads.
+    $.widget('blueimp.fileupload', {
+
+        options: {
+            // The drop target element(s), by the default the complete document.
+            // Set to null to disable drag & drop support:
+            dropZone: $(document),
+            // The paste target element(s), by the default the complete document.
+            // Set to null to disable paste support:
+            pasteZone: $(document),
+            // The file input field(s), that are listened to for change events.
+            // If undefined, it is set to the file input fields inside
+            // of the widget element on plugin initialization.
+            // Set to null to disable the change listener.
+            fileInput: undefined,
+            // By default, the file input field is replaced with a clone after
+            // each input field change event. This is required for iframe transport
+            // queues and allows change events to be fired for the same file
+            // selection, but can be disabled by setting the following option to false:
+            replaceFileInput: true,
+            // The parameter name for the file form data (the request argument name).
+            // If undefined or empty, the name property of the file input field is
+            // used, or "files[]" if the file input name property is also empty,
+            // can be a string or an array of strings:
+            paramName: undefined,
+            // By default, each file of a selection is uploaded using an individual
+            // request for XHR type uploads. Set to false to upload file
+            // selections in one request each:
+            singleFileUploads: true,
+            // To limit the number of files uploaded with one XHR request,
+            // set the following option to an integer greater than 0:
+            limitMultiFileUploads: undefined,
+            // Set the following option to true to issue all file upload requests
+            // in a sequential order:
+            sequentialUploads: false,
+            // To limit the number of concurrent uploads,
+            // set the following option to an integer greater than 0:
+            limitConcurrentUploads: undefined,
+            // Set the following option to true to force iframe transport uploads:
+            forceIframeTransport: false,
+            // Set the following option to the location of a redirect url on the
+            // origin server, for cross-domain iframe transport uploads:
+            redirect: undefined,
+            // The parameter name for the redirect url, sent as part of the form
+            // data and set to 'redirect' if this option is empty:
+            redirectParamName: undefined,
+            // Set the following option to the location of a postMessage window,
+            // to enable postMessage transport uploads:
+            postMessage: undefined,
+            // By default, XHR file uploads are sent as multipart/form-data.
+            // The iframe transport is always using multipart/form-data.
+            // Set to false to enable non-multipart XHR uploads:
+            multipart: true,
+            // To upload large files in smaller chunks, set the following option
+            // to a preferred maximum chunk size. If set to 0, null or undefined,
+            // or the browser does not support the required Blob API, files will
+            // be uploaded as a whole.
+            maxChunkSize: undefined,
+            // When a non-multipart upload or a chunked multipart upload has been
+            // aborted, this option can be used to resume the upload by setting
+            // it to the size of the already uploaded bytes. This option is most
+            // useful when modifying the options object inside of the "add" or
+            // "send" callbacks, as the options are cloned for each file upload.
+            uploadedBytes: undefined,
+            // By default, failed (abort or error) file uploads are removed from the
+            // global progress calculation. Set the following option to false to
+            // prevent recalculating the global progress data:
+            recalculateProgress: true,
+            // Interval in milliseconds to calculate and trigger progress events:
+            progressInterval: 100,
+            // Interval in milliseconds to calculate progress bitrate:
+            bitrateInterval: 500,
+
+            // Additional form data to be sent along with the file uploads can be set
+            // using this option, which accepts an array of objects with name and
+            // value properties, a function returning such an array, a FormData
+            // object (for XHR file uploads), or a simple object.
+            // The form of the first fileInput is given as parameter to the function:
+            formData: function (form) {
+                return form.serializeArray();
+            },
+
+            // The add callback is invoked as soon as files are added to the fileupload
+            // widget (via file input selection, drag & drop, paste or add API call).
+            // If the singleFileUploads option is enabled, this callback will be
+            // called once for each file in the selection for XHR file uplaods, else
+            // once for each file selection.
+            // The upload starts when the submit method is invoked on the data parameter.
+            // The data object contains a files property holding the added files
+            // and allows to override plugin options as well as define ajax settings.
+            // Listeners for this callback can also be bound the following way:
+            // .bind('fileuploadadd', func);
+            // data.submit() returns a Promise object and allows to attach additional
+            // handlers using jQuery's Deferred callbacks:
+            // data.submit().done(func).fail(func).always(func);
+            add: function (e, data) {
+                data.submit();
+            },
+
+            // Other callbacks:
+
+            // Callback for the submit event of each file upload:
+            // submit: function (e, data) {}, // .bind('fileuploadsubmit', func);
+
+            // Callback for the start of each file upload request:
+            // send: function (e, data) {}, // .bind('fileuploadsend', func);
+
+            // Callback for successful uploads:
+            // done: function (e, data) {}, // .bind('fileuploaddone', func);
+
+            // Callback for failed (abort or error) uploads:
+            // fail: function (e, data) {}, // .bind('fileuploadfail', func);
+
+            // Callback for completed (success, abort or error) requests:
+            // always: function (e, data) {}, // .bind('fileuploadalways', func);
+
+            // Callback for upload progress events:
+            // progress: function (e, data) {}, // .bind('fileuploadprogress', func);
+
+            // Callback for global upload progress events:
+            // progressall: function (e, data) {}, // .bind('fileuploadprogressall', func);
+
+            // Callback for uploads start, equivalent to the global ajaxStart event:
+            // start: function (e) {}, // .bind('fileuploadstart', func);
+
+            // Callback for uploads stop, equivalent to the global ajaxStop event:
+            // stop: function (e) {}, // .bind('fileuploadstop', func);
+
+            // Callback for change events of the fileInput(s):
+            // change: function (e, data) {}, // .bind('fileuploadchange', func);
+
+            // Callback for paste events to the pasteZone(s):
+            // paste: function (e, data) {}, // .bind('fileuploadpaste', func);
+
+            // Callback for drop events of the dropZone(s):
+            // drop: function (e, data) {}, // .bind('fileuploaddrop', func);
+
+            // Callback for dragover events of the dropZone(s):
+            // dragover: function (e) {}, // .bind('fileuploaddragover', func);
+
+            // Callback for the start of each chunk upload request:
+            // chunksend: function (e, data) {}, // .bind('fileuploadchunksend', func);
+
+            // Callback for successful chunk uploads:
+            // chunkdone: function (e, data) {}, // .bind('fileuploadchunkdone', func);
+
+            // Callback for failed (abort or error) chunk uploads:
+            // chunkfail: function (e, data) {}, // .bind('fileuploadchunkfail', func);
+
+            // Callback for completed (success, abort or error) chunk upload requests:
+            // chunkalways: function (e, data) {}, // .bind('fileuploadchunkalways', func);
+
+            // The plugin options are used as settings object for the ajax calls.
+            // The following are jQuery ajax settings required for the file uploads:
+            processData: false,
+            contentType: false,
+            cache: false
+        },
+
+        // A list of options that require a refresh after assigning a new value:
+        _refreshOptionsList: [
+            'fileInput',
+            'dropZone',
+            'pasteZone',
+            'multipart',
+            'forceIframeTransport'
+        ],
+
+        _BitrateTimer: function () {
+            this.timestamp = +(new Date());
+            this.loaded = 0;
+            this.bitrate = 0;
+            this.getBitrate = function (now, loaded, interval) {
+                var timeDiff = now - this.timestamp;
+                if (!this.bitrate || !interval || timeDiff > interval) {
+                    this.bitrate = (loaded - this.loaded) * (1000 / timeDiff) * 8;
+                    this.loaded = loaded;
+                    this.timestamp = now;
+                }
+                return this.bitrate;
+            };
+        },
+
+        _isXHRUpload: function (options) {
+            return !options.forceIframeTransport &&
+                ((!options.multipart && $.support.xhrFileUpload) ||
+                $.support.xhrFormDataFileUpload);
+        },
+
+        _getFormData: function (options) {
+            var formData;
+            if (typeof options.formData === 'function') {
+                return options.formData(options.form);
+            }
+            if ($.isArray(options.formData)) {
+                return options.formData;
+            }
+            if (options.formData) {
+                formData = [];
+                $.each(options.formData, function (name, value) {
+                    formData.push({name: name, value: value});
+                });
+                return formData;
+            }
+            return [];
+        },
+
+        _getTotal: function (files) {
+            var total = 0;
+            $.each(files, function (index, file) {
+                total += file.size || 1;
+            });
+            return total;
+        },
+
+        _onProgress: function (e, data) {
+            if (e.lengthComputable) {
+                var now = +(new Date()),
+                    total,
+                    loaded;
+                if (data._time && data.progressInterval &&
+                        (now - data._time < data.progressInterval) &&
+                        e.loaded !== e.total) {
+                    return;
+                }
+                data._time = now;
+                total = data.total || this._getTotal(data.files);
+                loaded = parseInt(
+                    e.loaded / e.total * (data.chunkSize || total),
+                    10
+                ) + (data.uploadedBytes || 0);
+                this._loaded += loaded - (data.loaded || data.uploadedBytes || 0);
+                data.lengthComputable = true;
+                data.loaded = loaded;
+                data.total = total;
+                data.bitrate = data._bitrateTimer.getBitrate(
+                    now,
+                    loaded,
+                    data.bitrateInterval
+                );
+                // Trigger a custom progress event with a total data property set
+                // to the file size(s) of the current upload and a loaded data
+                // property calculated accordingly:
+                this._trigger('progress', e, data);
+                // Trigger a global progress event for all current file uploads,
+                // including ajax calls queued for sequential file uploads:
+                this._trigger('progressall', e, {
+                    lengthComputable: true,
+                    loaded: this._loaded,
+                    total: this._total,
+                    bitrate: this._bitrateTimer.getBitrate(
+                        now,
+                        this._loaded,
+                        data.bitrateInterval
+                    )
+                });
+            }
+        },
+
+        _initProgressListener: function (options) {
+            var that = this,
+                xhr = options.xhr ? options.xhr() : $.ajaxSettings.xhr();
+            // Accesss to the native XHR object is required to add event listeners
+            // for the upload progress event:
+            if (xhr.upload) {
+                $(xhr.upload).bind('progress', function (e) {
+                    var oe = e.originalEvent;
+                    // Make sure the progress event properties get copied over:
+                    e.lengthComputable = oe.lengthComputable;
+                    e.loaded = oe.loaded;
+                    e.total = oe.total;
+                    that._onProgress(e, options);
+                });
+                options.xhr = function () {
+                    return xhr;
+                };
+            }
+        },
+
+        _initXHRData: function (options) {
+            var formData,
+                file = options.files[0],
+                // Ignore non-multipart setting if not supported:
+                multipart = options.multipart || !$.support.xhrFileUpload,
+                paramName = options.paramName[0];
+            options.headers = options.headers || {};
+            if (options.contentRange) {
+                options.headers['Content-Range'] = options.contentRange;
+            }
+            if (!multipart) {
+                options.headers['Content-Disposition'] = 'attachment; filename="' +
+                    encodeURI(file.name) + '"';
+                options.contentType = file.type;
+                options.data = options.blob || file;
+            } else if ($.support.xhrFormDataFileUpload) {
+                if (options.postMessage) {
+                    // window.postMessage does not allow sending FormData
+                    // objects, so we just add the File/Blob objects to
+                    // the formData array and let the postMessage window
+                    // create the FormData object out of this array:
+                    formData = this._getFormData(options);
+                    if (options.blob) {
+                        formData.push({
+                            name: paramName,
+                            value: options.blob
+                        });
+                    } else {
+                        $.each(options.files, function (index, file) {
+                            formData.push({
+                                name: options.paramName[index] || paramName,
+                                value: file
+                            });
+                        });
+                    }
+                } else {
+                    if (options.formData instanceof FormData) {
+                        formData = options.formData;
+                    } else {
+                        formData = new FormData();
+                        $.each(this._getFormData(options), function (index, field) {
+                            formData.append(field.name, field.value);
+                        });
+                    }
+                    if (options.blob) {
+                        options.headers['Content-Disposition'] = 'attachment; filename="' +
+                            encodeURI(file.name) + '"';
+                        formData.append(paramName, options.blob, file.name);
+                    } else {
+                        $.each(options.files, function (index, file) {
+                            // Files are also Blob instances, but some browsers
+                            // (Firefox 3.6) support the File API but not Blobs.
+                            // This check allows the tests to run with
+                            // dummy objects:
+                            if ((window.Blob && file instanceof Blob) ||
+                                    (window.File && file instanceof File)) {
+                                formData.append(
+                                    options.paramName[index] || paramName,
+                                    file,
+                                    file.name
+                                );
+                            }
+                        });
+                    }
+                }
+                options.data = formData;
+            }
+            // Blob reference is not needed anymore, free memory:
+            options.blob = null;
+        },
+
+        _initIframeSettings: function (options) {
+            // Setting the dataType to iframe enables the iframe transport:
+            options.dataType = 'iframe ' + (options.dataType || '');
+            // The iframe transport accepts a serialized array as form data:
+            options.formData = this._getFormData(options);
+            // Add redirect url to form data on cross-domain uploads:
+            if (options.redirect && $('<a></a>').prop('href', options.url)
+                    .prop('host') !== location.host) {
+                options.formData.push({
+                    name: options.redirectParamName || 'redirect',
+                    value: options.redirect
+                });
+            }
+        },
+
+        _initDataSettings: function (options) {
+            if (this._isXHRUpload(options)) {
+                if (!this._chunkedUpload(options, true)) {
+                    if (!options.data) {
+                        this._initXHRData(options);
+                    }
+                    this._initProgressListener(options);
+                }
+                if (options.postMessage) {
+                    // Setting the dataType to postmessage enables the
+                    // postMessage transport:
+                    options.dataType = 'postmessage ' + (options.dataType || '');
+                }
+            } else {
+                this._initIframeSettings(options, 'iframe');
+            }
+        },
+
+        _getParamName: function (options) {
+            var fileInput = $(options.fileInput),
+                paramName = options.paramName;
+            if (!paramName) {
+                paramName = [];
+                fileInput.each(function () {
+                    var input = $(this),
+                        name = input.prop('name') || 'files[]',
+                        i = (input.prop('files') || [1]).length;
+                    while (i) {
+                        paramName.push(name);
+                        i -= 1;
+                    }
+                });
+                if (!paramName.length) {
+                    paramName = [fileInput.prop('name') || 'files[]'];
+                }
+            } else if (!$.isArray(paramName)) {
+                paramName = [paramName];
+            }
+            return paramName;
+        },
+
+        _initFormSettings: function (options) {
+            // Retrieve missing options from the input field and the
+            // associated form, if available:
+            if (!options.form || !options.form.length) {
+                options.form = $(options.fileInput.prop('form'));
+                // If the given file input doesn't have an associated form,
+                // use the default widget file input's form:
+                if (!options.form.length) {
+                    options.form = $(this.options.fileInput.prop('form'));
+                }
+            }
+            options.paramName = this._getParamName(options);
+            if (!options.url) {
+                options.url = options.form.prop('action') || location.href;
+            }
+            // The HTTP request method must be "POST" or "PUT":
+            options.type = (options.type || options.form.prop('method') || '')
+                .toUpperCase();
+            if (options.type !== 'POST' && options.type !== 'PUT' &&
+                    options.type !== 'PATCH') {
+                options.type = 'POST';
+            }
+            if (!options.formAcceptCharset) {
+                options.formAcceptCharset = options.form.attr('accept-charset');
+            }
+        },
+
+        _getAJAXSettings: function (data) {
+            var options = $.extend({}, this.options, data);
+            this._initFormSettings(options);
+            this._initDataSettings(options);
+            return options;
+        },
+
+        // Maps jqXHR callbacks to the equivalent
+        // methods of the given Promise object:
+        _enhancePromise: function (promise) {
+            promise.success = promise.done;
+            promise.error = promise.fail;
+            promise.complete = promise.always;
+            return promise;
+        },
+
+        // Creates and returns a Promise object enhanced with
+        // the jqXHR methods abort, success, error and complete:
+        _getXHRPromise: function (resolveOrReject, context, args) {
+            var dfd = $.Deferred(),
+                promise = dfd.promise();
+            context = context || this.options.context || promise;
+            if (resolveOrReject === true) {
+                dfd.resolveWith(context, args);
+            } else if (resolveOrReject === false) {
+                dfd.rejectWith(context, args);
+            }
+            promise.abort = dfd.promise;
+            return this._enhancePromise(promise);
+        },
+
+        // Parses the Range header from the server response
+        // and returns the uploaded bytes:
+        _getUploadedBytes: function (jqXHR) {
+            var range = jqXHR.getResponseHeader('Range'),
+                parts = range && range.split('-'),
+                upperBytesPos = parts && parts.length > 1 &&
+                    parseInt(parts[1], 10);
+            return upperBytesPos && upperBytesPos + 1;
+        },
+
+        // Uploads a file in multiple, sequential requests
+        // by splitting the file up in multiple blob chunks.
+        // If the second parameter is true, only tests if the file
+        // should be uploaded in chunks, but does not invoke any
+        // upload requests:
+        _chunkedUpload: function (options, testOnly) {
+            var that = this,
+                file = options.files[0],
+                fs = file.size,
+                ub = options.uploadedBytes = options.uploadedBytes || 0,
+                mcs = options.maxChunkSize || fs,
+                slice = file.slice || file.webkitSlice || file.mozSlice,
+                dfd = $.Deferred(),
+                promise = dfd.promise(),
+                jqXHR,
+                upload;
+            if (!(this._isXHRUpload(options) && slice && (ub || mcs < fs)) ||
+                    options.data) {
+                return false;
+            }
+            if (testOnly) {
+                return true;
+            }
+            if (ub >= fs) {
+                file.error = 'Uploaded bytes exceed file size';
+                return this._getXHRPromise(
+                    false,
+                    options.context,
+                    [null, 'error', file.error]
+                );
+            }
+            // The chunk upload method:
+            upload = function (i) {
+                // Clone the options object for each chunk upload:
+                var o = $.extend({}, options);
+                o.blob = slice.call(
+                    file,
+                    ub,
+                    ub + mcs,
+                    file.type
+                );
+                // Store the current chunk size, as the blob itself
+                // will be dereferenced after data processing:
+                o.chunkSize = o.blob.size;
+                // Expose the chunk bytes position range:
+                o.contentRange = 'bytes ' + ub + '-' +
+                    (ub + o.chunkSize - 1) + '/' + fs;
+                // Process the upload data (the blob and potential form data):
+                that._initXHRData(o);
+                // Add progress listeners for this chunk upload:
+                that._initProgressListener(o);
+                jqXHR = ((that._trigger('chunksend', null, o) !== false && $.ajax(o)) ||
+                        that._getXHRPromise(false, o.context))
+                    .done(function (result, textStatus, jqXHR) {
+                        ub = that._getUploadedBytes(jqXHR) ||
+                            (ub + o.chunkSize);
+                        // Create a progress event if upload is done and no progress
+                        // event has been invoked for this chunk, or there has been
+                        // no progress event with loaded equaling total:
+                        if (!o.loaded || o.loaded < o.total) {
+                            that._onProgress($.Event('progress', {
+                                lengthComputable: true,
+                                loaded: ub - o.uploadedBytes,
+                                total: ub - o.uploadedBytes
+                            }), o);
+                        }
+                        options.uploadedBytes = o.uploadedBytes = ub;
+                        o.result = result;
+                        o.textStatus = textStatus;
+                        o.jqXHR = jqXHR;
+                        that._trigger('chunkdone', null, o);
+                        that._trigger('chunkalways', null, o);
+                        if (ub < fs) {
+                            // File upload not yet complete,
+                            // continue with the next chunk:
+                            upload();
+                        } else {
+                            dfd.resolveWith(
+                                o.context,
+                                [result, textStatus, jqXHR]
+                            );
+                        }
+                    })
+                    .fail(function (jqXHR, textStatus, errorThrown) {
+                        o.jqXHR = jqXHR;
+                        o.textStatus = textStatus;
+                        o.errorThrown = errorThrown;
+                        that._trigger('chunkfail', null, o);
+                        that._trigger('chunkalways', null, o);
+                        dfd.rejectWith(
+                            o.context,
+                            [jqXHR, textStatus, errorThrown]
+                        );
+                    });
+            };
+            this._enhancePromise(promise);
+            promise.abort = function () {
+                return jqXHR.abort();
+            };
+            upload();
+            return promise;
+        },
+
+        _beforeSend: function (e, data) {
+            if (this._active === 0) {
+                // the start callback is triggered when an upload starts
+                // and no other uploads are currently running,
+                // equivalent to the global ajaxStart event:
+                this._trigger('start');
+                // Set timer for global bitrate progress calculation:
+                this._bitrateTimer = new this._BitrateTimer();
+            }
+            this._active += 1;
+            // Initialize the global progress values:
+            this._loaded += data.uploadedBytes || 0;
+            this._total += this._getTotal(data.files);
+        },
+
+        _onDone: function (result, textStatus, jqXHR, options) {
+            if (!this._isXHRUpload(options) || !options.loaded ||
+                    options.loaded < options.total) {
+                var total = this._getTotal(options.files) || 1;
+                // Create a progress event for each iframe load,
+                // or if there has been no progress event with
+                // loaded equaling total for XHR uploads:
+                this._onProgress($.Event('progress', {
+                    lengthComputable: true,
+                    loaded: total,
+                    total: total
+                }), options);
+            }
+            options.result = result;
+            options.textStatus = textStatus;
+            options.jqXHR = jqXHR;
+            this._trigger('done', null, options);
+        },
+
+        _onFail: function (jqXHR, textStatus, errorThrown, options) {
+            options.jqXHR = jqXHR;
+            options.textStatus = textStatus;
+            options.errorThrown = errorThrown;
+            this._trigger('fail', null, options);
+            if (options.recalculateProgress) {
+                // Remove the failed (error or abort) file upload from
+                // the global progress calculation:
+                this._loaded -= options.loaded || options.uploadedBytes || 0;
+                this._total -= options.total || this._getTotal(options.files);
+            }
+        },
+
+        _onAlways: function (jqXHRorResult, textStatus, jqXHRorError, options) {
+            // jqXHRorResult, textStatus and jqXHRorError are added to the
+            // options object via done and fail callbacks
+            this._active -= 1;
+            this._trigger('always', null, options);
+            if (this._active === 0) {
+                // The stop callback is triggered when all uploads have
+                // been completed, equivalent to the global ajaxStop event:
+                this._trigger('stop');
+                // Reset the global progress values:
+                this._loaded = this._total = 0;
+                this._bitrateTimer = null;
+            }
+        },
+
+        _onSend: function (e, data) {
+            var that = this,
+                jqXHR,
+                aborted,
+                slot,
+                pipe,
+                options = that._getAJAXSettings(data),
+                send = function () {
+                    that._sending += 1;
+                    // Set timer for bitrate progress calculation:
+                    options._bitrateTimer = new that._BitrateTimer();
+                    jqXHR = jqXHR || (
+                        ((aborted || that._trigger('send', e, options) === false) &&
+                        that._getXHRPromise(false, options.context, aborted)) ||
+                        that._chunkedUpload(options) || $.ajax(options)
+                    ).done(function (result, textStatus, jqXHR) {
+                        that._onDone(result, textStatus, jqXHR, options);
+                    }).fail(function (jqXHR, textStatus, errorThrown) {
+                        that._onFail(jqXHR, textStatus, errorThrown, options);
+                    }).always(function (jqXHRorResult, textStatus, jqXHRorError) {
+                        that._sending -= 1;
+                        that._onAlways(
+                            jqXHRorResult,
+                            textStatus,
+                            jqXHRorError,
+                            options
+                        );
+                        if (options.limitConcurrentUploads &&
+                                options.limitConcurrentUploads > that._sending) {
+                            // Start the next queued upload,
+                            // that has not been aborted:
+                            var nextSlot = that._slots.shift(),
+                                isPending;
+                            while (nextSlot) {
+                                // jQuery 1.6 doesn't provide .state(),
+                                // while jQuery 1.8+ removed .isRejected():
+                                isPending = nextSlot.state ?
+                                        nextSlot.state() === 'pending' :
+                                        !nextSlot.isRejected();
+                                if (isPending) {
+                                    nextSlot.resolve();
+                                    break;
+                                }
+                                nextSlot = that._slots.shift();
+                            }
+                        }
+                    });
+                    return jqXHR;
+                };
+            this._beforeSend(e, options);
+            if (this.options.sequentialUploads ||
+                    (this.options.limitConcurrentUploads &&
+                    this.options.limitConcurrentUploads <= this._sending)) {
+                if (this.options.limitConcurrentUploads > 1) {
+                    slot = $.Deferred();
+                    this._slots.push(slot);
+                    pipe = slot.pipe(send);
+                } else {
+                    pipe = (this._sequence = this._sequence.pipe(send, send));
+                }
+                // Return the piped Promise object, enhanced with an abort method,
+                // which is delegated to the jqXHR object of the current upload,
+                // and jqXHR callbacks mapped to the equivalent Promise methods:
+                pipe.abort = function () {
+                    aborted = [undefined, 'abort', 'abort'];
+                    if (!jqXHR) {
+                        if (slot) {
+                            slot.rejectWith(options.context, aborted);
+                        }
+                        return send();
+                    }
+                    return jqXHR.abort();
+                };
+                return this._enhancePromise(pipe);
+            }
+            return send();
+        },
+
+        _onAdd: function (e, data) {
+            var that = this,
+                result = true,
+                options = $.extend({}, this.options, data),
+                limit = options.limitMultiFileUploads,
+                paramName = this._getParamName(options),
+                paramNameSet,
+                paramNameSlice,
+                fileSet,
+                i;
+            if (!(options.singleFileUploads || limit) ||
+                    !this._isXHRUpload(options)) {
+                fileSet = [data.files];
+                paramNameSet = [paramName];
+            } else if (!options.singleFileUploads && limit) {
+                fileSet = [];
+                paramNameSet = [];
+                for (i = 0; i < data.files.length; i += limit) {
+                    fileSet.push(data.files.slice(i, i + limit));
+                    paramNameSlice = paramName.slice(i, i + limit);
+                    if (!paramNameSlice.length) {
+                        paramNameSlice = paramName;
+                    }
+                    paramNameSet.push(paramNameSlice);
+                }
+            } else {
+                paramNameSet = paramName;
+            }
+            data.originalFiles = data.files;
+            $.each(fileSet || data.files, function (index, element) {
+                var newData = $.extend({}, data);
+                newData.files = fileSet ? element : [element];
+                newData.paramName = paramNameSet[index];
+                newData.submit = function () {
+                    newData.jqXHR = this.jqXHR =
+                        (that._trigger('submit', e, this) !== false) &&
+                        that._onSend(e, this);
+                    return this.jqXHR;
+                };
+                result = that._trigger('add', e, newData);
+                return result;
+            });
+            return result;
+        },
+
+        _replaceFileInput: function (input) {
+            var inputClone = input.clone(true);
+            $('<form></form>').append(inputClone)[0].reset();
+            // Detaching allows to insert the fileInput on another form
+            // without loosing the file input value:
+            input.after(inputClone).detach();
+            // Avoid memory leaks with the detached file input:
+            $.cleanData(input.unbind('remove'));
+            // Replace the original file input element in the fileInput
+            // elements set with the clone, which has been copied including
+            // event handlers:
+            this.options.fileInput = this.options.fileInput.map(function (i, el) {
+                if (el === input[0]) {
+                    return inputClone[0];
+                }
+                return el;
+            });
+            // If the widget has been initialized on the file input itself,
+            // override this.element with the file input clone:
+            if (input[0] === this.element[0]) {
+                this.element = inputClone;
+            }
+        },
+
+        _handleFileTreeEntry: function (entry, path) {
+            var that = this,
+                dfd = $.Deferred(),
+                errorHandler = function (e) {
+                    if (e && !e.entry) {
+                        e.entry = entry;
+                    }
+                    // Since $.when returns immediately if one
+                    // Deferred is rejected, we use resolve instead.
+                    // This allows valid files and invalid items
+                    // to be returned together in one set:
+                    dfd.resolve([e]);
+                },
+                dirReader;
+            path = path || '';
+            if (entry.isFile) {
+                if (entry._file) {
+                    // Workaround for Chrome bug #149735
+                    entry._file.relativePath = path;
+                    dfd.resolve(entry._file);
+                } else {
+                    entry.file(function (file) {
+                        file.relativePath = path;
+                        dfd.resolve(file);
+                    }, errorHandler);
+                }
+            } else if (entry.isDirectory) {
+                dirReader = entry.createReader();
+                dirReader.readEntries(function (entries) {
+                    that._handleFileTreeEntries(
+                        entries,
+                        path + entry.name + '/'
+                    ).done(function (files) {
+                        dfd.resolve(files);
+                    }).fail(errorHandler);
+                }, errorHandler);
+            } else {
+                // Return an empy list for file system items
+                // other than files or directories:
+                dfd.resolve([]);
+            }
+            return dfd.promise();
+        },
+
+        _handleFileTreeEntries: function (entries, path) {
+            var that = this;
+            return $.when.apply(
+                $,
+                $.map(entries, function (entry) {
+                    return that._handleFileTreeEntry(entry, path);
+                })
+            ).pipe(function () {
+                return Array.prototype.concat.apply(
+                    [],
+                    arguments
+                );
+            });
+        },
+
+        _getDroppedFiles: function (dataTransfer) {
+            dataTransfer = dataTransfer || {};
+            var items = dataTransfer.items;
+            if (items && items.length && (items[0].webkitGetAsEntry ||
+                    items[0].getAsEntry)) {
+                return this._handleFileTreeEntries(
+                    $.map(items, function (item) {
+                        var entry;
+                        if (item.webkitGetAsEntry) {
+                            entry = item.webkitGetAsEntry();
+                            if (entry) {
+                                // Workaround for Chrome bug #149735:
+                                entry._file = item.getAsFile();
+                            }
+                            return entry;
+                        }
+                        return item.getAsEntry();
+                    })
+                );
+            }
+            return $.Deferred().resolve(
+                $.makeArray(dataTransfer.files)
+            ).promise();
+        },
+
+        _getSingleFileInputFiles: function (fileInput) {
+            fileInput = $(fileInput);
+            var entries = fileInput.prop('webkitEntries') ||
+                    fileInput.prop('entries'),
+                files,
+                value;
+            if (entries && entries.length) {
+                return this._handleFileTreeEntries(entries);
+            }
+            files = $.makeArray(fileInput.prop('files'));
+            if (!files.length) {
+                value = fileInput.prop('value');
+                if (!value) {
+                    return $.Deferred().resolve([]).promise();
+                }
+                // If the files property is not available, the browser does not
+                // support the File API and we add a pseudo File object with
+                // the input value as name with path information removed:
+                files = [{name: value.replace(/^.*\\/, '')}];
+            } else if (files[0].name === undefined && files[0].fileName) {
+                // File normalization for Safari 4 and Firefox 3:
+                $.each(files, function (index, file) {
+                    file.name = file.fileName;
+                    file.size = file.fileSize;
+                });
+            }
+            return $.Deferred().resolve(files).promise();
+        },
+
+        _getFileInputFiles: function (fileInput) {
+            if (!(fileInput instanceof $) || fileInput.length === 1) {
+                return this._getSingleFileInputFiles(fileInput);
+            }
+            return $.when.apply(
+                $,
+                $.map(fileInput, this._getSingleFileInputFiles)
+            ).pipe(function () {
+                return Array.prototype.concat.apply(
+                    [],
+                    arguments
+                );
+            });
+        },
+
+        _onChange: function (e) {
+            var that = this,
+                data = {
+                    fileInput: $(e.target),
+                    form: $(e.target.form)
+                };
+            this._getFileInputFiles(data.fileInput).always(function (files) {
+                data.files = files;
+                if (that.options.replaceFileInput) {
+                    that._replaceFileInput(data.fileInput);
+                }
+                if (that._trigger('change', e, data) !== false) {
+                    that._onAdd(e, data);
+                }
+            });
+        },
+
+        _onPaste: function (e) {
+            var cbd = e.originalEvent.clipboardData,
+                items = (cbd && cbd.items) || [],
+                data = {files: []};
+            $.each(items, function (index, item) {
+                var file = item.getAsFile && item.getAsFile();
+                if (file) {
+                    data.files.push(file);
+                }
+            });
+            if (this._trigger('paste', e, data) === false ||
+                    this._onAdd(e, data) === false) {
+                return false;
+            }
+        },
+
+        _onDrop: function (e) {
+            var that = this,
+                dataTransfer = e.dataTransfer = e.originalEvent.dataTransfer,
+                data = {};
+            if (dataTransfer && dataTransfer.files && dataTransfer.files.length) {
+                e.preventDefault();
+            }
+            this._getDroppedFiles(dataTransfer).always(function (files) {
+                data.files = files;
+                if (that._trigger('drop', e, data) !== false) {
+                    that._onAdd(e, data);
+                }
+            });
+        },
+
+        _onDragOver: function (e) {
+            var dataTransfer = e.dataTransfer = e.originalEvent.dataTransfer;
+            if (this._trigger('dragover', e) === false) {
+                return false;
+            }
+            if (dataTransfer && $.inArray('Files', dataTransfer.types) !== -1) {
+                dataTransfer.dropEffect = 'copy';
+                e.preventDefault();
+            }
+        },
+
+        _initEventHandlers: function () {
+            if (this._isXHRUpload(this.options)) {
+                this._on(this.options.dropZone, {
+                    dragover: this._onDragOver,
+                    drop: this._onDrop
+                });
+                this._on(this.options.pasteZone, {
+                    paste: this._onPaste
+                });
+            }
+            this._on(this.options.fileInput, {
+                change: this._onChange
+            });
+        },
+
+        _destroyEventHandlers: function () {
+            this._off(this.options.dropZone, 'dragover drop');
+            this._off(this.options.pasteZone, 'paste');
+            this._off(this.options.fileInput, 'change');
+        },
+
+        _setOption: function (key, value) {
+            var refresh = $.inArray(key, this._refreshOptionsList) !== -1;
+            if (refresh) {
+                this._destroyEventHandlers();
+            }
+            this._super(key, value);
+            if (refresh) {
+                this._initSpecialOptions();
+                this._initEventHandlers();
+            }
+        },
+
+        _initSpecialOptions: function () {
+            var options = this.options;
+            if (options.fileInput === undefined) {
+                options.fileInput = this.element.is('input[type="file"]') ?
+                        this.element : this.element.find('input[type="file"]');
+            } else if (!(options.fileInput instanceof $)) {
+                options.fileInput = $(options.fileInput);
+            }
+            if (!(options.dropZone instanceof $)) {
+                options.dropZone = $(options.dropZone);
+            }
+            if (!(options.pasteZone instanceof $)) {
+                options.pasteZone = $(options.pasteZone);
+            }
+        },
+
+        _create: function () {
+            var options = this.options;
+            // Initialize options set via HTML5 data-attributes:
+            $.extend(options, $(this.element[0].cloneNode(false)).data());
+            this._initSpecialOptions();
+            this._slots = [];
+            this._sequence = this._getXHRPromise(true);
+            this._sending = this._active = this._loaded = this._total = 0;
+            this._initEventHandlers();
+        },
+
+        _destroy: function () {
+            this._destroyEventHandlers();
+        },
+
+        // This method is exposed to the widget API and allows adding files
+        // using the fileupload API. The data parameter accepts an object which
+        // must have a files property and can contain additional options:
+        // .fileupload('add', {files: filesList});
+        add: function (data) {
+            var that = this;
+            if (!data || this.options.disabled) {
+                return;
+            }
+            if (data.fileInput && !data.files) {
+                this._getFileInputFiles(data.fileInput).always(function (files) {
+                    data.files = files;
+                    that._onAdd(null, data);
+                });
+            } else {
+                data.files = $.makeArray(data.files);
+                this._onAdd(null, data);
+            }
+        },
+
+        // This method is exposed to the widget API and allows sending files
+        // using the fileupload API. The data parameter accepts an object which
+        // must have a files or fileInput property and can contain additional options:
+        // .fileupload('send', {files: filesList});
+        // The method returns a Promise object for the file upload call.
+        send: function (data) {
+            if (data && !this.options.disabled) {
+                if (data.fileInput && !data.files) {
+                    var that = this,
+                        dfd = $.Deferred(),
+                        promise = dfd.promise(),
+                        jqXHR,
+                        aborted;
+                    promise.abort = function () {
+                        aborted = true;
+                        if (jqXHR) {
+                            return jqXHR.abort();
+                        }
+                        dfd.reject(null, 'abort', 'abort');
+                        return promise;
+                    };
+                    this._getFileInputFiles(data.fileInput).always(
+                        function (files) {
+                            if (aborted) {
+                                return;
+                            }
+                            data.files = files;
+                            jqXHR = that._onSend(null, data).then(
+                                function (result, textStatus, jqXHR) {
+                                    dfd.resolve(result, textStatus, jqXHR);
+                                },
+                                function (jqXHR, textStatus, errorThrown) {
+                                    dfd.reject(jqXHR, textStatus, errorThrown);
+                                }
+                            );
+                        }
+                    );
+                    return this._enhancePromise(promise);
+                }
+                data.files = $.makeArray(data.files);
+                if (data.files.length) {
+                    return this._onSend(null, data);
+                }
+            }
+            return this._getXHRPromise(false, data && data.context);
+        }
+
+    });
+
+}));
+
+
+
+
+/*
  * Foundation Responsive Library
  * http://foundation.zurb.com
  * Copyright 2014, ZURB
@@ -16223,6 +18109,13195 @@ return jQuery;
 
 
 
+(function() {
+  var AjaxMonitor, Bar, DocumentMonitor, ElementMonitor, ElementTracker, EventLagMonitor, Evented, Events, NoTargetError, RequestIntercept, SOURCE_KEYS, Scaler, SocketRequestTracker, XHRRequestTracker, animation, avgAmplitude, bar, cancelAnimation, cancelAnimationFrame, defaultOptions, extend, extendNative, getFromDOM, getIntercept, handlePushState, ignoreStack, init, now, options, requestAnimationFrame, result, runAnimation, scalers, shouldIgnoreURL, shouldTrack, source, sources, uniScaler, _WebSocket, _XDomainRequest, _XMLHttpRequest, _i, _intercept, _len, _pushState, _ref, _ref1, _replaceState,
+    __slice = [].slice,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
+  defaultOptions = {
+    catchupTime: 500,
+    initialRate: .03,
+    minTime: 500,
+    ghostTime: 500,
+    maxProgressPerFrame: 10,
+    easeFactor: 1.25,
+    startOnPageLoad: true,
+    restartOnPushState: true,
+    restartOnRequestAfter: 500,
+    target: 'body',
+    elements: {
+      checkInterval: 100,
+      selectors: ['body']
+    },
+    eventLag: {
+      minSamples: 10,
+      sampleCount: 3,
+      lagThreshold: 3
+    },
+    ajax: {
+      trackMethods: ['GET'],
+      trackWebSockets: true,
+      ignoreURLs: []
+    }
+  };
+
+  now = function() {
+    var _ref;
+    return (_ref = typeof performance !== "undefined" && performance !== null ? typeof performance.now === "function" ? performance.now() : void 0 : void 0) != null ? _ref : +(new Date);
+  };
+
+  requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+  cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
+
+  if (requestAnimationFrame == null) {
+    requestAnimationFrame = function(fn) {
+      return setTimeout(fn, 50);
+    };
+    cancelAnimationFrame = function(id) {
+      return clearTimeout(id);
+    };
+  }
+
+  runAnimation = function(fn) {
+    var last, tick;
+    last = now();
+    tick = function() {
+      var diff;
+      diff = now() - last;
+      if (diff >= 33) {
+        last = now();
+        return fn(diff, function() {
+          return requestAnimationFrame(tick);
+        });
+      } else {
+        return setTimeout(tick, 33 - diff);
+      }
+    };
+    return tick();
+  };
+
+  result = function() {
+    var args, key, obj;
+    obj = arguments[0], key = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
+    if (typeof obj[key] === 'function') {
+      return obj[key].apply(obj, args);
+    } else {
+      return obj[key];
+    }
+  };
+
+  extend = function() {
+    var key, out, source, sources, val, _i, _len;
+    out = arguments[0], sources = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    for (_i = 0, _len = sources.length; _i < _len; _i++) {
+      source = sources[_i];
+      if (source) {
+        for (key in source) {
+          if (!__hasProp.call(source, key)) continue;
+          val = source[key];
+          if ((out[key] != null) && typeof out[key] === 'object' && (val != null) && typeof val === 'object') {
+            extend(out[key], val);
+          } else {
+            out[key] = val;
+          }
+        }
+      }
+    }
+    return out;
+  };
+
+  avgAmplitude = function(arr) {
+    var count, sum, v, _i, _len;
+    sum = count = 0;
+    for (_i = 0, _len = arr.length; _i < _len; _i++) {
+      v = arr[_i];
+      sum += Math.abs(v);
+      count++;
+    }
+    return sum / count;
+  };
+
+  getFromDOM = function(key, json) {
+    var data, e, el;
+    if (key == null) {
+      key = 'options';
+    }
+    if (json == null) {
+      json = true;
+    }
+    el = document.querySelector("[data-pace-" + key + "]");
+    if (!el) {
+      return;
+    }
+    data = el.getAttribute("data-pace-" + key);
+    if (!json) {
+      return data;
+    }
+    try {
+      return JSON.parse(data);
+    } catch (_error) {
+      e = _error;
+      return typeof console !== "undefined" && console !== null ? console.error("Error parsing inline pace options", e) : void 0;
+    }
+  };
+
+  Evented = (function() {
+    function Evented() {}
+
+    Evented.prototype.on = function(event, handler, ctx, once) {
+      var _base;
+      if (once == null) {
+        once = false;
+      }
+      if (this.bindings == null) {
+        this.bindings = {};
+      }
+      if ((_base = this.bindings)[event] == null) {
+        _base[event] = [];
+      }
+      return this.bindings[event].push({
+        handler: handler,
+        ctx: ctx,
+        once: once
+      });
+    };
+
+    Evented.prototype.once = function(event, handler, ctx) {
+      return this.on(event, handler, ctx, true);
+    };
+
+    Evented.prototype.off = function(event, handler) {
+      var i, _ref, _results;
+      if (((_ref = this.bindings) != null ? _ref[event] : void 0) == null) {
+        return;
+      }
+      if (handler == null) {
+        return delete this.bindings[event];
+      } else {
+        i = 0;
+        _results = [];
+        while (i < this.bindings[event].length) {
+          if (this.bindings[event][i].handler === handler) {
+            _results.push(this.bindings[event].splice(i, 1));
+          } else {
+            _results.push(i++);
+          }
+        }
+        return _results;
+      }
+    };
+
+    Evented.prototype.trigger = function() {
+      var args, ctx, event, handler, i, once, _ref, _ref1, _results;
+      event = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      if ((_ref = this.bindings) != null ? _ref[event] : void 0) {
+        i = 0;
+        _results = [];
+        while (i < this.bindings[event].length) {
+          _ref1 = this.bindings[event][i], handler = _ref1.handler, ctx = _ref1.ctx, once = _ref1.once;
+          handler.apply(ctx != null ? ctx : this, args);
+          if (once) {
+            _results.push(this.bindings[event].splice(i, 1));
+          } else {
+            _results.push(i++);
+          }
+        }
+        return _results;
+      }
+    };
+
+    return Evented;
+
+  })();
+
+  if (window.Pace == null) {
+    window.Pace = {};
+  }
+
+  extend(Pace, Evented.prototype);
+
+  options = Pace.options = extend({}, defaultOptions, window.paceOptions, getFromDOM());
+
+  _ref = ['ajax', 'document', 'eventLag', 'elements'];
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    source = _ref[_i];
+    if (options[source] === true) {
+      options[source] = defaultOptions[source];
+    }
+  }
+
+  NoTargetError = (function(_super) {
+    __extends(NoTargetError, _super);
+
+    function NoTargetError() {
+      _ref1 = NoTargetError.__super__.constructor.apply(this, arguments);
+      return _ref1;
+    }
+
+    return NoTargetError;
+
+  })(Error);
+
+  Bar = (function() {
+    function Bar() {
+      this.progress = 0;
+    }
+
+    Bar.prototype.getElement = function() {
+      var targetElement;
+      if (this.el == null) {
+        targetElement = document.querySelector(options.target);
+        if (!targetElement) {
+          throw new NoTargetError;
+        }
+        this.el = document.createElement('div');
+        this.el.className = "pace pace-active";
+        document.body.className = document.body.className.replace(/pace-done/g, '');
+        document.body.className += ' pace-running';
+        this.el.innerHTML = '<div class="pace-progress">\n  <div class="pace-progress-inner"></div>\n</div>\n<div class="pace-activity"></div>';
+        if (targetElement.firstChild != null) {
+          targetElement.insertBefore(this.el, targetElement.firstChild);
+        } else {
+          targetElement.appendChild(this.el);
+        }
+      }
+      return this.el;
+    };
+
+    Bar.prototype.finish = function() {
+      var el;
+      el = this.getElement();
+      el.className = el.className.replace('pace-active', '');
+      el.className += ' pace-inactive';
+      document.body.className = document.body.className.replace('pace-running', '');
+      return document.body.className += ' pace-done';
+    };
+
+    Bar.prototype.update = function(prog) {
+      this.progress = prog;
+      return this.render();
+    };
+
+    Bar.prototype.destroy = function() {
+      try {
+        this.getElement().parentNode.removeChild(this.getElement());
+      } catch (_error) {
+        NoTargetError = _error;
+      }
+      return this.el = void 0;
+    };
+
+    Bar.prototype.render = function() {
+      var el, progressStr;
+      if (document.querySelector(options.target) == null) {
+        return false;
+      }
+      el = this.getElement();
+      el.children[0].style.width = "" + this.progress + "%";
+      if (!this.lastRenderedProgress || this.lastRenderedProgress | 0 !== this.progress | 0) {
+        el.children[0].setAttribute('data-progress-text', "" + (this.progress | 0) + "%");
+        if (this.progress >= 100) {
+          progressStr = '99';
+        } else {
+          progressStr = this.progress < 10 ? "0" : "";
+          progressStr += this.progress | 0;
+        }
+        el.children[0].setAttribute('data-progress', "" + progressStr);
+      }
+      return this.lastRenderedProgress = this.progress;
+    };
+
+    Bar.prototype.done = function() {
+      return this.progress >= 100;
+    };
+
+    return Bar;
+
+  })();
+
+  Events = (function() {
+    function Events() {
+      this.bindings = {};
+    }
+
+    Events.prototype.trigger = function(name, val) {
+      var binding, _j, _len1, _ref2, _results;
+      if (this.bindings[name] != null) {
+        _ref2 = this.bindings[name];
+        _results = [];
+        for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+          binding = _ref2[_j];
+          _results.push(binding.call(this, val));
+        }
+        return _results;
+      }
+    };
+
+    Events.prototype.on = function(name, fn) {
+      var _base;
+      if ((_base = this.bindings)[name] == null) {
+        _base[name] = [];
+      }
+      return this.bindings[name].push(fn);
+    };
+
+    return Events;
+
+  })();
+
+  _XMLHttpRequest = window.XMLHttpRequest;
+
+  _XDomainRequest = window.XDomainRequest;
+
+  _WebSocket = window.WebSocket;
+
+  extendNative = function(to, from) {
+    var e, key, val, _results;
+    _results = [];
+    for (key in from.prototype) {
+      try {
+        val = from.prototype[key];
+        if ((to[key] == null) && typeof val !== 'function') {
+          _results.push(to[key] = val);
+        } else {
+          _results.push(void 0);
+        }
+      } catch (_error) {
+        e = _error;
+      }
+    }
+    return _results;
+  };
+
+  ignoreStack = [];
+
+  Pace.ignore = function() {
+    var args, fn, ret;
+    fn = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    ignoreStack.unshift('ignore');
+    ret = fn.apply(null, args);
+    ignoreStack.shift();
+    return ret;
+  };
+
+  Pace.track = function() {
+    var args, fn, ret;
+    fn = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    ignoreStack.unshift('track');
+    ret = fn.apply(null, args);
+    ignoreStack.shift();
+    return ret;
+  };
+
+  shouldTrack = function(method) {
+    var _ref2;
+    if (method == null) {
+      method = 'GET';
+    }
+    if (ignoreStack[0] === 'track') {
+      return 'force';
+    }
+    if (!ignoreStack.length && options.ajax) {
+      if (method === 'socket' && options.ajax.trackWebSockets) {
+        return true;
+      } else if (_ref2 = method.toUpperCase(), __indexOf.call(options.ajax.trackMethods, _ref2) >= 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  RequestIntercept = (function(_super) {
+    __extends(RequestIntercept, _super);
+
+    function RequestIntercept() {
+      var monitorXHR,
+        _this = this;
+      RequestIntercept.__super__.constructor.apply(this, arguments);
+      monitorXHR = function(req) {
+        var _open;
+        _open = req.open;
+        return req.open = function(type, url, async) {
+          if (shouldTrack(type)) {
+            _this.trigger('request', {
+              type: type,
+              url: url,
+              request: req
+            });
+          }
+          return _open.apply(req, arguments);
+        };
+      };
+      window.XMLHttpRequest = function(flags) {
+        var req;
+        req = new _XMLHttpRequest(flags);
+        monitorXHR(req);
+        return req;
+      };
+      extendNative(window.XMLHttpRequest, _XMLHttpRequest);
+      if (_XDomainRequest != null) {
+        window.XDomainRequest = function() {
+          var req;
+          req = new _XDomainRequest;
+          monitorXHR(req);
+          return req;
+        };
+        extendNative(window.XDomainRequest, _XDomainRequest);
+      }
+      if ((_WebSocket != null) && options.ajax.trackWebSockets) {
+        window.WebSocket = function(url, protocols) {
+          var req;
+          if (protocols != null) {
+            req = new _WebSocket(url, protocols);
+          } else {
+            req = new _WebSocket(url);
+          }
+          if (shouldTrack('socket')) {
+            _this.trigger('request', {
+              type: 'socket',
+              url: url,
+              protocols: protocols,
+              request: req
+            });
+          }
+          return req;
+        };
+        extendNative(window.WebSocket, _WebSocket);
+      }
+    }
+
+    return RequestIntercept;
+
+  })(Events);
+
+  _intercept = null;
+
+  getIntercept = function() {
+    if (_intercept == null) {
+      _intercept = new RequestIntercept;
+    }
+    return _intercept;
+  };
+
+  shouldIgnoreURL = function(url) {
+    var pattern, _j, _len1, _ref2;
+    _ref2 = options.ajax.ignoreURLs;
+    for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+      pattern = _ref2[_j];
+      if (typeof pattern === 'string') {
+        if (url.indexOf(pattern) !== -1) {
+          return true;
+        }
+      } else {
+        if (pattern.test(url)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  getIntercept().on('request', function(_arg) {
+    var after, args, request, type, url;
+    type = _arg.type, request = _arg.request, url = _arg.url;
+    if (shouldIgnoreURL(url)) {
+      return;
+    }
+    if (!Pace.running && (options.restartOnRequestAfter !== false || shouldTrack(type) === 'force')) {
+      args = arguments;
+      after = options.restartOnRequestAfter || 0;
+      if (typeof after === 'boolean') {
+        after = 0;
+      }
+      return setTimeout(function() {
+        var stillActive, _j, _len1, _ref2, _ref3, _results;
+        if (type === 'socket') {
+          stillActive = request.readyState < 2;
+        } else {
+          stillActive = (0 < (_ref2 = request.readyState) && _ref2 < 4);
+        }
+        if (stillActive) {
+          Pace.restart();
+          _ref3 = Pace.sources;
+          _results = [];
+          for (_j = 0, _len1 = _ref3.length; _j < _len1; _j++) {
+            source = _ref3[_j];
+            if (source instanceof AjaxMonitor) {
+              source.watch.apply(source, args);
+              break;
+            } else {
+              _results.push(void 0);
+            }
+          }
+          return _results;
+        }
+      }, after);
+    }
+  });
+
+  AjaxMonitor = (function() {
+    function AjaxMonitor() {
+      var _this = this;
+      this.elements = [];
+      getIntercept().on('request', function() {
+        return _this.watch.apply(_this, arguments);
+      });
+    }
+
+    AjaxMonitor.prototype.watch = function(_arg) {
+      var request, tracker, type, url;
+      type = _arg.type, request = _arg.request, url = _arg.url;
+      if (shouldIgnoreURL(url)) {
+        return;
+      }
+      if (type === 'socket') {
+        tracker = new SocketRequestTracker(request);
+      } else {
+        tracker = new XHRRequestTracker(request);
+      }
+      return this.elements.push(tracker);
+    };
+
+    return AjaxMonitor;
+
+  })();
+
+  XHRRequestTracker = (function() {
+    function XHRRequestTracker(request) {
+      var event, size, _j, _len1, _onreadystatechange, _ref2,
+        _this = this;
+      this.progress = 0;
+      if (window.ProgressEvent != null) {
+        size = null;
+        request.addEventListener('progress', function(evt) {
+          if (evt.lengthComputable) {
+            return _this.progress = 100 * evt.loaded / evt.total;
+          } else {
+            return _this.progress = _this.progress + (100 - _this.progress) / 2;
+          }
+        });
+        _ref2 = ['load', 'abort', 'timeout', 'error'];
+        for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+          event = _ref2[_j];
+          request.addEventListener(event, function() {
+            return _this.progress = 100;
+          });
+        }
+      } else {
+        _onreadystatechange = request.onreadystatechange;
+        request.onreadystatechange = function() {
+          var _ref3;
+          if ((_ref3 = request.readyState) === 0 || _ref3 === 4) {
+            _this.progress = 100;
+          } else if (request.readyState === 3) {
+            _this.progress = 50;
+          }
+          return typeof _onreadystatechange === "function" ? _onreadystatechange.apply(null, arguments) : void 0;
+        };
+      }
+    }
+
+    return XHRRequestTracker;
+
+  })();
+
+  SocketRequestTracker = (function() {
+    function SocketRequestTracker(request) {
+      var event, _j, _len1, _ref2,
+        _this = this;
+      this.progress = 0;
+      _ref2 = ['error', 'open'];
+      for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+        event = _ref2[_j];
+        request.addEventListener(event, function() {
+          return _this.progress = 100;
+        });
+      }
+    }
+
+    return SocketRequestTracker;
+
+  })();
+
+  ElementMonitor = (function() {
+    function ElementMonitor(options) {
+      var selector, _j, _len1, _ref2;
+      if (options == null) {
+        options = {};
+      }
+      this.elements = [];
+      if (options.selectors == null) {
+        options.selectors = [];
+      }
+      _ref2 = options.selectors;
+      for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+        selector = _ref2[_j];
+        this.elements.push(new ElementTracker(selector));
+      }
+    }
+
+    return ElementMonitor;
+
+  })();
+
+  ElementTracker = (function() {
+    function ElementTracker(selector) {
+      this.selector = selector;
+      this.progress = 0;
+      this.check();
+    }
+
+    ElementTracker.prototype.check = function() {
+      var _this = this;
+      if (document.querySelector(this.selector)) {
+        return this.done();
+      } else {
+        return setTimeout((function() {
+          return _this.check();
+        }), options.elements.checkInterval);
+      }
+    };
+
+    ElementTracker.prototype.done = function() {
+      return this.progress = 100;
+    };
+
+    return ElementTracker;
+
+  })();
+
+  DocumentMonitor = (function() {
+    DocumentMonitor.prototype.states = {
+      loading: 0,
+      interactive: 50,
+      complete: 100
+    };
+
+    function DocumentMonitor() {
+      var _onreadystatechange, _ref2,
+        _this = this;
+      this.progress = (_ref2 = this.states[document.readyState]) != null ? _ref2 : 100;
+      _onreadystatechange = document.onreadystatechange;
+      document.onreadystatechange = function() {
+        if (_this.states[document.readyState] != null) {
+          _this.progress = _this.states[document.readyState];
+        }
+        return typeof _onreadystatechange === "function" ? _onreadystatechange.apply(null, arguments) : void 0;
+      };
+    }
+
+    return DocumentMonitor;
+
+  })();
+
+  EventLagMonitor = (function() {
+    function EventLagMonitor() {
+      var avg, interval, last, points, samples,
+        _this = this;
+      this.progress = 0;
+      avg = 0;
+      samples = [];
+      points = 0;
+      last = now();
+      interval = setInterval(function() {
+        var diff;
+        diff = now() - last - 50;
+        last = now();
+        samples.push(diff);
+        if (samples.length > options.eventLag.sampleCount) {
+          samples.shift();
+        }
+        avg = avgAmplitude(samples);
+        if (++points >= options.eventLag.minSamples && avg < options.eventLag.lagThreshold) {
+          _this.progress = 100;
+          return clearInterval(interval);
+        } else {
+          return _this.progress = 100 * (3 / (avg + 3));
+        }
+      }, 50);
+    }
+
+    return EventLagMonitor;
+
+  })();
+
+  Scaler = (function() {
+    function Scaler(source) {
+      this.source = source;
+      this.last = this.sinceLastUpdate = 0;
+      this.rate = options.initialRate;
+      this.catchup = 0;
+      this.progress = this.lastProgress = 0;
+      if (this.source != null) {
+        this.progress = result(this.source, 'progress');
+      }
+    }
+
+    Scaler.prototype.tick = function(frameTime, val) {
+      var scaling;
+      if (val == null) {
+        val = result(this.source, 'progress');
+      }
+      if (val >= 100) {
+        this.done = true;
+      }
+      if (val === this.last) {
+        this.sinceLastUpdate += frameTime;
+      } else {
+        if (this.sinceLastUpdate) {
+          this.rate = (val - this.last) / this.sinceLastUpdate;
+        }
+        this.catchup = (val - this.progress) / options.catchupTime;
+        this.sinceLastUpdate = 0;
+        this.last = val;
+      }
+      if (val > this.progress) {
+        this.progress += this.catchup * frameTime;
+      }
+      scaling = 1 - Math.pow(this.progress / 100, options.easeFactor);
+      this.progress += scaling * this.rate * frameTime;
+      this.progress = Math.min(this.lastProgress + options.maxProgressPerFrame, this.progress);
+      this.progress = Math.max(0, this.progress);
+      this.progress = Math.min(100, this.progress);
+      this.lastProgress = this.progress;
+      return this.progress;
+    };
+
+    return Scaler;
+
+  })();
+
+  sources = null;
+
+  scalers = null;
+
+  bar = null;
+
+  uniScaler = null;
+
+  animation = null;
+
+  cancelAnimation = null;
+
+  Pace.running = false;
+
+  handlePushState = function() {
+    if (options.restartOnPushState) {
+      return Pace.restart();
+    }
+  };
+
+  if (window.history.pushState != null) {
+    _pushState = window.history.pushState;
+    window.history.pushState = function() {
+      handlePushState();
+      return _pushState.apply(window.history, arguments);
+    };
+  }
+
+  if (window.history.replaceState != null) {
+    _replaceState = window.history.replaceState;
+    window.history.replaceState = function() {
+      handlePushState();
+      return _replaceState.apply(window.history, arguments);
+    };
+  }
+
+  SOURCE_KEYS = {
+    ajax: AjaxMonitor,
+    elements: ElementMonitor,
+    document: DocumentMonitor,
+    eventLag: EventLagMonitor
+  };
+
+  (init = function() {
+    var type, _j, _k, _len1, _len2, _ref2, _ref3, _ref4;
+    Pace.sources = sources = [];
+    _ref2 = ['ajax', 'elements', 'document', 'eventLag'];
+    for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+      type = _ref2[_j];
+      if (options[type] !== false) {
+        sources.push(new SOURCE_KEYS[type](options[type]));
+      }
+    }
+    _ref4 = (_ref3 = options.extraSources) != null ? _ref3 : [];
+    for (_k = 0, _len2 = _ref4.length; _k < _len2; _k++) {
+      source = _ref4[_k];
+      sources.push(new source(options));
+    }
+    Pace.bar = bar = new Bar;
+    scalers = [];
+    return uniScaler = new Scaler;
+  })();
+
+  Pace.stop = function() {
+    Pace.trigger('stop');
+    Pace.running = false;
+    bar.destroy();
+    cancelAnimation = true;
+    if (animation != null) {
+      if (typeof cancelAnimationFrame === "function") {
+        cancelAnimationFrame(animation);
+      }
+      animation = null;
+    }
+    return init();
+  };
+
+  Pace.restart = function() {
+    Pace.trigger('restart');
+    Pace.stop();
+    return Pace.start();
+  };
+
+  Pace.go = function() {
+    var start;
+    Pace.running = true;
+    bar.render();
+    start = now();
+    cancelAnimation = false;
+    return animation = runAnimation(function(frameTime, enqueueNextFrame) {
+      var avg, count, done, element, elements, i, j, remaining, scaler, scalerList, sum, _j, _k, _len1, _len2, _ref2;
+      remaining = 100 - bar.progress;
+      count = sum = 0;
+      done = true;
+      for (i = _j = 0, _len1 = sources.length; _j < _len1; i = ++_j) {
+        source = sources[i];
+        scalerList = scalers[i] != null ? scalers[i] : scalers[i] = [];
+        elements = (_ref2 = source.elements) != null ? _ref2 : [source];
+        for (j = _k = 0, _len2 = elements.length; _k < _len2; j = ++_k) {
+          element = elements[j];
+          scaler = scalerList[j] != null ? scalerList[j] : scalerList[j] = new Scaler(element);
+          done &= scaler.done;
+          if (scaler.done) {
+            continue;
+          }
+          count++;
+          sum += scaler.tick(frameTime);
+        }
+      }
+      avg = sum / count;
+      bar.update(uniScaler.tick(frameTime, avg));
+      if (bar.done() || done || cancelAnimation) {
+        bar.update(100);
+        Pace.trigger('done');
+        return setTimeout(function() {
+          bar.finish();
+          Pace.running = false;
+          return Pace.trigger('hide');
+        }, Math.max(options.ghostTime, Math.max(options.minTime - (now() - start), 0)));
+      } else {
+        return enqueueNextFrame();
+      }
+    });
+  };
+
+  Pace.start = function(_options) {
+    extend(options, _options);
+    Pace.running = true;
+    try {
+      bar.render();
+    } catch (_error) {
+      NoTargetError = _error;
+    }
+    if (!document.querySelector('.pace')) {
+      return setTimeout(Pace.start, 50);
+    } else {
+      Pace.trigger('start');
+      return Pace.go();
+    }
+  };
+
+  if (typeof define === 'function' && define.amd) {
+    define(function() {
+      return Pace;
+    });
+  } else if (typeof exports === 'object') {
+    module.exports = Pace;
+  } else {
+    if (options.startOnPageLoad) {
+      Pace.start();
+    }
+  }
+
+}).call(this);
+/*!
+	TimelineJS
+	Version 2.17
+	Designed and built by Zach Wise at VéritéCo
+
+	This Source Code Form is subject to the terms of the Mozilla Public
+	License, v. 2.0. If a copy of the MPL was not distributed with this
+	file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+*/
+
+/* **********************************************
+     Begin VMM.StoryJS.License.js
+********************************************** */
+
+/*!
+	StoryJS
+	Designed and built by Zach Wise at VéritéCo
+
+	This Source Code Form is subject to the terms of the Mozilla Public
+	License, v. 2.0. If a copy of the MPL was not distributed with this
+	file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+/* **********************************************
+     Begin VMM.js
+********************************************** */
+
+/**
+	* VéritéCo JS Core
+	* Designed and built by Zach Wise at VéritéCo zach@verite.co
+
+	* This Source Code Form is subject to the terms of the Mozilla Public
+	* License, v. 2.0. If a copy of the MPL was not distributed with this
+	* file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+*/
+
+
+/*	Simple JavaScript Inheritance
+	By John Resig http://ejohn.org/
+	MIT Licensed.
+================================================== */
+
+(function() {
+	var initializing = false,
+	fnTest = /xyz/.test(function() {
+		xyz;
+		}) ? /\b_super\b/: /.*/;
+		// The base Class implementation (does nothing)
+	this.Class = function() {};
+
+    // Create a new Class that inherits from this class
+	Class.extend = function(prop) {
+		var _super = this.prototype;
+
+        // Instantiate a base class (but only create the instance,
+        // don't run the init constructor)
+		initializing = true;
+		var prototype = new this();
+		initializing = false;
+
+        // Copy the properties over onto the new prototype
+		for (var name in prop) {
+            // Check if we're overwriting an existing function
+			prototype[name] = typeof prop[name] == "function" &&
+			typeof _super[name] == "function" && fnTest.test(prop[name]) ?
+			(function(name, fn) {
+				return function() {
+					var tmp = this._super;
+
+					// Add a new ._super() method that is the same method
+					// but on the super-class
+					this._super = _super[name];
+
+					// The method only need to be bound temporarily, so we
+					// remove it when we're done executing
+					var ret = fn.apply(this, arguments);
+					this._super = tmp;
+
+					return ret;
+				};
+			})(name, prop[name]) :
+			prop[name];
+		}
+
+		// The dummy class constructor
+		function Class() {
+			// All construction is actually done in the init method
+			if (!initializing && this.init)
+			this.init.apply(this, arguments);
+		}
+
+		// Populate our constructed prototype object
+		Class.prototype = prototype;
+
+		// Enforce the constructor to be what we expect
+		Class.prototype.constructor = Class;
+
+		// And make this class extendable
+		Class.extend = arguments.callee;
+
+		return Class;
+    };
+})();
+
+/*	Access to the Global Object
+	access the global object without hard-coding the identifier window
+================================================== */
+var global = (function () {
+   return this || (1,eval)('this');
+}());
+
+/* VMM
+================================================== */
+if (typeof VMM == 'undefined') {
+
+	/* Main Scope Container
+	================================================== */
+	//var VMM = {};
+	var VMM = Class.extend({});
+
+	/* Debug
+	================================================== */
+	VMM.debug = true;
+
+	/* Master Config
+	================================================== */
+
+	VMM.master_config = ({
+
+		init: function() {
+			return this;
+		},
+
+		sizes: {
+			api: {
+				width:			0,
+				height:			0
+			}
+		},
+
+		vp:				"Pellentesque nibh felis, eleifend id, commodo in, interdum vitae, leo",
+
+		api_keys_master: {
+			flickr:		"RAIvxHY4hE/Elm5cieh4X5ptMyDpj7MYIxziGxi0WGCcy1s+yr7rKQ==",
+			//google:		"jwNGnYw4hE9lmAez4ll0QD+jo6SKBJFknkopLS4FrSAuGfIwyj57AusuR0s8dAo=",
+			google:		"uQKadH1VMlCsp560gN2aOiMz4evWkl1s34yryl3F/9FJOsn+/948CbBUvKLN46U=",
+			twitter:	""
+		},
+
+		timers: {
+			api:			7000
+		},
+
+		api:	{
+			pushques:		[]
+
+		},
+
+		twitter: {
+			active:			false,
+			array:			[],
+			api_loaded:		false,
+			que:			[]
+		},
+
+		flickr: {
+			active:			false,
+			array:			[],
+			api_loaded:		false,
+			que:			[]
+		},
+
+		youtube: {
+			active:			false,
+			array:			[],
+			api_loaded:		false,
+			que:			[]
+		},
+
+		vimeo: {
+			active:			false,
+			array:			[],
+			api_loaded:		false,
+			que:			[]
+		},
+
+		vine: {
+			active:			false,
+			array:			[],
+			api_loaded:		false,
+			que:			[]
+		},
+
+		webthumb: {
+			active:			false,
+			array:			[],
+			api_loaded:		false,
+			que:			[]
+		},
+
+		googlemaps: {
+			active:			false,
+			map_active:		false,
+			places_active:	false,
+			array:			[],
+			api_loaded:		false,
+			que:			[]
+		},
+
+		googledocs: {
+			active:			false,
+			array:			[],
+			api_loaded:		false,
+			que:			[]
+		},
+
+		googleplus: {
+			active:			false,
+			array:			[],
+			api_loaded:		false,
+			que:			[]
+		},
+
+		wikipedia: {
+			active:			false,
+			array:			[],
+			api_loaded:		false,
+			que:			[],
+			tries:			0
+		},
+
+		soundcloud: {
+			active:			false,
+			array:			[],
+			api_loaded:		false,
+			que:			[]
+		}
+
+	}).init();
+
+	//VMM.createElement(tag, value, cName, attrs, styles);
+	VMM.createElement = function(tag, value, cName, attrs, styles) {
+
+		var ce = "";
+
+		if (tag != null && tag != "") {
+
+			// TAG
+			ce += "<" + tag;
+			if (cName != null && cName != "") {
+				ce += " class='" + cName + "'";
+			};
+
+			if (attrs != null && attrs != "") {
+				ce += " " + attrs;
+			};
+
+			if (styles != null && styles != "") {
+				ce += " style='" + styles + "'";
+			};
+
+			ce += ">";
+
+			if (value != null && value != "") {
+				ce += value;
+			}
+
+			// CLOSE TAG
+			ce = ce + "</" + tag + ">";
+		}
+
+		return ce;
+
+    };
+
+	VMM.createMediaElement = function(media, caption, credit) {
+
+		var ce = "";
+
+		var _valid = false;
+
+		ce += "<div class='media'>";
+
+		if (media != null && media != "") {
+
+			valid = true;
+
+			ce += "<img src='" + media + "'>";
+
+			// CREDIT
+			if (credit != null && credit != "") {
+				ce += VMM.createElement("div", credit, "credit");
+			}
+
+			// CAPTION
+			if (caption != null && caption != "") {
+				ce += VMM.createElement("div", caption, "caption");
+			}
+
+		}
+
+		ce += "</div>";
+
+		return ce;
+
+    };
+
+	// Hide URL Bar for iOS and Android by Scott Jehl
+	// https://gist.github.com/1183357
+
+	VMM.hideUrlBar = function () {
+		var win = window,
+			doc = win.document;
+
+		// If there's a hash, or addEventListener is undefined, stop here
+		if( !location.hash || !win.addEventListener ){
+
+			//scroll to 1
+			window.scrollTo( 0, 1 );
+			var scrollTop = 1,
+
+			//reset to 0 on bodyready, if needed
+			bodycheck = setInterval(function(){
+				if( doc.body ){
+					clearInterval( bodycheck );
+					scrollTop = "scrollTop" in doc.body ? doc.body.scrollTop : 1;
+					win.scrollTo( 0, scrollTop === 1 ? 0 : 1 );
+				}
+			}, 15 );
+
+			win.addEventListener( "load", function(){
+				setTimeout(function(){
+					//reset to hide addr bar at onload
+					win.scrollTo( 0, scrollTop === 1 ? 0 : 1 );
+				}, 0);
+			}, false );
+		}
+	};
+
+
+}
+
+/* Trace (console.log)
+================================================== */
+function trace( msg ) {
+	if (VMM.debug) {
+		if (window.console) {
+			console.log(msg);
+		} else if ( typeof( jsTrace ) != 'undefined' ) {
+			jsTrace.send( msg );
+		} else {
+			//alert(msg);
+		}
+	}
+}
+
+/*	Array Remove - By John Resig (MIT Licensed)
+	http://ejohn.org/blog/javascript-array-remove/
+================================================== */
+Array.prototype.remove = function(from, to) {
+  var rest = this.slice((to || from) + 1 || this.length);
+  this.length = from < 0 ? this.length + from : from;
+  return this.push.apply(this, rest);
+}
+
+/* Extending Date to include Week
+================================================== */
+Date.prototype.getWeek = function() {
+	var onejan = new Date(this.getFullYear(),0,1);
+	return Math.ceil((((this - onejan) / 86400000) + onejan.getDay()+1)/7);
+}
+
+/* Extending Date to include Day of Year
+================================================== */
+Date.prototype.getDayOfYear = function() {
+	var onejan = new Date(this.getFullYear(),0,1);
+	return Math.ceil((this - onejan) / 86400000);
+}
+
+/* A MORE SPECIFIC TYPEOF();
+//	http://rolandog.com/archives/2007/01/18/typeof-a-more-specific-typeof/
+================================================== */
+// type.of()
+var is={
+	Null:function(a){return a===null;},
+	Undefined:function(a){return a===undefined;},
+	nt:function(a){return(a===null||a===undefined);},
+	Function:function(a){return(typeof(a)==="function")?a.constructor.toString().match(/Function/)!==null:false;},
+	String:function(a){return(typeof(a)==="string")?true:(typeof(a)==="object")?a.constructor.toString().match(/string/i)!==null:false;},
+	Array:function(a){return(typeof(a)==="object")?a.constructor.toString().match(/array/i)!==null||a.length!==undefined:false;},
+	Boolean:function(a){return(typeof(a)==="boolean")?true:(typeof(a)==="object")?a.constructor.toString().match(/boolean/i)!==null:false;},
+	Date:function(a){return(typeof(a)==="date")?true:(typeof(a)==="object")?a.constructor.toString().match(/date/i)!==null:false;},
+	HTML:function(a){return(typeof(a)==="object")?a.constructor.toString().match(/html/i)!==null:false;},
+	Number:function(a){return(typeof(a)==="number")?true:(typeof(a)==="object")?a.constructor.toString().match(/Number/)!==null:false;},
+	Object:function(a){return(typeof(a)==="object")?a.constructor.toString().match(/object/i)!==null:false;},
+	RegExp:function(a){return(typeof(a)==="function")?a.constructor.toString().match(/regexp/i)!==null:false;}
+};
+var type={
+	of:function(a){
+		for(var i in is){
+			if(is[i](a)){
+				return i.toLowerCase();
+			}
+		}
+	}
+};
+
+
+
+
+
+/* **********************************************
+     Begin VMM.Library.js
+********************************************** */
+
+/*	* LIBRARY ABSTRACTION
+================================================== */
+if(typeof VMM != 'undefined') {
+
+	VMM.modal = function(elem, opt) {
+		if( typeof( jQuery ) != 'undefined' ){
+			jQuery(elem).fancybox(opt);
+		}
+	};
+
+	VMM.smoothScrollTo = function(elem, duration, ease) {
+		if( typeof( jQuery ) != 'undefined' ){
+			var _ease		= "easein",
+				_duration	= 1000;
+
+			if (duration != null) {
+				if (duration < 1) {
+					_duration = 1;
+				} else {
+					_duration = Math.round(duration);
+				}
+
+			}
+
+			if (ease != null && ease != "") {
+				_ease = ease;
+			}
+
+			if (jQuery(window).scrollTop() != VMM.Lib.offset(elem).top) {
+				VMM.Lib.animate('html,body', _duration, _ease, {scrollTop: VMM.Lib.offset(elem).top})
+			}
+
+		}
+
+	};
+
+	VMM.attachElement = function(element, content) {
+		if( typeof( jQuery ) != 'undefined' ){
+			jQuery(element).html(content);
+		}
+
+	};
+
+	VMM.appendElement = function(element, content) {
+
+		if( typeof( jQuery ) != 'undefined' ){
+			jQuery(element).append(content);
+		}
+
+	};
+
+	VMM.getHTML = function(element) {
+		var e;
+		if( typeof( jQuery ) != 'undefined' ){
+			e = jQuery(element).html();
+			return e;
+		}
+
+	};
+
+	VMM.getElement = function(element, p) {
+		var e;
+		if( typeof( jQuery ) != 'undefined' ){
+			if (p) {
+				e = jQuery(element).parent().get(0);
+
+			} else {
+				e = jQuery(element).get(0);
+			}
+			return e;
+		}
+
+	};
+
+	VMM.bindEvent = function(element, the_handler, the_event_type, event_data) {
+		var e;
+		var _event_type = "click";
+		var _event_data = {};
+
+		if (the_event_type != null && the_event_type != "") {
+			_event_type = the_event_type;
+		}
+
+		if (_event_data != null && _event_data != "") {
+			_event_data = event_data;
+		}
+
+		if( typeof( jQuery ) != 'undefined' ){
+			jQuery(element).bind(_event_type, _event_data, the_handler);
+
+			//return e;
+		}
+
+	};
+
+	VMM.unbindEvent = function(element, the_handler, the_event_type) {
+		var e;
+		var _event_type = "click";
+		var _event_data = {};
+
+		if (the_event_type != null && the_event_type != "") {
+			_event_type = the_event_type;
+		}
+
+		if( typeof( jQuery ) != 'undefined' ){
+			jQuery(element).unbind(_event_type, the_handler);
+
+			//return e;
+		}
+
+	};
+
+	VMM.fireEvent = function(element, the_event_type, the_data) {
+		var e;
+		var _event_type = "click";
+		var _data = [];
+
+		if (the_event_type != null && the_event_type != "") {
+			_event_type = the_event_type;
+		}
+		if (the_data != null && the_data != "") {
+			_data = the_data;
+		}
+
+		if( typeof( jQuery ) != 'undefined' ){
+			jQuery(element).trigger(_event_type, _data);
+
+			//return e;
+		}
+
+	};
+
+	VMM.getJSON = function(url, data, callback) {
+		if( typeof( jQuery ) != 'undefined' ){
+			jQuery.ajaxSetup({
+			     timeout: VMM.Timeline.Config.ajax_timeout
+			});
+			/* CHECK FOR IE
+			================================================== */
+			if ( VMM.Browser.browser == "Explorer" && parseInt(VMM.Browser.version, 10) >= 7 && window.XDomainRequest) {
+				trace("IE JSON");
+				var ie_url = url;
+				if (ie_url.match('^http://')){
+					return jQuery.getJSON(ie_url, data, callback);
+				} else if (ie_url.match('^https://')) {
+					ie_url = ie_url.replace("https://","http://");
+					return jQuery.getJSON(ie_url, data, callback);
+				} else {
+					return jQuery.getJSON(url, data, callback);
+				}
+
+			} else {
+				return jQuery.getJSON(url, data, callback);
+
+			}
+		}
+	}
+
+	VMM.parseJSON = function(the_json) {
+		if( typeof( jQuery ) != 'undefined' ){
+			return jQuery.parseJSON(the_json);
+		}
+	}
+
+	// ADD ELEMENT AND RETURN IT
+	VMM.appendAndGetElement = function(append_to_element, tag, cName, content) {
+		var e,
+			_tag		= "<div>",
+			_class		= "",
+			_content	= "",
+			_id			= "";
+
+		if (tag != null && tag != "") {
+			_tag = tag;
+		}
+
+		if (cName != null && cName != "") {
+			_class = cName;
+		}
+
+		if (content != null && content != "") {
+			_content = content;
+		}
+
+		if( typeof( jQuery ) != 'undefined' ){
+
+			e = jQuery(tag);
+
+			e.addClass(_class);
+			e.html(_content);
+
+			jQuery(append_to_element).append(e);
+
+		}
+
+		return e;
+
+	};
+
+	VMM.Lib = {
+
+		init: function() {
+			return this;
+		},
+
+		hide: function(element, duration) {
+			if (duration != null && duration != "") {
+				if( typeof( jQuery ) != 'undefined' ){
+					jQuery(element).hide(duration);
+				}
+			} else {
+				if( typeof( jQuery ) != 'undefined' ){
+					jQuery(element).hide();
+				}
+			}
+
+		},
+
+		remove: function(element) {
+			if( typeof( jQuery ) != 'undefined' ){
+				jQuery(element).remove();
+			}
+		},
+
+		detach: function(element) {
+			if( typeof( jQuery ) != 'undefined' ){
+				jQuery(element).detach();
+			}
+		},
+
+		append: function(element, value) {
+			if( typeof( jQuery ) != 'undefined' ){
+				jQuery(element).append(value);
+			}
+		},
+
+		prepend: function(element, value) {
+			if( typeof( jQuery ) != 'undefined' ){
+				jQuery(element).prepend(value);
+			}
+		},
+
+		show: function(element, duration) {
+			if (duration != null && duration != "") {
+				if( typeof( jQuery ) != 'undefined' ){
+					jQuery(element).show(duration);
+				}
+			} else {
+				if( typeof( jQuery ) != 'undefined' ){
+					jQuery(element).show();
+				}
+			}
+
+		},
+
+		load: function(element, callback_function, event_data) {
+			var _event_data = {elem:element}; // return element by default
+			if (_event_data != null && _event_data != "") {
+				_event_data = event_data;
+			}
+			if( typeof( jQuery ) != 'undefined' ){
+				jQuery(element).load(_event_data, callback_function);
+			}
+		},
+
+		addClass: function(element, cName) {
+			if( typeof( jQuery ) != 'undefined' ){
+				jQuery(element).addClass(cName);
+			}
+		},
+
+		removeClass: function(element, cName) {
+			if( typeof( jQuery ) != 'undefined' ){
+				jQuery(element).removeClass(cName);
+			}
+		},
+
+		attr: function(element, aName, value) {
+			if (value != null && value != "") {
+				if( typeof( jQuery ) != 'undefined' ){
+					jQuery(element).attr(aName, value);
+				}
+			} else {
+				if( typeof( jQuery ) != 'undefined' ){
+					return jQuery(element).attr(aName);
+				}
+			}
+		},
+
+		prop: function(element, aName, value) {
+			if (typeof jQuery == 'undefined' || !/[1-9]\.[3-9].[1-9]/.test(jQuery.fn.jquery)) {
+			    VMM.Lib.attribute(element, aName, value);
+			} else {
+				jQuery(element).prop(aName, value);
+			}
+		},
+
+		attribute: function(element, aName, value) {
+
+			if (value != null && value != "") {
+				if( typeof( jQuery ) != 'undefined' ){
+					jQuery(element).attr(aName, value);
+				}
+			} else {
+				if( typeof( jQuery ) != 'undefined' ){
+					return jQuery(element).attr(aName);
+				}
+			}
+		},
+
+		visible: function(element, show) {
+			if (show != null) {
+				if( typeof( jQuery ) != 'undefined' ){
+					if (show) {
+						jQuery(element).show(0);
+					} else {
+						jQuery(element).hide(0);
+					}
+				}
+			} else {
+				if( typeof( jQuery ) != 'undefined' ){
+					if ( jQuery(element).is(':visible')){
+						return true;
+					} else {
+						return false;
+					}
+				}
+			}
+		},
+
+		css: function(element, prop, value) {
+
+			if (value != null && value != "") {
+				if( typeof( jQuery ) != 'undefined' ){
+					jQuery(element).css(prop, value);
+				}
+			} else {
+				if( typeof( jQuery ) != 'undefined' ){
+					return jQuery(element).css(prop);
+				}
+			}
+		},
+
+		cssmultiple: function(element, propval) {
+
+			if( typeof( jQuery ) != 'undefined' ){
+				return jQuery(element).css(propval);
+			}
+		},
+
+		offset: function(element) {
+			var p;
+			if( typeof( jQuery ) != 'undefined' ){
+				p = jQuery(element).offset();
+			}
+			return p;
+		},
+
+		position: function(element) {
+			var p;
+			if( typeof( jQuery ) != 'undefined' ){
+				p = jQuery(element).position();
+			}
+			return p;
+		},
+
+		width: function(element, s) {
+			if (s != null && s != "") {
+				if( typeof( jQuery ) != 'undefined' ){
+					jQuery(element).width(s);
+				}
+			} else {
+				if( typeof( jQuery ) != 'undefined' ){
+					return jQuery(element).width();
+				}
+			}
+		},
+
+		height: function(element, s) {
+			if (s != null && s != "") {
+				if( typeof( jQuery ) != 'undefined' ){
+					jQuery(element).height(s);
+				}
+			} else {
+				if( typeof( jQuery ) != 'undefined' ){
+					return jQuery(element).height();
+				}
+			}
+		},
+
+		toggleClass: function(element, cName) {
+			if( typeof( jQuery ) != 'undefined' ){
+				jQuery(element).toggleClass(cName);
+			}
+		},
+
+		each:function(element, return_function) {
+			if( typeof( jQuery ) != 'undefined' ){
+				jQuery(element).each(return_function);
+			}
+
+		},
+
+		html: function(element, str) {
+			var e;
+			if( typeof( jQuery ) != 'undefined' ){
+				e = jQuery(element).html();
+				return e;
+			}
+
+			if (str != null && str != "") {
+				if( typeof( jQuery ) != 'undefined' ){
+					jQuery(element).html(str);
+				}
+			} else {
+				var e;
+				if( typeof( jQuery ) != 'undefined' ){
+					e = jQuery(element).html();
+					return e;
+				}
+			}
+
+		},
+
+		find: function(element, selec) {
+			if( typeof( jQuery ) != 'undefined' ){
+				return jQuery(element).find(selec);
+			}
+		},
+
+		stop: function(element) {
+			if( typeof( jQuery ) != 'undefined' ){
+				jQuery(element).stop();
+			}
+		},
+
+		delay_animate: function(delay, element, duration, ease, att, callback_function) {
+			if (VMM.Browser.device == "mobile" || VMM.Browser.device == "tablet") {
+				var _tdd		= Math.round((duration/1500)*10)/10,
+					__duration	= _tdd + 's';
+
+				VMM.Lib.css(element, '-webkit-transition', 'all '+ __duration + ' ease');
+				VMM.Lib.css(element, '-moz-transition', 'all '+ __duration + ' ease');
+				VMM.Lib.css(element, '-o-transition', 'all '+ __duration + ' ease');
+				VMM.Lib.css(element, '-ms-transition', 'all '+ __duration + ' ease');
+				VMM.Lib.css(element, 'transition', 'all '+ __duration + ' ease');
+				VMM.Lib.cssmultiple(element, _att);
+			} else {
+				if( typeof( jQuery ) != 'undefined' ){
+					jQuery(element).delay(delay).animate(att, {duration:duration, easing:ease} );
+				}
+			}
+
+		},
+
+		animate: function(element, duration, ease, att, que, callback_function) {
+
+			var _ease		= "easein",
+				_que		= false,
+				_duration	= 1000,
+				_att		= {};
+
+			if (duration != null) {
+				if (duration < 1) {
+					_duration = 1;
+				} else {
+					_duration = Math.round(duration);
+				}
+
+			}
+
+			if (ease != null && ease != "") {
+				_ease = ease;
+			}
+
+			if (que != null && que != "") {
+				_que = que;
+			}
+
+
+			if (att != null) {
+				_att = att
+			} else {
+				_att = {opacity: 0}
+			}
+
+
+			if (VMM.Browser.device == "mobile" || VMM.Browser.device == "tablet") {
+
+				var _tdd		= Math.round((_duration/1500)*10)/10,
+					__duration	= _tdd + 's';
+
+				_ease = " cubic-bezier(0.33, 0.66, 0.66, 1)";
+				//_ease = " ease-in-out";
+				for (x in _att) {
+					if (Object.prototype.hasOwnProperty.call(_att, x)) {
+						trace(x + " to " + _att[x]);
+						VMM.Lib.css(element, '-webkit-transition',  x + ' ' + __duration + _ease);
+						VMM.Lib.css(element, '-moz-transition', x + ' ' + __duration + _ease);
+						VMM.Lib.css(element, '-o-transition', x + ' ' + __duration + _ease);
+						VMM.Lib.css(element, '-ms-transition', x + ' ' + __duration + _ease);
+						VMM.Lib.css(element, 'transition', x + ' ' + __duration + _ease);
+					}
+				}
+
+				VMM.Lib.cssmultiple(element, _att);
+
+			} else {
+				if( typeof( jQuery ) != 'undefined' ){
+					if (callback_function != null && callback_function != "") {
+						jQuery(element).animate(_att, {queue:_que, duration:_duration, easing:_ease, complete:callback_function} );
+					} else {
+						jQuery(element).animate(_att, {queue:_que, duration:_duration, easing:_ease} );
+					}
+				}
+			}
+
+		}
+
+	}
+}
+
+if( typeof( jQuery ) != 'undefined' ){
+
+	/*	XDR AJAX EXTENTION FOR jQuery
+		https://github.com/jaubourg/ajaxHooks/blob/master/src/ajax/xdr.js
+	================================================== */
+	(function( jQuery ) {
+		if ( window.XDomainRequest ) {
+			jQuery.ajaxTransport(function( s ) {
+				if ( s.crossDomain && s.async ) {
+					if ( s.timeout ) {
+						s.xdrTimeout = s.timeout;
+						delete s.timeout;
+					}
+					var xdr;
+					return {
+						send: function( _, complete ) {
+							function callback( status, statusText, responses, responseHeaders ) {
+								xdr.onload = xdr.onerror = xdr.ontimeout = jQuery.noop;
+								xdr = undefined;
+								complete( status, statusText, responses, responseHeaders );
+							}
+							xdr = new XDomainRequest();
+							xdr.open( s.type, s.url );
+							xdr.onload = function() {
+								callback( 200, "OK", { text: xdr.responseText }, "Content-Type: " + xdr.contentType );
+							};
+							xdr.onerror = function() {
+								callback( 404, "Not Found" );
+							};
+							if ( s.xdrTimeout ) {
+								xdr.ontimeout = function() {
+									callback( 0, "timeout" );
+								};
+								xdr.timeout = s.xdrTimeout;
+							}
+							xdr.send( ( s.hasContent && s.data ) || null );
+						},
+						abort: function() {
+							if ( xdr ) {
+								xdr.onerror = jQuery.noop();
+								xdr.abort();
+							}
+						}
+					};
+				}
+			});
+		}
+	})( jQuery );
+
+	/*	jQuery Easing v1.3
+		http://gsgd.co.uk/sandbox/jquery/easing/
+	================================================== */
+	jQuery.easing['jswing'] = jQuery.easing['swing'];
+
+	jQuery.extend( jQuery.easing, {
+		def: 'easeOutQuad',
+		swing: function (x, t, b, c, d) {
+			//alert(jQuery.easing.default);
+			return jQuery.easing[jQuery.easing.def](x, t, b, c, d);
+		},
+		easeInExpo: function (x, t, b, c, d) {
+			return (t==0) ? b : c * Math.pow(2, 10 * (t/d - 1)) + b;
+		},
+		easeOutExpo: function (x, t, b, c, d) {
+			return (t==d) ? b+c : c * (-Math.pow(2, -10 * t/d) + 1) + b;
+		},
+		easeInOutExpo: function (x, t, b, c, d) {
+			if (t==0) return b;
+			if (t==d) return b+c;
+			if ((t/=d/2) < 1) return c/2 * Math.pow(2, 10 * (t - 1)) + b;
+			return c/2 * (-Math.pow(2, -10 * --t) + 2) + b;
+		},
+		easeInQuad: function (x, t, b, c, d) {
+			return c*(t/=d)*t + b;
+		},
+		easeOutQuad: function (x, t, b, c, d) {
+			return -c *(t/=d)*(t-2) + b;
+		},
+		easeInOutQuad: function (x, t, b, c, d) {
+			if ((t/=d/2) < 1) return c/2*t*t + b;
+			return -c/2 * ((--t)*(t-2) - 1) + b;
+		}
+	});
+}
+
+
+/* **********************************************
+     Begin VMM.Browser.js
+********************************************** */
+
+/*	* DEVICE AND BROWSER DETECTION
+================================================== */
+if(typeof VMM != 'undefined' && typeof VMM.Browser == 'undefined') {
+
+	VMM.Browser = {
+		init: function () {
+			this.browser = this.searchString(this.dataBrowser) || "An unknown browser";
+			this.version = this.searchVersion(navigator.userAgent)
+				|| this.searchVersion(navigator.appVersion)
+				|| "an unknown version";
+			this.OS = this.searchString(this.dataOS) || "an unknown OS";
+			this.device = this.searchDevice(navigator.userAgent);
+			this.orientation = this.searchOrientation(window.orientation);
+		},
+		searchOrientation: function(orientation) {
+			var orient = "";
+			if ( orientation == 0  || orientation == 180) {
+				orient = "portrait";
+			} else if ( orientation == 90 || orientation == -90) {
+				orient = "landscape";
+			} else {
+				orient = "normal";
+			}
+			return orient;
+		},
+		searchDevice: function(d) {
+			var device = "";
+			if (d.match(/Android/i) || d.match(/iPhone|iPod/i)) {
+				device = "mobile";
+			} else if (d.match(/iPad/i)) {
+				device = "tablet";
+			} else if (d.match(/BlackBerry/i) || d.match(/IEMobile/i)) {
+				device = "other mobile";
+			} else {
+				device = "desktop";
+			}
+			return device;
+		},
+		searchString: function (data) {
+			for (var i=0;i<data.length;i++)	{
+				var dataString	= data[i].string,
+					dataProp	= data[i].prop;
+
+				this.versionSearchString = data[i].versionSearch || data[i].identity;
+
+				if (dataString) {
+					if (dataString.indexOf(data[i].subString) != -1) {
+						return data[i].identity;
+					}
+				} else if (dataProp) {
+					return data[i].identity;
+				}
+			}
+		},
+		searchVersion: function (dataString) {
+			var index = dataString.indexOf(this.versionSearchString);
+			if (index == -1) return;
+			return parseFloat(dataString.substring(index+this.versionSearchString.length+1));
+		},
+		dataBrowser: [
+			{
+				string: navigator.userAgent,
+				subString: "Chrome",
+				identity: "Chrome"
+			},
+			{ 	string: navigator.userAgent,
+				subString: "OmniWeb",
+				versionSearch: "OmniWeb/",
+				identity: "OmniWeb"
+			},
+			{
+				string: navigator.vendor,
+				subString: "Apple",
+				identity: "Safari",
+				versionSearch: "Version"
+			},
+			{
+				prop: window.opera,
+				identity: "Opera",
+				versionSearch: "Version"
+			},
+			{
+				string: navigator.vendor,
+				subString: "iCab",
+				identity: "iCab"
+			},
+			{
+				string: navigator.vendor,
+				subString: "KDE",
+				identity: "Konqueror"
+			},
+			{
+				string: navigator.userAgent,
+				subString: "Firefox",
+				identity: "Firefox"
+			},
+			{
+				string: navigator.vendor,
+				subString: "Camino",
+				identity: "Camino"
+			},
+			{		// for newer Netscapes (6+)
+				string: navigator.userAgent,
+				subString: "Netscape",
+				identity: "Netscape"
+			},
+			{
+				string: navigator.userAgent,
+				subString: "MSIE",
+				identity: "Explorer",
+				versionSearch: "MSIE"
+			},
+			{
+				string: navigator.userAgent,
+				subString: "Gecko",
+				identity: "Mozilla",
+				versionSearch: "rv"
+			},
+			{ 		// for older Netscapes (4-)
+				string: navigator.userAgent,
+				subString: "Mozilla",
+				identity: "Netscape",
+				versionSearch: "Mozilla"
+			}
+		],
+		dataOS : [
+			{
+				string: navigator.platform,
+				subString: "Win",
+				identity: "Windows"
+			},
+			{
+				string: navigator.platform,
+				subString: "Mac",
+				identity: "Mac"
+			},
+			{
+				string: navigator.userAgent,
+				subString: "iPhone",
+				identity: "iPhone/iPod"
+		    },
+			{
+				string: navigator.userAgent,
+				subString: "iPad",
+				identity: "iPad"
+		    },
+			{
+				string: navigator.platform,
+				subString: "Linux",
+				identity: "Linux"
+			}
+		]
+
+	}
+	VMM.Browser.init();
+}
+
+/* **********************************************
+     Begin VMM.FileExtention.js
+********************************************** */
+
+/*	* File Extention
+================================================== */
+if(typeof VMM != 'undefined' && typeof VMM.FileExtention == 'undefined') {
+	VMM.FileExtention = {
+		googleDocType: function(url) {
+			var fileName			= url.replace(/\s\s*$/, ''),
+				fileExtension		= "",
+				validFileExtensions = ["DOC","DOCX","XLS","XLSX","PPT","PPTX","PDF","PAGES","AI","PSD","TIFF","DXF","SVG","EPS","PS","TTF","XPS","ZIP","RAR"],
+				flag				= false;
+
+			fileExtension = fileName.substr(fileName.length - 5, 5);
+
+			for (var i = 0; i < validFileExtensions.length; i++) {
+				if (fileExtension.toLowerCase().match(validFileExtensions[i].toString().toLowerCase()) || fileName.match("docs.google.com") ) {
+					flag = true;
+				}
+			}
+			return flag;
+		}
+	}
+}
+
+/* **********************************************
+     Begin VMM.Date.js
+********************************************** */
+
+/*	* Utilities and Useful Functions
+================================================== */
+if(typeof VMM != 'undefined' && typeof VMM.Date == 'undefined') {
+
+	VMM.Date = ({
+
+		init: function() {
+			return this;
+		},
+
+		dateformats: {
+			year: "yyyy",
+			month_short: "mmm",
+			month: "mmmm yyyy",
+			full_short: "mmm d",
+			full: "mmmm d',' yyyy",
+			time_short: "h:MM:ss TT",
+			time_no_seconds_short: "h:MM TT",
+			time_no_seconds_small_date: "h:MM TT'<br/><small>'mmmm d',' yyyy'</small>'",
+			full_long: "mmm d',' yyyy 'at' hh:MM TT",
+			full_long_small_date: "hh:MM TT'<br/><small>mmm d',' yyyy'</small>'"
+		},
+
+		month: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+		month_abbr: ["Jan.", "Feb.", "March", "April", "May", "June", "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."],
+		day: ["Sunday","Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		day_abbr: ["Sun.", "Mon.", "Tues.", "Wed.", "Thurs.", "Fri.", "Sat."],
+		hour: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+		hour_suffix: ["am"],
+
+		//B.C.
+		bc_format: {
+			year: "yyyy",
+			month_short: "mmm",
+			month: "mmmm yyyy",
+			full_short: "mmm d",
+			full: "mmmm d',' yyyy",
+			time_no_seconds_short: "h:MM TT",
+			time_no_seconds_small_date: "dddd', 'h:MM TT'<br/><small>'mmmm d',' yyyy'</small>'",
+			full_long: "dddd',' mmm d',' yyyy 'at' hh:MM TT",
+			full_long_small_date: "hh:MM TT'<br/><small>'dddd',' mmm d',' yyyy'</small>'"
+		},
+
+		setLanguage: function(lang) {
+			trace("SET DATE LANGUAGE");
+			VMM.Date.dateformats		=	lang.dateformats;
+			VMM.Date.month				=	lang.date.month;
+			VMM.Date.month_abbr			=	lang.date.month_abbr;
+			VMM.Date.day				=	lang.date.day;
+			VMM.Date.day_abbr			=	lang.date.day_abbr;
+			dateFormat.i18n.dayNames	=	lang.date.day_abbr.concat(lang.date.day);
+			dateFormat.i18n.monthNames	=	lang.date.month_abbr.concat(lang.date.month);
+		},
+
+		parse: function(d, precision) {
+			"use strict";
+			var date,
+				date_array,
+				time_array,
+				time_parse,
+				p = {
+					year: 			false,
+					month: 			false,
+					day: 			false,
+					hour: 			false,
+					minute: 		false,
+					second: 		false,
+					millisecond: 	false
+				};
+
+			if (type.of(d) == "date") {
+				trace("DEBUG THIS, ITs A DATE");
+				date = d;
+			} else {
+				date = new Date(0, 0, 1, 0, 0, 0, 0);
+
+				if ( d.match(/,/gi) ) {
+					date_array = d.split(",");
+					for(var i = 0; i < date_array.length; i++) {
+						date_array[i] = parseInt(date_array[i], 10);
+					}
+					if (date_array[0]) {
+						date.setFullYear(date_array[0]);
+						p.year = true;
+					}
+					if (date_array[1]) {
+						date.setMonth(date_array[1] - 1);
+						p.month = true;
+					}
+					if (date_array[2]) {
+						date.setDate(date_array[2]);
+						p.day = true;
+					}
+					if (date_array[3]) {
+						date.setHours(date_array[3]);
+						p.hour = true;
+					}
+					if (date_array[4]) {
+						date.setMinutes(date_array[4]);
+						p.minute = true;
+					}
+					if (date_array[5]) {
+						date.setSeconds(date_array[5]);
+						if (date_array[5] >= 1) {
+							p.second = true;
+						}
+					}
+					if (date_array[6]) {
+						date.setMilliseconds(date_array[6]);
+						if (date_array[6] >= 1) {
+							p.millisecond = true;
+						}
+					}
+				} else if (d.match("/")) {
+					if (d.match(" ")) {
+
+						time_parse = d.split(" ");
+						if (d.match(":")) {
+							time_array = time_parse[1].split(":");
+							if (time_array[0] >= 0 ) {
+								date.setHours(time_array[0]);
+								p.hour = true;
+							}
+							if (time_array[1] >= 0) {
+								date.setMinutes(time_array[1]);
+								p.minute = true;
+							}
+							if (time_array[2] >= 0) {
+								date.setSeconds(time_array[2]);
+								p.second = true;
+							}
+							if (time_array[3] >= 0) {
+								date.setMilliseconds(time_array[3]);
+								p.millisecond = true;
+							}
+						}
+						date_array = time_parse[0].split("/");
+					} else {
+						date_array = d.split("/");
+					}
+					if (date_array[2]) {
+						date.setFullYear(date_array[2]);
+						p.year = true;
+					}
+					if (date_array[0] >= 0) {
+						date.setMonth(date_array[0] - 1);
+						p.month = true;
+					}
+					if (date_array[1] >= 0) {
+						if (date_array[1].length > 2) {
+							date.setFullYear(date_array[1]);
+							p.year = true;
+						} else {
+							date.setDate(date_array[1]);
+							p.day = true;
+						}
+					}
+				} else if (d.match("now")) {
+					var now = new Date();
+
+					date.setFullYear(now.getFullYear());
+					p.year = true;
+
+					date.setMonth(now.getMonth());
+					p.month = true;
+
+					date.setDate(now.getDate());
+					p.day = true;
+
+					if (d.match("hours")) {
+						date.setHours(now.getHours());
+						p.hour = true;
+					}
+					if (d.match("minutes")) {
+						date.setHours(now.getHours());
+						date.setMinutes(now.getMinutes());
+						p.hour = true;
+						p.minute = true;
+					}
+					if (d.match("seconds")) {
+						date.setHours(now.getHours());
+						date.setMinutes(now.getMinutes());
+						date.setSeconds(now.getSeconds());
+						p.hour = true;
+						p.minute = true;
+						p.second = true;
+					}
+					if (d.match("milliseconds")) {
+						date.setHours(now.getHours());
+						date.setMinutes(now.getMinutes());
+						date.setSeconds(now.getSeconds());
+						date.setMilliseconds(now.getMilliseconds());
+						p.hour = true;
+						p.minute = true;
+						p.second = true;
+						p.millisecond = true;
+					}
+				} else if (d.length <= 8) {
+					p.year = true;
+					date.setFullYear(parseInt(d, 10));
+					date.setMonth(0);
+					date.setDate(1);
+					date.setHours(0);
+					date.setMinutes(0);
+					date.setSeconds(0);
+					date.setMilliseconds(0);
+				} else if (d.match("T")) {
+					if (navigator.userAgent.match(/MSIE\s(?!9.0)/)) {
+					    // IE 8 < Won't accept dates with a "-" in them.
+						time_parse = d.split("T");
+						if (d.match(":")) {
+							time_array = time_parse[1].split(":");
+							if (time_array[0] >= 1) {
+								date.setHours(time_array[0]);
+								p.hour = true;
+							}
+							if (time_array[1] >= 1) {
+								date.setMinutes(time_array[1]);
+								p.minute = true;
+							}
+							if (time_array[2] >= 1) {
+								date.setSeconds(time_array[2]);
+								if (time_array[2] >= 1) {
+									p.second = true;
+								}
+							}
+							if (time_array[3] >= 1) {
+								date.setMilliseconds(time_array[3]);
+								if (time_array[3] >= 1) {
+									p.millisecond = true;
+								}
+							}
+						}
+						date_array = time_parse[0].split("-");
+						if (date_array[0]) {
+							date.setFullYear(date_array[0]);
+							p.year = true;
+						}
+						if (date_array[1] >= 0) {
+							date.setMonth(date_array[1] - 1);
+							p.month = true;
+						}
+						if (date_array[2] >= 0) {
+							date.setDate(date_array[2]);
+							p.day = true;
+						}
+
+					} else {
+						date = new Date(Date.parse(d));
+						p.year = true;
+						p.month = true;
+						p.day = true;
+						p.hour = true;
+						p.minute = true;
+						if (date.getSeconds() >= 1) {
+							p.second = true;
+						}
+						if (date.getMilliseconds() >= 1) {
+							p.millisecond = true;
+						}
+					}
+				} else {
+					date = new Date(
+						parseInt(d.slice(0,4), 10),
+						parseInt(d.slice(4,6), 10) - 1,
+						parseInt(d.slice(6,8), 10),
+						parseInt(d.slice(8,10), 10),
+						parseInt(d.slice(10,12), 10)
+					);
+					p.year = true;
+					p.month = true;
+					p.day = true;
+					p.hour = true;
+					p.minute = true;
+					if (date.getSeconds() >= 1) {
+						p.second = true;
+					}
+					if (date.getMilliseconds() >= 1) {
+						p.millisecond = true;
+					}
+
+				}
+
+			}
+
+			if (precision != null && precision != "") {
+				return {
+					date: 		date,
+					precision: 	p
+				};
+			} else {
+				return date;
+			}
+		},
+
+
+
+		prettyDate: function(d, is_abbr, p, d2) {
+			var _date,
+				_date2,
+				format,
+				bc_check,
+				is_pair = false,
+				bc_original,
+				bc_number,
+				bc_string;
+
+			if (d2 != null && d2 != "" && typeof d2 != 'undefined') {
+				is_pair = true;
+				trace("D2 " + d2);
+			}
+
+
+			if (type.of(d) == "date") {
+
+				if (type.of(p) == "object") {
+					if (p.millisecond || p.second && d.getSeconds() >= 1) {
+						// YEAR MONTH DAY HOUR MINUTE
+						if (is_abbr){
+							format = VMM.Date.dateformats.time_short;
+						} else {
+							format = VMM.Date.dateformats.time_short;
+						}
+					} else if (p.minute) {
+						// YEAR MONTH DAY HOUR MINUTE
+						if (is_abbr){
+							format = VMM.Date.dateformats.time_no_seconds_short;
+						} else {
+							format = VMM.Date.dateformats.time_no_seconds_small_date;
+						}
+					} else if (p.hour) {
+						// YEAR MONTH DAY HOUR
+						if (is_abbr) {
+							format = VMM.Date.dateformats.time_no_seconds_short;
+						} else {
+							format = VMM.Date.dateformats.time_no_seconds_small_date;
+						}
+					} else if (p.day) {
+						// YEAR MONTH DAY
+						if (is_abbr) {
+							format = VMM.Date.dateformats.full_short;
+						} else {
+							format = VMM.Date.dateformats.full;
+						}
+					} else if (p.month) {
+						// YEAR MONTH
+						if (is_abbr) {
+							format = VMM.Date.dateformats.month_short;
+						} else {
+							format = VMM.Date.dateformats.month;
+						}
+					} else if (p.year) {
+						format = VMM.Date.dateformats.year;
+					} else {
+						format = VMM.Date.dateformats.year;
+					}
+
+				} else {
+
+					if (d.getMonth() === 0 && d.getDate() == 1 && d.getHours() === 0 && d.getMinutes() === 0 ) {
+						// YEAR ONLY
+						format = VMM.Date.dateformats.year;
+					} else if (d.getDate() <= 1 && d.getHours() === 0 && d.getMinutes() === 0) {
+						// YEAR MONTH
+						if (is_abbr) {
+							format = VMM.Date.dateformats.month_short;
+						} else {
+							format = VMM.Date.dateformats.month;
+						}
+					} else if (d.getHours() === 0 && d.getMinutes() === 0) {
+						// YEAR MONTH DAY
+						if (is_abbr) {
+							format = VMM.Date.dateformats.full_short;
+						} else {
+							format = VMM.Date.dateformats.full;
+						}
+					} else  if (d.getMinutes() === 0) {
+						// YEAR MONTH DAY HOUR
+						if (is_abbr) {
+							format = VMM.Date.dateformats.time_no_seconds_short;
+						} else {
+							format = VMM.Date.dateformats.time_no_seconds_small_date;
+						}
+					} else {
+						// YEAR MONTH DAY HOUR MINUTE
+						if (is_abbr){
+							format = VMM.Date.dateformats.time_no_seconds_short;
+						} else {
+							format = VMM.Date.dateformats.full_long;
+						}
+					}
+				}
+
+				_date = dateFormat(d, format, false);
+				//_date = "Jan"
+				bc_check = _date.split(" ");
+
+				// BC TIME SUPPORT
+				for(var i = 0; i < bc_check.length; i++) {
+					if ( parseInt(bc_check[i], 10) < 0 ) {
+						trace("YEAR IS BC");
+						bc_original	= bc_check[i];
+						bc_number	= Math.abs( parseInt(bc_check[i], 10) );
+						bc_string	= bc_number.toString() + " B.C.";
+						_date		= _date.replace(bc_original, bc_string);
+					}
+				}
+
+
+				if (is_pair) {
+					_date2 = dateFormat(d2, format, false);
+					bc_check = _date2.split(" ");
+					// BC TIME SUPPORT
+					for(var j = 0; j < bc_check.length; j++) {
+						if ( parseInt(bc_check[j], 10) < 0 ) {
+							trace("YEAR IS BC");
+							bc_original	= bc_check[j];
+							bc_number	= Math.abs( parseInt(bc_check[j], 10) );
+							bc_string	= bc_number.toString() + " B.C.";
+							_date2			= _date2.replace(bc_original, bc_string);
+						}
+					}
+
+				}
+			} else {
+				trace("NOT A VALID DATE?");
+				trace(d);
+			}
+
+			if (is_pair) {
+				return _date + " &mdash; " + _date2;
+			} else {
+				return _date;
+			}
+		}
+
+	}).init();
+
+	/*
+	 * Date Format 1.2.3
+	 * (c) 2007-2009 Steven Levithan <stevenlevithan.com>
+	 * MIT license
+	 *
+	 * Includes enhancements by Scott Trenda <scott.trenda.net>
+	 * and Kris Kowal <cixar.com/~kris.kowal/>
+	 *
+	 * Accepts a date, a mask, or a date and a mask.
+	 * Returns a formatted version of the given date.
+	 * The date defaults to the current date/time.
+	 * The mask defaults to dateFormat.masks.default.
+	 */
+
+	var dateFormat = function () {
+		var	token = /d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|[LloSZ]|"[^"]*"|'[^']*'/g,
+			timezone = /\b(?:[PMCEA][SDP]T|(?:Pacific|Mountain|Central|Eastern|Atlantic) (?:Standard|Daylight|Prevailing) Time|(?:GMT|UTC)(?:[-+]\d{4})?)\b/g,
+			timezoneClip = /[^-+\dA-Z]/g,
+			pad = function (val, len) {
+				val = String(val);
+				len = len || 2;
+				while (val.length < len) val = "0" + val;
+				return val;
+			};
+
+		// Regexes and supporting functions are cached through closure
+		return function (date, mask, utc) {
+			var dF = dateFormat;
+
+			// You can't provide utc if you skip other args (use the "UTC:" mask prefix)
+			if (arguments.length == 1 && Object.prototype.toString.call(date) == "[object String]" && !/\d/.test(date)) {
+				mask = date;
+				date = undefined;
+			}
+
+			// Passing date through Date applies Date.parse, if necessary
+			// Caused problems in IE
+			// date = date ? new Date(date) : new Date;
+			if (isNaN(date)) {
+				trace("invalid date " + date);
+				//return "";
+			}
+
+			mask = String(dF.masks[mask] || mask || dF.masks["default"]);
+
+			// Allow setting the utc argument via the mask
+			if (mask.slice(0, 4) == "UTC:") {
+				mask = mask.slice(4);
+				utc = true;
+			}
+
+			var	_ = utc ? "getUTC" : "get",
+				d = date[_ + "Date"](),
+				D = date[_ + "Day"](),
+				m = date[_ + "Month"](),
+				y = date[_ + "FullYear"](),
+				H = date[_ + "Hours"](),
+				M = date[_ + "Minutes"](),
+				s = date[_ + "Seconds"](),
+				L = date[_ + "Milliseconds"](),
+				o = utc ? 0 : date.getTimezoneOffset(),
+				flags = {
+					d:    d,
+					dd:   pad(d),
+					ddd:  dF.i18n.dayNames[D],
+					dddd: dF.i18n.dayNames[D + 7],
+					m:    m + 1,
+					mm:   pad(m + 1),
+					mmm:  dF.i18n.monthNames[m],
+					mmmm: dF.i18n.monthNames[m + 12],
+					yy:   String(y).slice(2),
+					yyyy: y,
+					h:    H % 12 || 12,
+					hh:   pad(H % 12 || 12),
+					H:    H,
+					HH:   pad(H),
+					M:    M,
+					MM:   pad(M),
+					s:    s,
+					ss:   pad(s),
+					l:    pad(L, 3),
+					L:    pad(L > 99 ? Math.round(L / 10) : L),
+					t:    H < 12 ? "a"  : "p",
+					tt:   H < 12 ? "am" : "pm",
+					T:    H < 12 ? "A"  : "P",
+					TT:   H < 12 ? "AM" : "PM",
+					Z:    utc ? "UTC" : (String(date).match(timezone) || [""]).pop().replace(timezoneClip, ""),
+					o:    (o > 0 ? "-" : "+") + pad(Math.floor(Math.abs(o) / 60) * 100 + Math.abs(o) % 60, 4),
+					S:    ["th", "st", "nd", "rd"][d % 10 > 3 ? 0 : (d % 100 - d % 10 != 10) * d % 10]
+				};
+
+			return mask.replace(token, function ($0) {
+				return $0 in flags ? flags[$0] : $0.slice(1, $0.length - 1);
+			});
+		};
+	}();
+
+	// Some common format strings
+	dateFormat.masks = {
+		"default":      "ddd mmm dd yyyy HH:MM:ss",
+		shortDate:      "m/d/yy",
+		mediumDate:     "mmm d, yyyy",
+		longDate:       "mmmm d, yyyy",
+		fullDate:       "dddd, mmmm d, yyyy",
+		shortTime:      "h:MM TT",
+		mediumTime:     "h:MM:ss TT",
+		longTime:       "h:MM:ss TT Z",
+		isoDate:        "yyyy-mm-dd",
+		isoTime:        "HH:MM:ss",
+		isoDateTime:    "yyyy-mm-dd'T'HH:MM:ss",
+		isoUtcDateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'"
+	};
+
+	// Internationalization strings
+	dateFormat.i18n = {
+		dayNames: [
+			"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+			"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+		],
+		monthNames: [
+			"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+			"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+		]
+	};
+
+	// For convenience...
+	Date.prototype.format = function (mask, utc) {
+		return dateFormat(this, mask, utc);
+	};
+
+}
+
+/* **********************************************
+     Begin VMM.Util.js
+********************************************** */
+
+/*	* Utilities and Useful Functions
+================================================== */
+if(typeof VMM != 'undefined' && typeof VMM.Util == 'undefined') {
+
+	VMM.Util = ({
+
+		init: function() {
+			return this;
+		},
+
+		/*	* CORRECT PROTOCOL (DOES NOT WORK)
+		================================================== */
+		correctProtocol: function(url) {
+			var loc = (window.parent.location.protocol).toString(),
+				prefix = "",
+				the_url = url.split("://", 2);
+
+			if (loc.match("http")) {
+				prefix = loc;
+			} else {
+				prefix = "https";
+			}
+
+			return prefix + "://" + the_url[1];
+
+		},
+
+		/*	* MERGE CONFIG
+		================================================== */
+		mergeConfig: function(config_main, config_to_merge) {
+			var x;
+			for (x in config_to_merge) {
+				if (Object.prototype.hasOwnProperty.call(config_to_merge, x)) {
+					config_main[x] = config_to_merge[x];
+				}
+			}
+			return config_main;
+		},
+
+		/*	* GET OBJECT ATTRIBUTE BY INDEX
+		================================================== */
+		getObjectAttributeByIndex: function(obj, index) {
+			if(typeof obj != 'undefined') {
+				var i = 0;
+				for (var attr in obj){
+					if (index === i){
+						return obj[attr];
+					}
+					i++;
+				}
+				return "";
+			} else {
+				return "";
+			}
+
+		},
+
+		/*	* ORDINAL
+		================================================== */
+		ordinal: function(n) {
+		    return ["th","st","nd","rd"][(!( ((n%10) >3) || (Math.floor(n%100/10)==1)) ) * (n%10)];
+		},
+
+		/*	* RANDOM BETWEEN
+		================================================== */
+		//VMM.Util.randomBetween(1, 3)
+		randomBetween: function(min, max) {
+			return Math.floor(Math.random() * (max - min + 1) + min);
+		},
+
+		/*	* AVERAGE
+			* http://jsfromhell.com/array/average
+			* var x = VMM.Util.average([2, 3, 4]);
+			* VMM.Util.average([2, 3, 4]).mean
+		================================================== */
+		average: function(a) {
+		    var r = {mean: 0, variance: 0, deviation: 0}, t = a.length;
+		    for(var m, s = 0, l = t; l--; s += a[l]);
+		    for(m = r.mean = s / t, l = t, s = 0; l--; s += Math.pow(a[l] - m, 2));
+		    return r.deviation = Math.sqrt(r.variance = s / t), r;
+		},
+
+		/*	* CUSTOM SORT
+		================================================== */
+		customSort: function(a, b) {
+			var a1= a, b1= b;
+			if(a1== b1) return 0;
+			return a1> b1? 1: -1;
+		},
+
+		/*	* Remove Duplicates from Array
+		================================================== */
+		deDupeArray: function(arr) {
+			var i,
+				len=arr.length,
+				out=[],
+				obj={};
+
+			for (i=0;i<len;i++) {
+				obj[arr[i]]=0;
+			}
+			for (i in obj) {
+				out.push(i);
+			}
+			return out;
+		},
+
+		/*	* Given an int or decimal, turn that into string in $xxx,xxx.xx format.
+		================================================== */
+		number2money: function(n, symbol, padding) {
+			var symbol = (symbol !== null) ? symbol : true; // add $
+			var padding = (padding !== null) ? padding : false; //pad with .00
+			var number = VMM.Math2.floatPrecision(n,2); // rounded correctly to two digits, if decimals passed
+			var formatted = this.niceNumber(number);
+			// no decimal and padding is enabled
+			if (!formatted.split(/\./g)[1] && padding) formatted = formatted + ".00";
+			// add money sign
+			if (symbol) formatted = "$"+formatted;
+			return formatted;
+		},
+
+		/*	* Returns a word count number
+		================================================== */
+		wordCount: function(s) {
+			var fullStr = s + " ";
+			var initial_whitespace_rExp = /^[^A-Za-z0-9\'\-]+/gi;
+			var left_trimmedStr = fullStr.replace(initial_whitespace_rExp, "");
+			var non_alphanumerics_rExp = /[^A-Za-z0-9\'\-]+/gi;
+			var cleanedStr = left_trimmedStr.replace(non_alphanumerics_rExp, " ");
+			var splitString = cleanedStr.split(" ");
+			var word_count = splitString.length -1;
+			if (fullStr.length <2) {
+				word_count = 0;
+			}
+			return word_count;
+		},
+
+		ratio: {
+			fit: function(w, h, ratio_w, ratio_h) {
+				//VMM.Util.ratio.fit(w, h, ratio_w, ratio_h).width;
+				var _fit = {width:0,height:0};
+				// TRY WIDTH FIRST
+				_fit.width = w;
+				//_fit.height = Math.round((h / ratio_h) * ratio_w);
+				_fit.height = Math.round((w / ratio_w) * ratio_h);
+				if (_fit.height > h) {
+					_fit.height = h;
+					//_fit.width = Math.round((w / ratio_w) * ratio_h);
+					_fit.width = Math.round((h / ratio_h) * ratio_w);
+
+					if (_fit.width > w) {
+						trace("FIT: DIDN'T FIT!!! ")
+					}
+				}
+
+				return _fit;
+
+			},
+			r16_9: function(w,h) {
+				//VMM.Util.ratio.r16_9(w, h) // Returns corresponding number
+				if (w !== null && w !== "") {
+					return Math.round((h / 16) * 9);
+				} else if (h !== null && h !== "") {
+					return Math.round((w / 9) * 16);
+				}
+			},
+			r4_3: function(w,h) {
+				if (w !== null && w !== "") {
+					return Math.round((h / 4) * 3);
+				} else if (h !== null && h !== "") {
+					return Math.round((w / 3) * 4);
+				}
+			}
+		},
+
+		doubledigit: function(n) {
+			return (n < 10 ? '0' : '') + n;
+		},
+
+		/*	* Returns a truncated segement of a long string of between min and max words. If possible, ends on a period (otherwise goes to max).
+		================================================== */
+		truncateWords: function(s, min, max) {
+
+			if (!min) min = 30;
+			if (!max) max = min;
+
+			var initial_whitespace_rExp = /^[^A-Za-z0-9\'\-]+/gi;
+			var left_trimmedStr = s.replace(initial_whitespace_rExp, "");
+			var words = left_trimmedStr.split(" ");
+
+			var result = [];
+
+			min = Math.min(words.length, min);
+			max = Math.min(words.length, max);
+
+			for (var i = 0; i<min; i++) {
+				result.push(words[i]);
+			}
+
+			for (var j = min; i<max; i++) {
+				var word = words[i];
+
+				result.push(word);
+
+				if (word.charAt(word.length-1) == '.') {
+					break;
+				}
+			}
+
+			return (result.join(' '));
+		},
+
+		/*	* Turns plain text links into real links
+		================================================== */
+		linkify: function(text,targets,is_touch) {
+
+			// http://, https://, ftp://
+			var urlPattern = /\b(?:https?|ftp):\/\/[a-z0-9-+&@#\/%?=~_|!:,.;]*[a-z0-9-+&@#\/%=~_|]/gim;
+
+			// www. sans http:// or https://
+			var pseudoUrlPattern = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+
+			// Email addresses
+			var emailAddressPattern = /(([a-zA-Z0-9_\-\.]+)@[a-zA-Z_]+?(?:\.[a-zA-Z]{2,6}))+/gim;
+
+
+			return text
+				.replace(urlPattern, "<a target='_blank' href='$&' onclick='void(0)'>$&</a>")
+				.replace(pseudoUrlPattern, "$1<a target='_blank' onclick='void(0)' href='http://$2'>$2</a>")
+				.replace(emailAddressPattern, "<a target='_blank' onclick='void(0)' href='mailto:$1'>$1</a>");
+		},
+
+		linkify_with_twitter: function(text,targets,is_touch) {
+
+			// http://, https://, ftp://
+			var urlPattern = /\b(?:https?|ftp):\/\/[a-z0-9-+&@#\/%?=~_|!:,.;]*[a-z0-9-+&@#\/%=~_|]/gim;
+			var url_pattern = /(\()((?:ht|f)tps?:\/\/[a-z0-9\-._~!$&'()*+,;=:\/?#[\]@%]+)(\))|(\[)((?:ht|f)tps?:\/\/[a-z0-9\-._~!$&'()*+,;=:\/?#[\]@%]+)(\])|(\{)((?:ht|f)tps?:\/\/[a-z0-9\-._~!$&'()*+,;=:\/?#[\]@%]+)(\})|(<|&(?:lt|#60|#x3c);)((?:ht|f)tps?:\/\/[a-z0-9\-._~!$&'()*+,;=:\/?#[\]@%]+)(>|&(?:gt|#62|#x3e);)|((?:^|[^=\s'"\]])\s*['"]?|[^=\s]\s+)(\b(?:ht|f)tps?:\/\/[a-z0-9\-._~!$'()*+,;=:\/?#[\]@%]+(?:(?!&(?:gt|#0*62|#x0*3e);|&(?:amp|apos|quot|#0*3[49]|#x0*2[27]);[.!&',:?;]?(?:[^a-z0-9\-._~!$&'()*+,;=:\/?#[\]@%]|$))&[a-z0-9\-._~!$'()*+,;=:\/?#[\]@%]*)*[a-z0-9\-_~$()*+=\/#[\]@%])/img;
+			var url_replace = '$1$4$7$10$13<a href="$2$5$8$11$14" target="_blank" class="hyphenate">$2$5$8$11$14</a>$3$6$9$12';
+
+			// www. sans http:// or https://
+			var pseudoUrlPattern = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+			function replaceURLWithHTMLLinks(text) {
+			    var exp = /(\b(https?|ftp|file):\/\/([-A-Z0-9+&@#%?=~_|!:,.;]*)([-A-Z0-9+&@#%?\/=~_|!:,.;]*)[-A-Z0-9+&@#\/%=~_|])/ig;
+			    return text.replace(exp, "<a href='$1' target='_blank'>$3</a>");
+			}
+			// Email addresses
+			var emailAddressPattern = /(([a-zA-Z0-9_\-\.]+)@[a-zA-Z_]+?(?:\.[a-zA-Z]{2,6}))+/gim;
+
+			//var twitterHandlePattern = /(@([\w]+))/g;
+			var twitterHandlePattern = /\B@([\w-]+)/gm;
+			var twitterSearchPattern = /(#([\w]+))/g;
+
+			return text
+				//.replace(urlPattern, "<a target='_blank' href='$&' onclick='void(0)'>$&</a>")
+				.replace(url_pattern, url_replace)
+				.replace(pseudoUrlPattern, "$1<a target='_blank' class='hyphenate' onclick='void(0)' href='http://$2'>$2</a>")
+				.replace(emailAddressPattern, "<a target='_blank' onclick='void(0)' href='mailto:$1'>$1</a>")
+				.replace(twitterHandlePattern, "<a href='http://twitter.com/$1' target='_blank' onclick='void(0)'>@$1</a>");
+
+				// TURN THIS BACK ON TO AUTOMAGICALLY LINK HASHTAGS TO TWITTER SEARCH
+				//.replace(twitterSearchPattern, "<a href='http://twitter.com/#search?q=%23$2' target='_blank' 'void(0)'>$1</a>");
+		},
+
+		linkify_wikipedia: function(text) {
+
+			var urlPattern = /<i[^>]*>(.*?)<\/i>/gim;
+			return text
+				.replace(urlPattern, "<a target='_blank' href='http://en.wikipedia.org/wiki/$&' onclick='void(0)'>$&</a>")
+				.replace(/<i\b[^>]*>/gim, "")
+				.replace(/<\/i>/gim, "")
+				.replace(/<b\b[^>]*>/gim, "")
+				.replace(/<\/b>/gim, "");
+		},
+
+		/*	* Turns plain text links into real links
+		================================================== */
+		// VMM.Util.unlinkify();
+		unlinkify: function(text) {
+			if(!text) return text;
+			text = text.replace(/<a\b[^>]*>/i,"");
+			text = text.replace(/<\/a>/i, "");
+			return text;
+		},
+
+		untagify: function(text) {
+			if (!text) {
+				return text;
+			}
+			text = text.replace(/<\s*\w.*?>/g,"");
+			return text;
+		},
+
+		/*	* TK
+		================================================== */
+		nl2br: function(text) {
+			return text.replace(/(\r\n|[\r\n]|\\n|\\r)/g,"<br/>");
+		},
+
+		/*	* Generate a Unique ID
+		================================================== */
+		// VMM.Util.unique_ID(size);
+		unique_ID: function(size) {
+
+			var getRandomNumber = function(range) {
+				return Math.floor(Math.random() * range);
+			};
+
+			var getRandomChar = function() {
+				var chars = "abcdefghijklmnopqurstuvwxyzABCDEFGHIJKLMNOPQURSTUVWXYZ";
+				return chars.substr( getRandomNumber(62), 1 );
+			};
+
+			var randomID = function(size) {
+				var str = "";
+				for(var i = 0; i < size; i++) {
+					str += getRandomChar();
+				}
+				return str;
+			};
+
+			return randomID(size);
+		},
+		/*	* Tells you if a number is even or not
+		================================================== */
+		// VMM.Util.isEven(n)
+		isEven: function(n){
+			return (n%2 === 0) ? true : false;
+		},
+		/*	* Get URL Variables
+		================================================== */
+		//	var somestring = VMM.Util.getUrlVars(str_url)["varname"];
+		getUrlVars: function(string) {
+
+			var str = string.toString();
+
+			if (str.match('&#038;')) {
+				str = str.replace("&#038;", "&");
+			} else if (str.match('&#38;')) {
+				str = str.replace("&#38;", "&");
+			} else if (str.match('&amp;')) {
+				str = str.replace("&amp;", "&");
+			}
+
+			var vars = [], hash;
+			var hashes = str.slice(str.indexOf('?') + 1).split('&');
+			for(var i = 0; i < hashes.length; i++) {
+				hash = hashes[i].split('=');
+				vars.push(hash[0]);
+				vars[hash[0]] = hash[1];
+			}
+
+
+			return vars;
+		},
+
+		/*	* Cleans up strings to become real HTML
+		================================================== */
+		toHTML: function(text) {
+
+			text = this.nl2br(text);
+			text = this.linkify(text);
+
+			return text.replace(/\s\s/g,"&nbsp;&nbsp;");
+		},
+
+		/*	* Returns text strings as CamelCase
+		================================================== */
+		toCamelCase: function(s,forceLowerCase) {
+
+			if(forceLowerCase !== false) forceLowerCase = true;
+
+			var sps = ((forceLowerCase) ? s.toLowerCase() : s).split(" ");
+
+			for(var i=0; i<sps.length; i++) {
+
+				sps[i] = sps[i].substr(0,1).toUpperCase() + sps[i].substr(1);
+			}
+
+			return sps.join(" ");
+		},
+
+		/*	* Replaces dumb quote marks with smart ones
+		================================================== */
+		properQuotes: function(str) {
+			return str.replace(/\"([^\"]*)\"/gi,"&#8220;$1&#8221;");
+		},
+		/*	* Add Commas to numbers
+		================================================== */
+		niceNumber: function(nStr){
+			nStr += '';
+			x = nStr.split('.');
+			x1 = x[0];
+			x2 = x.length > 1 ? '.' + x[1] : '';
+			var rgx = /(\d+)(\d{3})/;
+			while (rgx.test(x1)) {
+				x1 = x1.replace(rgx, '$1' + ',' + '$2');
+			}
+			return x1 + x2;
+		},
+		/*	* Transform text to Title Case
+		================================================== */
+		toTitleCase: function(t){
+			if ( VMM.Browser.browser == "Explorer" && parseInt(VMM.Browser.version, 10) >= 7) {
+				return t.replace("_", "%20");
+			} else {
+				var __TitleCase = {
+					__smallWords: ['a', 'an', 'and', 'as', 'at', 'but','by', 'en', 'for', 'if', 'in', 'of', 'on', 'or','the', 'to', 'v[.]?', 'via', 'vs[.]?'],
+
+					init: function() {
+						this.__smallRE = this.__smallWords.join('|');
+						this.__lowerCaseWordsRE = new RegExp('\\b(' + this.__smallRE + ')\\b', 'gi');
+						this.__firstWordRE = new RegExp('^([^a-zA-Z0-9 \\r\\n\\t]*)(' + this.__smallRE + ')\\b', 'gi');
+						this.__lastWordRE = new RegExp('\\b(' + this.__smallRE + ')([^a-zA-Z0-9 \\r\\n\\t]*)$', 'gi');
+					},
+
+					toTitleCase: function(string) {
+						var line = '';
+
+						var split = string.split(/([:.;?!][ ]|(?:[ ]|^)["“])/);
+
+						for (var i = 0; i < split.length; ++i) {
+							var s = split[i];
+
+							s = s.replace(/\b([a-zA-Z][a-z.'’]*)\b/g,this.__titleCaseDottedWordReplacer);
+
+			 				// lowercase the list of small words
+							s = s.replace(this.__lowerCaseWordsRE, this.__lowerReplacer);
+
+							// if the first word in the title is a small word then capitalize it
+							s = s.replace(this.__firstWordRE, this.__firstToUpperCase);
+
+							// if the last word in the title is a small word, then capitalize it
+							s = s.replace(this.__lastWordRE, this.__firstToUpperCase);
+
+							line += s;
+						}
+
+						// special cases
+						line = line.replace(/ V(s?)\. /g, ' v$1. ');
+						line = line.replace(/(['’])S\b/g, '$1s');
+						line = line.replace(/\b(AT&T|Q&A)\b/ig, this.__upperReplacer);
+
+						return line;
+					},
+
+					__titleCaseDottedWordReplacer: function (w) {
+						return (w.match(/[a-zA-Z][.][a-zA-Z]/)) ? w : __TitleCase.__firstToUpperCase(w);
+					},
+
+					__lowerReplacer: function (w) { return w.toLowerCase() },
+
+					__upperReplacer: function (w) { return w.toUpperCase() },
+
+					__firstToUpperCase: function (w) {
+						var split = w.split(/(^[^a-zA-Z0-9]*[a-zA-Z0-9])(.*)$/);
+						if (split[1]) {
+							split[1] = split[1].toUpperCase();
+						}
+
+						return split.join('');
+
+
+					}
+				};
+
+				__TitleCase.init();
+
+				t = t.replace(/_/g," ");
+				t = __TitleCase.toTitleCase(t);
+
+				return t;
+
+			}
+
+		}
+
+	}).init();
+}
+
+/* **********************************************
+     Begin LazyLoad.js
+********************************************** */
+
+/*jslint browser: true, eqeqeq: true, bitwise: true, newcap: true, immed: true, regexp: false */
+
+/*
+LazyLoad makes it easy and painless to lazily load one or more external
+JavaScript or CSS files on demand either during or after the rendering of a web
+page.
+
+Supported browsers include Firefox 2+, IE6+, Safari 3+ (including Mobile
+Safari), Google Chrome, and Opera 9+. Other browsers may or may not work and
+are not officially supported.
+
+Visit https://github.com/rgrove/lazyload/ for more info.
+
+Copyright (c) 2011 Ryan Grove <ryan@wonko.com>
+All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the 'Software'), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+@module lazyload
+@class LazyLoad
+@static
+@version 2.0.3 (git)
+*/
+
+LazyLoad = (function (doc) {
+  // -- Private Variables ------------------------------------------------------
+
+  // User agent and feature test information.
+  var env,
+
+  // Reference to the <head> element (populated lazily).
+  head,
+
+  // Requests currently in progress, if any.
+  pending = {},
+
+  // Number of times we've polled to check whether a pending stylesheet has
+  // finished loading. If this gets too high, we're probably stalled.
+  pollCount = 0,
+
+  // Queued requests.
+  queue = {css: [], js: []},
+
+  // Reference to the browser's list of stylesheets.
+  styleSheets = doc.styleSheets;
+
+  // -- Private Methods --------------------------------------------------------
+
+  /**
+  Creates and returns an HTML element with the specified name and attributes.
+
+  @method createNode
+  @param {String} name element name
+  @param {Object} attrs name/value mapping of element attributes
+  @return {HTMLElement}
+  @private
+  */
+  function createNode(name, attrs) {
+    var node = doc.createElement(name), attr;
+
+    for (attr in attrs) {
+      if (attrs.hasOwnProperty(attr)) {
+        node.setAttribute(attr, attrs[attr]);
+      }
+    }
+
+    return node;
+  }
+
+  /**
+  Called when the current pending resource of the specified type has finished
+  loading. Executes the associated callback (if any) and loads the next
+  resource in the queue.
+
+  @method finish
+  @param {String} type resource type ('css' or 'js')
+  @private
+  */
+  function finish(type) {
+    var p = pending[type],
+        callback,
+        urls;
+
+    if (p) {
+      callback = p.callback;
+      urls     = p.urls;
+
+      urls.shift();
+      pollCount = 0;
+
+      // If this is the last of the pending URLs, execute the callback and
+      // start the next request in the queue (if any).
+      if (!urls.length) {
+        callback && callback.call(p.context, p.obj);
+        pending[type] = null;
+        queue[type].length && load(type);
+      }
+    }
+  }
+
+  /**
+  Populates the <code>env</code> variable with user agent and feature test
+  information.
+
+  @method getEnv
+  @private
+  */
+  function getEnv() {
+    var ua = navigator.userAgent;
+
+    env = {
+      // True if this browser supports disabling async mode on dynamically
+      // created script nodes. See
+      // http://wiki.whatwg.org/wiki/Dynamic_Script_Execution_Order
+      async: doc.createElement('script').async === true
+    };
+
+    (env.webkit = /AppleWebKit\//.test(ua))
+      || (env.ie = /MSIE/.test(ua))
+      || (env.opera = /Opera/.test(ua))
+      || (env.gecko = /Gecko\//.test(ua))
+      || (env.unknown = true);
+  }
+
+  /**
+  Loads the specified resources, or the next resource of the specified type
+  in the queue if no resources are specified. If a resource of the specified
+  type is already being loaded, the new request will be queued until the
+  first request has been finished.
+
+  When an array of resource URLs is specified, those URLs will be loaded in
+  parallel if it is possible to do so while preserving execution order. All
+  browsers support parallel loading of CSS, but only Firefox and Opera
+  support parallel loading of scripts. In other browsers, scripts will be
+  queued and loaded one at a time to ensure correct execution order.
+
+  @method load
+  @param {String} type resource type ('css' or 'js')
+  @param {String|Array} urls (optional) URL or array of URLs to load
+  @param {Function} callback (optional) callback function to execute when the
+    resource is loaded
+  @param {Object} obj (optional) object to pass to the callback function
+  @param {Object} context (optional) if provided, the callback function will
+    be executed in this object's context
+  @private
+  */
+  function load(type, urls, callback, obj, context) {
+    var _finish = function () { finish(type); },
+        isCSS   = type === 'css',
+        nodes   = [],
+        i, len, node, p, pendingUrls, url;
+
+    env || getEnv();
+
+    if (urls) {
+      // If urls is a string, wrap it in an array. Otherwise assume it's an
+      // array and create a copy of it so modifications won't be made to the
+      // original.
+      urls = typeof urls === 'string' ? [urls] : urls.concat();
+
+      // Create a request object for each URL. If multiple URLs are specified,
+      // the callback will only be executed after all URLs have been loaded.
+      //
+      // Sadly, Firefox and Opera are the only browsers capable of loading
+      // scripts in parallel while preserving execution order. In all other
+      // browsers, scripts must be loaded sequentially.
+      //
+      // All browsers respect CSS specificity based on the order of the link
+      // elements in the DOM, regardless of the order in which the stylesheets
+      // are actually downloaded.
+      if (isCSS || env.async || env.gecko || env.opera) {
+        // Load in parallel.
+        queue[type].push({
+          urls    : urls,
+          callback: callback,
+          obj     : obj,
+          context : context
+        });
+      } else {
+        // Load sequentially.
+        for (i = 0, len = urls.length; i < len; ++i) {
+          queue[type].push({
+            urls    : [urls[i]],
+            callback: i === len - 1 ? callback : null, // callback is only added to the last URL
+            obj     : obj,
+            context : context
+          });
+        }
+      }
+    }
+
+    // If a previous load request of this type is currently in progress, we'll
+    // wait our turn. Otherwise, grab the next item in the queue.
+    if (pending[type] || !(p = pending[type] = queue[type].shift())) {
+      return;
+    }
+
+    head || (head = doc.head || doc.getElementsByTagName('head')[0]);
+    pendingUrls = p.urls;
+
+    for (i = 0, len = pendingUrls.length; i < len; ++i) {
+      url = pendingUrls[i];
+
+      if (isCSS) {
+          node = env.gecko ? createNode('style') : createNode('link', {
+            href: url,
+            rel : 'stylesheet'
+          });
+      } else {
+        node = createNode('script', {src: url});
+        node.async = false;
+      }
+
+      node.className = 'lazyload';
+      node.setAttribute('charset', 'utf-8');
+
+      if (env.ie && !isCSS) {
+        node.onreadystatechange = function () {
+          if (/loaded|complete/.test(node.readyState)) {
+            node.onreadystatechange = null;
+            _finish();
+          }
+        };
+      } else if (isCSS && (env.gecko || env.webkit)) {
+        // Gecko and WebKit don't support the onload event on link nodes.
+        if (env.webkit) {
+          // In WebKit, we can poll for changes to document.styleSheets to
+          // figure out when stylesheets have loaded.
+          p.urls[i] = node.href; // resolve relative URLs (or polling won't work)
+          pollWebKit();
+        } else {
+          // In Gecko, we can import the requested URL into a <style> node and
+          // poll for the existence of node.sheet.cssRules. Props to Zach
+          // Leatherman for calling my attention to this technique.
+          node.innerHTML = '@import "' + url + '";';
+          pollGecko(node);
+        }
+      } else {
+        node.onload = node.onerror = _finish;
+      }
+
+      nodes.push(node);
+    }
+
+    for (i = 0, len = nodes.length; i < len; ++i) {
+      head.appendChild(nodes[i]);
+    }
+  }
+
+  /**
+  Begins polling to determine when the specified stylesheet has finished loading
+  in Gecko. Polling stops when all pending stylesheets have loaded or after 10
+  seconds (to prevent stalls).
+
+  Thanks to Zach Leatherman for calling my attention to the @import-based
+  cross-domain technique used here, and to Oleg Slobodskoi for an earlier
+  same-domain implementation. See Zach's blog for more details:
+  http://www.zachleat.com/web/2010/07/29/load-css-dynamically/
+
+  @method pollGecko
+  @param {HTMLElement} node Style node to poll.
+  @private
+  */
+  function pollGecko(node) {
+    var hasRules;
+
+    try {
+      // We don't really need to store this value or ever refer to it again, but
+      // if we don't store it, Closure Compiler assumes the code is useless and
+      // removes it.
+      hasRules = !!node.sheet.cssRules;
+    } catch (ex) {
+      // An exception means the stylesheet is still loading.
+      pollCount += 1;
+
+      if (pollCount < 200) {
+        setTimeout(function () { pollGecko(node); }, 50);
+      } else {
+        // We've been polling for 10 seconds and nothing's happened. Stop
+        // polling and finish the pending requests to avoid blocking further
+        // requests.
+        hasRules && finish('css');
+      }
+
+      return;
+    }
+
+    // If we get here, the stylesheet has loaded.
+    finish('css');
+  }
+
+  /**
+  Begins polling to determine when pending stylesheets have finished loading
+  in WebKit. Polling stops when all pending stylesheets have loaded or after 10
+  seconds (to prevent stalls).
+
+  @method pollWebKit
+  @private
+  */
+  function pollWebKit() {
+    var css = pending.css, i;
+
+    if (css) {
+      i = styleSheets.length;
+
+      // Look for a stylesheet matching the pending URL.
+      while (--i >= 0) {
+        if (styleSheets[i].href === css.urls[0]) {
+          finish('css');
+          break;
+        }
+      }
+
+      pollCount += 1;
+
+      if (css) {
+        if (pollCount < 200) {
+          setTimeout(pollWebKit, 50);
+        } else {
+          // We've been polling for 10 seconds and nothing's happened, which may
+          // indicate that the stylesheet has been removed from the document
+          // before it had a chance to load. Stop polling and finish the pending
+          // request to prevent blocking further requests.
+          finish('css');
+        }
+      }
+    }
+  }
+
+  return {
+
+    /**
+    Requests the specified CSS URL or URLs and executes the specified
+    callback (if any) when they have finished loading. If an array of URLs is
+    specified, the stylesheets will be loaded in parallel and the callback
+    will be executed after all stylesheets have finished loading.
+
+    @method css
+    @param {String|Array} urls CSS URL or array of CSS URLs to load
+    @param {Function} callback (optional) callback function to execute when
+      the specified stylesheets are loaded
+    @param {Object} obj (optional) object to pass to the callback function
+    @param {Object} context (optional) if provided, the callback function
+      will be executed in this object's context
+    @static
+    */
+    css: function (urls, callback, obj, context) {
+      load('css', urls, callback, obj, context);
+    },
+
+    /**
+    Requests the specified JavaScript URL or URLs and executes the specified
+    callback (if any) when they have finished loading. If an array of URLs is
+    specified and the browser supports it, the scripts will be loaded in
+    parallel and the callback will be executed after all scripts have
+    finished loading.
+
+    Currently, only Firefox and Opera support parallel loading of scripts while
+    preserving execution order. In other browsers, scripts will be
+    queued and loaded one at a time to ensure correct execution order.
+
+    @method js
+    @param {String|Array} urls JS URL or array of JS URLs to load
+    @param {Function} callback (optional) callback function to execute when
+      the specified scripts are loaded
+    @param {Object} obj (optional) object to pass to the callback function
+    @param {Object} context (optional) if provided, the callback function
+      will be executed in this object's context
+    @static
+    */
+    js: function (urls, callback, obj, context) {
+      load('js', urls, callback, obj, context);
+    }
+
+  };
+})(this.document);
+
+
+/* **********************************************
+     Begin VMM.LoadLib.js
+********************************************** */
+
+/*
+	LoadLib
+	Designed and built by Zach Wise digitalartwork.net
+*/
+
+/*	* CodeKit Import
+	* http://incident57.com/codekit/
+================================================== */
+// @codekit-prepend "../Library/LazyLoad.js";
+
+LoadLib = (function (doc) {
+	var loaded	= [];
+
+	function isLoaded(url) {
+
+		var i			= 0,
+			has_loaded	= false;
+
+		for (i = 0; i < loaded.length; i++) {
+			if (loaded[i] == url) {
+				has_loaded = true;
+			}
+		}
+
+		if (has_loaded) {
+			return true;
+		} else {
+			loaded.push(url);
+			return false;
+		}
+
+	}
+
+	return {
+
+		css: function (urls, callback, obj, context) {
+			if (!isLoaded(urls)) {
+				LazyLoad.css(urls, callback, obj, context);
+			}
+		},
+
+		js: function (urls, callback, obj, context) {
+			if (!isLoaded(urls)) {
+				LazyLoad.js(urls, callback, obj, context);
+			}
+		}
+    };
+
+})(this.document);
+
+
+/* **********************************************
+     Begin VMM.Core.js
+********************************************** */
+
+/* VeriteCo Core
+================================================== */
+
+/*	* CodeKit Import
+	* http://incident57.com/codekit/
+================================================== */
+// @codekit-prepend "VMM.js";
+// @codekit-prepend "VMM.Library.js";
+// @codekit-prepend "VMM.Browser.js";
+// @codekit-prepend "VMM.FileExtention.js";
+// @codekit-prepend "VMM.Date.js";
+// @codekit-prepend "VMM.Util.js";
+// @codekit-prepend "VMM.LoadLib.js";
+// @codekit-prepend "VMM.Language.js";
+
+
+
+/* **********************************************
+     Begin VMM.Language.js
+********************************************** */
+
+/* DEFAULT LANGUAGE
+================================================== */
+if(typeof VMM != 'undefined' && typeof VMM.Language == 'undefined') {
+	VMM.Language = {
+		lang: "en",
+		api: {
+			wikipedia: "en"
+		},
+		date: {
+			month: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+			month_abbr: ["Jan.", "Feb.", "March", "April", "May", "June", "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."],
+			day: ["Sunday","Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+			day_abbr: ["Sun.","Mon.", "Tues.", "Wed.", "Thurs.", "Fri.", "Sat."]
+		},
+		dateformats: {
+			year: "yyyy",
+			month_short: "mmm",
+			month: "mmmm yyyy",
+			full_short: "mmm d",
+			full: "mmmm d',' yyyy",
+			time_short: "h:MM:ss TT",
+			time_no_seconds_short: "h:MM TT",
+			time_no_seconds_small_date: "h:MM TT'<br/><small>'mmmm d',' yyyy'</small>'",
+			full_long: "mmm d',' yyyy 'at' h:MM TT",
+			full_long_small_date: "h:MM TT'<br/><small>mmm d',' yyyy'</small>'"
+		},
+		messages: {
+			loading_timeline: "Loading Timeline... ",
+			return_to_title: "Return to Title",
+			expand_timeline: "Expand Timeline",
+			contract_timeline: "Contract Timeline",
+			wikipedia: "From Wikipedia, the free encyclopedia",
+			loading_content: "Loading Content",
+			loading: "Loading"
+		}
+	}
+};
+
+/* **********************************************
+     Begin VMM.ExternalAPI.js
+********************************************** */
+
+/* External API
+================================================== */
+if(typeof VMM != 'undefined' && typeof VMM.ExternalAPI == 'undefined') {
+
+	VMM.ExternalAPI = ({
+
+		keys: {
+			google:				"",
+			flickr:				"",
+			twitter:			""
+		},
+
+		keys_master: {
+			vp:			"Pellentesque nibh felis, eleifend id, commodo in, interdum vitae, leo",
+			flickr:		"RAIvxHY4hE/Elm5cieh4X5ptMyDpj7MYIxziGxi0WGCcy1s+yr7rKQ==",
+			google:		"jwNGnYw4hE9lmAez4ll0QD+jo6SKBJFknkopLS4FrSAuGfIwyj57AusuR0s8dAo=",
+			twitter:	""
+		},
+
+		init: function() {
+			return this;
+		},
+
+		setKeys: function(d) {
+			VMM.ExternalAPI.keys	= d;
+		},
+
+		pushQues: function() {
+
+			if (VMM.master_config.googlemaps.active) {
+				VMM.ExternalAPI.googlemaps.pushQue();
+			}
+			if (VMM.master_config.youtube.active) {
+				VMM.ExternalAPI.youtube.pushQue();
+			}
+			if (VMM.master_config.soundcloud.active) {
+				VMM.ExternalAPI.soundcloud.pushQue();
+			}
+			if (VMM.master_config.googledocs.active) {
+				VMM.ExternalAPI.googledocs.pushQue();
+			}
+			if (VMM.master_config.googleplus.active) {
+				VMM.ExternalAPI.googleplus.pushQue();
+			}
+			if (VMM.master_config.wikipedia.active) {
+				VMM.ExternalAPI.wikipedia.pushQue();
+			}
+			if (VMM.master_config.vimeo.active) {
+				VMM.ExternalAPI.vimeo.pushQue();
+			}
+			if (VMM.master_config.vine.active) {
+				VMM.ExternalAPI.vine.pushQue();
+			}
+			if (VMM.master_config.twitter.active) {
+				VMM.ExternalAPI.twitter.pushQue();
+			}
+			if (VMM.master_config.flickr.active) {
+				VMM.ExternalAPI.flickr.pushQue();
+			}
+			if (VMM.master_config.webthumb.active) {
+				VMM.ExternalAPI.webthumb.pushQue();
+			}
+		},
+
+		twitter: {
+			tweetArray: [],
+
+			get: function(m) {
+				var tweet = {mid: m.id, id: m.uid};
+				VMM.master_config.twitter.que.push(tweet);
+				VMM.master_config.twitter.active = true;
+				//VMM.master_config.api.pushques.push(VMM.ExternalAPI.twitter.pushQue);
+
+			},
+
+			create: function(tweet, callback) {
+
+				var id				= tweet.mid.toString(),
+					error_obj		= { twitterid: tweet.mid },
+					the_url			= "http://api.twitter.com/1/statuses/show.json?id=" + tweet.mid + "&include_entities=true&callback=?";
+					//twitter_timeout	= setTimeout(VMM.ExternalAPI.twitter.errorTimeOut, VMM.master_config.timers.api, tweet),
+					//callback_timeout= setTimeout(callback, VMM.master_config.timers.api, tweet);
+
+				VMM.ExternalAPI.twitter.getOEmbed(tweet, callback);
+
+				/*
+				// Disabled thanks to twitter's new api
+
+				VMM.getJSON(the_url, function(d) {
+					var id		= d.id_str,
+						twit	= "<blockquote><p>",
+						td		= VMM.Util.linkify_with_twitter(d.text, "_blank");
+
+					//	TWEET CONTENT
+					twit += td;
+					twit += "</p></blockquote>";
+
+					//	TWEET MEDIA
+					if (typeof d.entities.media != 'undefined') {
+						if (d.entities.media[0].type == "photo") {
+							//twit += "<img src=' " + d.entities.media[0].media_url + "'  alt=''>"
+						}
+					}
+
+					//	TWEET AUTHOR
+					twit += "<div class='vcard author'>";
+					twit += "<a class='screen-name url' href='https://twitter.com/" + d.user.screen_name + "' data-screen-name='" + d.user.screen_name + "' target='_blank'>";
+					twit += "<span class='avatar'><img src=' " + d.user.profile_image_url + "'  alt=''></span>";
+					twit += "<span class='fn'>" + d.user.name + "</span>";
+					twit += "<span class='nickname'>@" + d.user.screen_name + "<span class='thumbnail-inline'></span></span>";
+					twit += "</a>";
+					twit += "</div>";
+
+
+
+					VMM.attachElement("#"+tweet.id.toString(), twit );
+					VMM.attachElement("#text_thumb_"+tweet.id.toString(), d.text );
+					VMM.attachElement("#marker_content_" + tweet.id.toString(), d.text );
+
+				})
+				.error(function(jqXHR, textStatus, errorThrown) {
+					trace("TWITTER error");
+					trace("TWITTER ERROR: " + textStatus + " " + jqXHR.responseText);
+					VMM.attachElement("#"+tweet.id, VMM.MediaElement.loadingmessage("ERROR LOADING TWEET " + tweet.mid) );
+				})
+				.success(function(d) {
+					clearTimeout(twitter_timeout);
+					clearTimeout(callback_timeout);
+					callback();
+				});
+
+				*/
+			},
+
+			errorTimeOut: function(tweet) {
+				trace("TWITTER JSON ERROR TIMEOUT " + tweet.mid);
+				VMM.attachElement("#"+tweet.id.toString(), VMM.MediaElement.loadingmessage("Still waiting on Twitter: " + tweet.mid) );
+				// CHECK RATE STATUS
+				VMM.getJSON("http://api.twitter.com/1/account/rate_limit_status.json", function(d) {
+					trace("REMAINING TWITTER API CALLS " + d.remaining_hits);
+					trace("TWITTER RATE LIMIT WILL RESET AT " + d.reset_time);
+					var mes = "";
+					if (d.remaining_hits == 0) {
+						mes		= 	"<p>You've reached the maximum number of tweets you can load in an hour.</p>";
+						mes 	+=	"<p>You can view tweets again starting at: <br/>" + d.reset_time + "</p>";
+					} else {
+						mes		=	"<p>Still waiting on Twitter. " + tweet.mid + "</p>";
+						//mes 	= 	"<p>Tweet " + id + " was not found.</p>";
+					}
+					VMM.attachElement("#"+tweet.id.toString(), VMM.MediaElement.loadingmessage(mes) );
+				});
+
+			},
+
+			errorTimeOutOembed: function(tweet) {
+				trace("TWITTER JSON ERROR TIMEOUT " + tweet.mid);
+				VMM.attachElement("#"+tweet.id.toString(), VMM.MediaElement.loadingmessage("Still waiting on Twitter: " + tweet.mid) );
+			},
+
+			pushQue: function() {
+				if (VMM.master_config.twitter.que.length > 0) {
+					VMM.ExternalAPI.twitter.create(VMM.master_config.twitter.que[0], VMM.ExternalAPI.twitter.pushQue);
+					VMM.master_config.twitter.que.remove(0);
+				}
+			},
+
+			getOEmbed: function(tweet, callback) {
+
+				var the_url = "http://api.twitter.com/1/statuses/oembed.json?id=" + tweet.mid + "&omit_script=true&include_entities=true&callback=?",
+					twitter_timeout	= setTimeout(VMM.ExternalAPI.twitter.errorTimeOutOembed, VMM.master_config.timers.api, tweet);
+					//callback_timeout= setTimeout(callback, VMM.master_config.timers.api, tweet);
+
+				VMM.getJSON(the_url, function(d) {
+					var twit	= "",
+						tuser	= "";
+
+
+					//	TWEET CONTENT
+					twit += d.html.split("<\/p>\&mdash;")[0] + "</p></blockquote>";
+					tuser = d.author_url.split("twitter.com\/")[1];
+
+
+					//	TWEET AUTHOR
+					twit += "<div class='vcard author'>";
+					twit += "<a class='screen-name url' href='" + d.author_url + "' target='_blank'>";
+					twit += "<span class='avatar'></span>";
+					twit += "<span class='fn'>" + d.author_name + "</span>";
+					twit += "<span class='nickname'>@" + tuser + "<span class='thumbnail-inline'></span></span>";
+					twit += "</a>";
+					twit += "</div>";
+
+					VMM.attachElement("#"+tweet.id.toString(), twit );
+					VMM.attachElement("#text_thumb_"+tweet.id.toString(), d.html );
+					VMM.attachElement("#marker_content_" + tweet.id.toString(), d.html );
+				})
+				.error(function(jqXHR, textStatus, errorThrown) {
+					trace("TWITTER error");
+					trace("TWITTER ERROR: " + textStatus + " " + jqXHR.responseText);
+					clearTimeout(twitter_timeout);
+					//clearTimeout(callback_timeout);
+					VMM.attachElement("#"+tweet.id, VMM.MediaElement.loadingmessage("ERROR LOADING TWEET " + tweet.mid) );
+				})
+				.success(function(d) {
+					clearTimeout(twitter_timeout);
+					clearTimeout(callback_timeout);
+					callback();
+				});
+
+			},
+
+			getHTML: function(id) {
+				//var the_url = document.location.protocol + "//api.twitter.com/1/statuses/oembed.json?id=" + id+ "&callback=?";
+				var the_url = "http://api.twitter.com/1/statuses/oembed.json?id=" + id+ "&omit_script=true&include_entities=true&callback=?";
+				VMM.getJSON(the_url, VMM.ExternalAPI.twitter.onJSONLoaded);
+			},
+
+			onJSONLoaded: function(d) {
+				trace("TWITTER JSON LOADED");
+				var id = d.id;
+				VMM.attachElement("#"+id, VMM.Util.linkify_with_twitter(d.html) );
+			},
+
+			parseTwitterDate: function(d) {
+				var date = new Date(Date.parse(d));
+				/*
+				var t = d.replace(/(\d{1,2}[:]\d{2}[:]\d{2}) (.*)/, '$2 $1');
+				t = t.replace(/(\+\S+) (.*)/, '$2 $1');
+				var date = new Date(Date.parse(t)).toLocaleDateString();
+				var time = new Date(Date.parse(t)).toLocaleTimeString();
+				*/
+				return date;
+			},
+
+			prettyParseTwitterDate: function(d) {
+				var date = new Date(Date.parse(d));
+				return VMM.Date.prettyDate(date, true);
+			},
+
+			getTweets: function(tweets) {
+				var tweetArray = [];
+				var number_of_tweets = tweets.length;
+
+				for(var i = 0; i < tweets.length; i++) {
+
+					var twitter_id = "";
+
+
+					/* FIND THE TWITTER ID
+					================================================== */
+					if (tweets[i].tweet.match("status\/")) {
+						twitter_id = tweets[i].tweet.split("status\/")[1];
+					} else if (tweets[i].tweet.match("statuses\/")) {
+						twitter_id = tweets[i].tweet.split("statuses\/")[1];
+					} else {
+						twitter_id = "";
+					}
+
+					/* FETCH THE DATA
+					================================================== */
+					var the_url = "http://api.twitter.com/1/statuses/show.json?id=" + twitter_id + "&include_entities=true&callback=?";
+					VMM.getJSON(the_url, function(d) {
+
+						var tweet = {}
+						/* FORMAT RESPONSE
+						================================================== */
+						var twit = "<div class='twitter'><blockquote><p>";
+						var td = VMM.Util.linkify_with_twitter(d.text, "_blank");
+						twit += td;
+						twit += "</p>";
+
+						twit += "— " + d.user.name + " (<a href='https://twitter.com/" + d.user.screen_name + "'>@" + d.user.screen_name + "</a>) <a href='https://twitter.com/" + d.user.screen_name + "/status/" + d.id + "'>" + VMM.ExternalAPI.twitter.prettyParseTwitterDate(d.created_at) + " </a></blockquote></div>";
+
+						tweet.content = twit;
+						tweet.raw = d;
+
+						tweetArray.push(tweet);
+
+
+						/* CHECK IF THATS ALL OF THEM
+						================================================== */
+						if (tweetArray.length == number_of_tweets) {
+							var the_tweets = {tweetdata: tweetArray}
+							VMM.fireEvent(global, "TWEETSLOADED", the_tweets);
+						}
+					})
+					.success(function() { trace("second success"); })
+					.error(function() { trace("error"); })
+					.complete(function() { trace("complete"); });
+
+				}
+
+
+			},
+
+			getTweetSearch: function(tweets, number_of_tweets) {
+				var _number_of_tweets = 40;
+				if (number_of_tweets != null && number_of_tweets != "") {
+					_number_of_tweets = number_of_tweets;
+				}
+
+				var the_url = "http://search.twitter.com/search.json?q=" + tweets + "&rpp=" + _number_of_tweets + "&include_entities=true&result_type=mixed";
+				var tweetArray = [];
+				VMM.getJSON(the_url, function(d) {
+
+					/* FORMAT RESPONSE
+					================================================== */
+					for(var i = 0; i < d.results.length; i++) {
+						var tweet = {}
+						var twit = "<div class='twitter'><blockquote><p>";
+						var td = VMM.Util.linkify_with_twitter(d.results[i].text, "_blank");
+						twit += td;
+						twit += "</p>";
+						twit += "— " + d.results[i].from_user_name + " (<a href='https://twitter.com/" + d.results[i].from_user + "'>@" + d.results[i].from_user + "</a>) <a href='https://twitter.com/" + d.results[i].from_user + "/status/" + d.id + "'>" + VMM.ExternalAPI.twitter.prettyParseTwitterDate(d.results[i].created_at) + " </a></blockquote></div>";
+						tweet.content = twit;
+						tweet.raw = d.results[i];
+						tweetArray.push(tweet);
+					}
+					var the_tweets = {tweetdata: tweetArray}
+					VMM.fireEvent(global, "TWEETSLOADED", the_tweets);
+				});
+
+			},
+
+			prettyHTML: function(id, secondary) {
+				var id = id.toString();
+				var error_obj = {
+					twitterid: id
+				};
+				var the_url = "http://api.twitter.com/1/statuses/show.json?id=" + id + "&include_entities=true&callback=?";
+				var twitter_timeout = setTimeout(VMM.ExternalAPI.twitter.errorTimeOut, VMM.master_config.timers.api, id);
+
+				VMM.getJSON(the_url, VMM.ExternalAPI.twitter.formatJSON)
+					.error(function(jqXHR, textStatus, errorThrown) {
+						trace("TWITTER error");
+						trace("TWITTER ERROR: " + textStatus + " " + jqXHR.responseText);
+						VMM.attachElement("#twitter_"+id, "<p>ERROR LOADING TWEET " + id + "</p>" );
+					})
+					.success(function(d) {
+						clearTimeout(twitter_timeout);
+						if (secondary) {
+							VMM.ExternalAPI.twitter.secondaryMedia(d);
+						}
+					});
+			},
+
+
+
+			formatJSON: function(d) {
+				var id = d.id_str;
+
+				var twit = "<blockquote><p>";
+				var td = VMM.Util.linkify_with_twitter(d.text, "_blank");
+				//td = td.replace(/(@([\w]+))/g,"<a href='http://twitter.com/$2' target='_blank'>$1</a>");
+				//td = td.replace(/(#([\w]+))/g,"<a href='http://twitter.com/#search?q=%23$2' target='_blank'>$1</a>");
+				twit += td;
+				twit += "</p></blockquote>";
+				//twit += " <a href='https://twitter.com/" + d.user.screen_name + "/status/" + d.id_str + "' target='_blank' alt='link to original tweet' title='link to original tweet'>" + "<span class='created-at'></span>" + " </a>";
+
+				twit += "<div class='vcard author'>";
+				twit += "<a class='screen-name url' href='https://twitter.com/" + d.user.screen_name + "' data-screen-name='" + d.user.screen_name + "' target='_blank'>";
+				twit += "<span class='avatar'><img src=' " + d.user.profile_image_url + "'  alt=''></span>";
+				twit += "<span class='fn'>" + d.user.name + "</span>";
+				twit += "<span class='nickname'>@" + d.user.screen_name + "<span class='thumbnail-inline'></span></span>";
+				twit += "</a>";
+				twit += "</div>";
+
+				if (typeof d.entities.media != 'undefined') {
+					if (d.entities.media[0].type == "photo") {
+						twit += "<img src=' " + d.entities.media[0].media_url + "'  alt=''>"
+					}
+				}
+
+				VMM.attachElement("#twitter_"+id.toString(), twit );
+				VMM.attachElement("#text_thumb_"+id.toString(), d.text );
+
+			}
+
+
+		},
+
+		googlemaps: {
+
+			maptype: "toner",
+
+			setMapType: function(d) {
+				if (d != "") {
+					VMM.ExternalAPI.googlemaps.maptype = d;
+				}
+			},
+
+			get: function(m) {
+				var timer,
+					api_key,
+					map_url;
+
+				m.vars = VMM.Util.getUrlVars(m.id);
+
+				if (VMM.ExternalAPI.keys.google != "") {
+					api_key = VMM.ExternalAPI.keys.google;
+				} else {
+					api_key = Aes.Ctr.decrypt(VMM.ExternalAPI.keys_master.google, VMM.ExternalAPI.keys_master.vp, 256);
+				}
+
+
+				/*
+					Investigating a google map api change on the latest release that causes custom map types to stop working
+					http://stackoverflow.com/questions/13486271/google-map-markermanager-cannot-call-method-substr-of-undefined
+					soulution is to use api ver 3.9
+				*/
+				map_url = "http://maps.googleapis.com/maps/api/js?key=" + api_key + "&v=3.9&libraries=places&sensor=false&callback=VMM.ExternalAPI.googlemaps.onMapAPIReady";
+
+				if (VMM.master_config.googlemaps.active) {
+					VMM.master_config.googlemaps.que.push(m);
+				} else {
+					VMM.master_config.googlemaps.que.push(m);
+
+					if (VMM.master_config.googlemaps.api_loaded) {
+
+					} else {
+						LoadLib.js(map_url, function() {
+							trace("Google Maps API Library Loaded");
+						});
+					}
+				}
+			},
+
+			create: function(m) {
+				VMM.ExternalAPI.googlemaps.createAPIMap(m);
+			},
+
+			createiFrameMap: function(m) {
+				var embed_url		= m.id + "&output=embed",
+					mc				= "",
+					unique_map_id	= m.uid.toString() + "_gmap";
+
+				mc				+= "<div class='google-map' id='" + unique_map_id + "' style='width=100%;height=100%;'>";
+				mc				+= "<iframe width='100%' height='100%' frameborder='0' scrolling='no' marginheight='0' marginwidth='0' src='" + embed_url + "'></iframe>";
+				mc				+= "</div>";
+
+				VMM.attachElement("#" + m.uid, mc);
+
+			},
+
+			createAPIMap: function(m) {
+				var map_attribution	= "",
+					layer,
+					map,
+					map_options,
+					unique_map_id			= m.uid.toString() + "_gmap",
+					map_attribution_html	= "",
+					location				= new google.maps.LatLng(41.875696,-87.624207),
+					latlong,
+					zoom					= 11,
+					has_location			= false,
+					has_zoom				= false,
+					api_limit				= false,
+					map_bounds;
+
+
+				function mapProvider(name) {
+					if (name in VMM.ExternalAPI.googlemaps.map_providers) {
+						map_attribution = VMM.ExternalAPI.googlemaps.map_attribution[VMM.ExternalAPI.googlemaps.map_providers[name].attribution];
+						return VMM.ExternalAPI.googlemaps.map_providers[name];
+					} else {
+						if (VMM.ExternalAPI.googlemaps.defaultType(name)) {
+							trace("GOOGLE MAP DEFAULT TYPE");
+							return google.maps.MapTypeId[name.toUpperCase()];
+						} else {
+							trace("Not a maptype: " + name );
+						}
+					}
+				}
+
+				google.maps.VeriteMapType = function(name) {
+					if (VMM.ExternalAPI.googlemaps.defaultType(name)) {
+						return google.maps.MapTypeId[name.toUpperCase()];
+					} else {
+						var provider = 			mapProvider(name);
+						return google.maps.ImageMapType.call(this, {
+							"getTileUrl": function(coord, zoom) {
+								var index = 	(zoom + coord.x + coord.y) % VMM.ExternalAPI.googlemaps.map_subdomains.length;
+								return [
+									provider.url
+										.replace("{S}", VMM.ExternalAPI.googlemaps.map_subdomains[index])
+										.replace("{Z}", zoom)
+										.replace("{X}", coord.x)
+										.replace("{Y}", coord.y)
+										.replace("{z}", zoom)
+										.replace("{x}", coord.x)
+										.replace("{y}", coord.y)
+								];
+							},
+							"tileSize": 		new google.maps.Size(256, 256),
+							"name":				name,
+							"minZoom":			provider.minZoom,
+							"maxZoom":			provider.maxZoom
+						});
+					}
+				};
+
+				google.maps.VeriteMapType.prototype = new google.maps.ImageMapType("_");
+
+				/* Make the Map
+				================================================== */
+
+				if (VMM.ExternalAPI.googlemaps.maptype != "") {
+					if (VMM.ExternalAPI.googlemaps.defaultType(VMM.ExternalAPI.googlemaps.maptype)) {
+						layer				=	google.maps.MapTypeId[VMM.ExternalAPI.googlemaps.maptype.toUpperCase()];
+					} else {
+						layer				=	VMM.ExternalAPI.googlemaps.maptype;
+					}
+				} else {
+					layer					=	"toner";
+				}
+
+
+				if (type.of(VMM.Util.getUrlVars(m.id)["ll"]) == "string") {
+					has_location			= true;
+					latlong					= VMM.Util.getUrlVars(m.id)["ll"].split(",");
+					location				= new google.maps.LatLng(parseFloat(latlong[0]),parseFloat(latlong[1]));
+
+				} else if (type.of(VMM.Util.getUrlVars(m.id)["sll"]) == "string") {
+					latlong					= VMM.Util.getUrlVars(m.id)["sll"].split(",");
+					location				= new google.maps.LatLng(parseFloat(latlong[0]),parseFloat(latlong[1]));
+				}
+
+				if (type.of(VMM.Util.getUrlVars(m.id)["z"]) == "string") {
+					has_zoom				=	true;
+					zoom					=	parseFloat(VMM.Util.getUrlVars(m.id)["z"]);
+				}
+
+				map_options = {
+					zoom:						zoom,
+					draggable: 					false,
+					disableDefaultUI:			true,
+					mapTypeControl:				false,
+					zoomControl:				true,
+					zoomControlOptions: {
+						style:					google.maps.ZoomControlStyle.SMALL,
+						position:				google.maps.ControlPosition.TOP_RIGHT
+					},
+					center: 					location,
+					mapTypeId:					layer,
+					mapTypeControlOptions: {
+				        mapTypeIds:				[layer]
+				    }
+				}
+
+				VMM.attachElement("#" + m.uid, "<div class='google-map' id='" + unique_map_id + "' style='width=100%;height=100%;'></div>");
+
+				map		= new google.maps.Map(document.getElementById(unique_map_id), map_options);
+
+				if (VMM.ExternalAPI.googlemaps.defaultType(VMM.ExternalAPI.googlemaps.maptype)) {
+
+				} else {
+					map.mapTypes.set(layer, new google.maps.VeriteMapType(layer));
+					// ATTRIBUTION
+					map_attribution_html =	"<div class='map-attribution'><div class='attribution-text'>" + map_attribution + "</div></div>";
+					VMM.appendElement("#"+unique_map_id, map_attribution_html);
+				}
+
+				// DETERMINE IF KML IS POSSIBLE
+				if (type.of(VMM.Util.getUrlVars(m.id)["msid"]) == "string") {
+					loadKML();
+				} else {
+					//loadPlaces();
+					if (type.of(VMM.Util.getUrlVars(m.id)["q"]) == "string") {
+						geocodePlace();
+					}
+				}
+
+				// GEOCODE
+				function geocodePlace() {
+
+
+
+					var geocoder	= new google.maps.Geocoder(),
+						address		= VMM.Util.getUrlVars(m.id)["q"],
+						marker;
+
+					if (address.match("loc:")) {
+						var address_latlon = address.split(":")[1].split("+");
+						location = new google.maps.LatLng(parseFloat(address_latlon[0]),parseFloat(address_latlon[1]));
+						has_location = true;
+					}
+
+					geocoder.geocode( { 'address': address}, function(results, status) {
+						if (status == google.maps.GeocoderStatus.OK) {
+
+							marker = new google.maps.Marker({
+								map: map,
+								position: results[0].geometry.location
+							});
+
+							// POSITION MAP
+							//map.setCenter(results[0].geometry.location);
+							//map.panTo(location);
+							if (typeof results[0].geometry.viewport != 'undefined') {
+								map.fitBounds(results[0].geometry.viewport);
+							} else if (typeof results[0].geometry.bounds != 'undefined') {
+								map.fitBounds(results[0].geometry.bounds);
+							} else {
+								map.setCenter(results[0].geometry.location);
+							}
+
+							if (has_location) {
+								map.panTo(location);
+							}
+							if (has_zoom) {
+								map.setZoom(zoom);
+							}
+
+						} else {
+							trace("Geocode for " + address + " was not successful for the following reason: " + status);
+							trace("TRYING PLACES SEARCH");
+
+							if (has_location) {
+								map.panTo(location);
+							}
+							if (has_zoom) {
+								map.setZoom(zoom);
+							}
+
+							loadPlaces();
+						}
+					});
+				}
+
+				// PLACES
+				function loadPlaces() {
+					var place,
+						search_request,
+						infowindow,
+						search_bounds,
+						bounds_sw,
+						bounds_ne;
+
+					place_search	= new google.maps.places.PlacesService(map);
+					infowindow		= new google.maps.InfoWindow();
+
+					search_request = {
+						query:		"",
+						types:		['country', 'neighborhood', 'political', 'locality', 'geocode']
+					};
+
+					if (type.of(VMM.Util.getUrlVars(m.id)["q"]) == "string") {
+						search_request.query	= VMM.Util.getUrlVars(m.id)["q"];
+					}
+
+					if (has_location) {
+						search_request.location	= location;
+						search_request.radius	= "15000";
+					} else {
+						bounds_sw = new google.maps.LatLng(-89.999999,-179.999999);
+						bounds_ne = new google.maps.LatLng(89.999999,179.999999);
+						search_bounds = new google.maps.LatLngBounds(bounds_sw,bounds_ne);
+
+						//search_request.location	= search_bounds;
+					}
+
+					place_search.textSearch(search_request, placeResults);
+
+					function placeResults(results, status) {
+
+						if (status == google.maps.places.PlacesServiceStatus.OK) {
+
+							for (var i = 0; i < results.length; i++) {
+								//createMarker(results[i]);
+							}
+
+							if (has_location) {
+								map.panTo(location);
+							} else {
+								if (results.length >= 1) {
+									map.panTo(results[0].geometry.location);
+									if (has_zoom) {
+										map.setZoom(zoom);
+									}
+								}
+							}
+
+
+						} else {
+							trace("Place search for " + search_request.query + " was not successful for the following reason: " + status);
+							// IF There's a problem loading the map, load a simple iFrame version instead
+							trace("YOU MAY NEED A GOOGLE MAPS API KEY IN ORDER TO USE THIS FEATURE OF TIMELINEJS");
+							trace("FIND OUT HOW TO GET YOUR KEY HERE: https://developers.google.com/places/documentation/#Authentication");
+
+
+							if (has_location) {
+								map.panTo(location);
+								if (has_zoom) {
+									map.setZoom(zoom);
+								}
+							} else {
+								trace("USING SIMPLE IFRAME MAP EMBED");
+								if (m.id[0].match("https")) {
+									m.id = m.url[0].replace("https", "http");
+								}
+								VMM.ExternalAPI.googlemaps.createiFrameMap(m);
+							}
+
+						}
+
+					}
+
+					function createMarker(place) {
+						var marker, placeLoc;
+
+						placeLoc = place.geometry.location;
+						marker = new google.maps.Marker({
+							map: map,
+							position: place.geometry.location
+						});
+
+						google.maps.event.addListener(marker, 'click', function() {
+							infowindow.setContent(place.name);
+							infowindow.open(map, this);
+						});
+					}
+
+				}
+
+				function loadPlacesAlt() {
+					var api_key,
+						places_url,
+						has_key		= false;
+
+					trace("LOADING PLACES API FOR GOOGLE MAPS");
+
+					if (VMM.ExternalAPI.keys.google != "") {
+						api_key	= VMM.ExternalAPI.keys.google;
+						has_key	= true;
+					} else {
+						trace("YOU NEED A GOOGLE MAPS API KEY IN ORDER TO USE THIS FEATURE OF TIMELINEJS");
+						trace("FIND OUT HOW TO GET YOUR KEY HERE: https://developers.google.com/places/documentation/#Authentication");
+					}
+
+					places_url		= "https://maps.googleapis.com/maps/api/place/textsearch/json?key=" + api_key + "&sensor=false&language=" + m.lang + "&";
+
+					if (type.of(VMM.Util.getUrlVars(m.id)["q"]) == "string") {
+						places_url	+= "query=" + VMM.Util.getUrlVars(m.id)["q"];
+					}
+
+					if (has_location) {
+						places_url	+= "&location=" + location;
+					}
+
+					if (has_key) {
+						VMM.getJSON(places_url, function(d) {
+							trace("PLACES JSON");
+
+							var places_location 	= "",
+								places_bounds		= "",
+								places_bounds_ne	= "",
+								places_bounds_sw	= "";
+
+							trace(d);
+
+							if (d.status == "OVER_QUERY_LIMIT") {
+								trace("OVER_QUERY_LIMIT");
+								if (has_location) {
+									map.panTo(location);
+									if (has_zoom) {
+										map.setZoom(zoom);
+									}
+								} else {
+									trace("DOING TRADITIONAL MAP IFRAME EMBED UNTIL QUERY LIMIT RESTORED");
+									api_limit = true;
+									VMM.ExternalAPI.googlemaps.createiFrameMap(m);
+								}
+
+							} else {
+								if (d.results.length >= 1) {
+									//location = new google.maps.LatLng(parseFloat(d.results[0].geometry.location.lat),parseFloat(d.results[0].geometry.location.lng));
+									//map.panTo(location);
+
+									places_bounds_ne	= new google.maps.LatLng(parseFloat(d.results[0].geometry.viewport.northeast.lat),parseFloat(d.results[0].geometry.viewport.northeast.lng));
+									places_bounds_sw	= new google.maps.LatLng(parseFloat(d.results[0].geometry.viewport.southwest.lat),parseFloat(d.results[0].geometry.viewport.southwest.lng));
+
+									places_bounds = new google.maps.LatLngBounds(places_bounds_sw, places_bounds_ne)
+									map.fitBounds(places_bounds);
+
+								} else {
+									trace("NO RESULTS");
+								}
+
+								if (has_location) {
+									map.panTo(location);
+								}
+								if (has_zoom) {
+									map.setZoom(zoom);
+								}
+							}
+
+						})
+						.error(function(jqXHR, textStatus, errorThrown) {
+							trace("PLACES JSON ERROR");
+							trace("PLACES JSON ERROR: " + textStatus + " " + jqXHR.responseText);
+						})
+						.success(function(d) {
+							trace("PLACES JSON SUCCESS");
+						});
+					} else {
+						if (has_location) {
+							map.panTo(location);
+							if (has_zoom) {
+								map.setZoom(zoom);
+							}
+						} else {
+							trace("DOING TRADITIONAL MAP IFRAME EMBED BECAUSE NO GOOGLE MAP API KEY WAS PROVIDED");
+							VMM.ExternalAPI.googlemaps.createiFrameMap(m);
+						}
+					}
+
+
+				}
+
+				// KML
+				function loadKML() {
+					var kml_url, kml_layer, infowindow, text;
+
+					kml_url				= m.id + "&output=kml";
+					kml_url				= kml_url.replace("&output=embed", "");
+					kml_layer			= new google.maps.KmlLayer(kml_url, {preserveViewport:true});
+					infowindow			= new google.maps.InfoWindow();
+					kml_layer.setMap(map);
+
+					google.maps.event.addListenerOnce(kml_layer, "defaultviewport_changed", function() {
+
+						if (has_location) {
+							map.panTo(location);
+						} else {
+							map.fitBounds(kml_layer.getDefaultViewport() );
+						}
+						if (has_zoom) {
+							map.setZoom(zoom);
+						}
+					});
+
+					google.maps.event.addListener(kml_layer, 'click', function(kmlEvent) {
+						text			= kmlEvent.featureData.description;
+						showInfoWindow(text);
+
+						function showInfoWindow(c) {
+							infowindow.setContent(c);
+							infowindow.open(map);
+						}
+					});
+				}
+
+
+			},
+
+			pushQue: function() {
+				for(var i = 0; i < VMM.master_config.googlemaps.que.length; i++) {
+					VMM.ExternalAPI.googlemaps.create(VMM.master_config.googlemaps.que[i]);
+				}
+				VMM.master_config.googlemaps.que = [];
+			},
+
+			onMapAPIReady: function() {
+				VMM.master_config.googlemaps.map_active = true;
+				VMM.master_config.googlemaps.places_active = true;
+				VMM.ExternalAPI.googlemaps.onAPIReady();
+			},
+
+			onPlacesAPIReady: function() {
+				VMM.master_config.googlemaps.places_active = true;
+				VMM.ExternalAPI.googlemaps.onAPIReady();
+			},
+
+			onAPIReady: function() {
+				if (!VMM.master_config.googlemaps.active) {
+					if (VMM.master_config.googlemaps.map_active && VMM.master_config.googlemaps.places_active) {
+						VMM.master_config.googlemaps.active = true;
+						VMM.ExternalAPI.googlemaps.pushQue();
+					}
+				}
+			},
+
+			defaultType: function(name) {
+				if (name.toLowerCase() == "satellite" || name.toLowerCase() == "hybrid" || name.toLowerCase() == "terrain" || name.toLowerCase() == "roadmap") {
+					return true;
+				} else {
+					return false;
+				}
+			},
+
+			map_subdomains: ["", "a.", "b.", "c.", "d."],
+
+			map_attribution: {
+				"stamen": 			"Map tiles by <a href='http://stamen.com'>Stamen Design</a>, under <a href='http://creativecommons.org/licenses/by/3.0'>CC BY 3.0</a>. Data by <a href='http://openstreetmap.org'>OpenStreetMap</a>, under <a href='http://creativecommons.org/licenses/by-sa/3.0'>CC BY SA</a>.",
+				"apple": 			"Map data &copy; 2012  Apple, Imagery &copy; 2012 Apple"
+			},
+
+			map_providers: {
+				"toner": {
+					"url": 			"http://{S}tile.stamen.com/toner/{Z}/{X}/{Y}.png",
+					"minZoom": 		0,
+					"maxZoom": 		20,
+					"attribution": 	"stamen"
+
+				},
+				"toner-lines": {
+					"url": 			"http://{S}tile.stamen.com/toner-lines/{Z}/{X}/{Y}.png",
+					"minZoom": 		0,
+					"maxZoom": 		20,
+					"attribution": 	"stamen"
+				},
+				"toner-labels": {
+					"url": 			"http://{S}tile.stamen.com/toner-labels/{Z}/{X}/{Y}.png",
+					"minZoom": 		0,
+					"maxZoom": 		20,
+					"attribution": 	"stamen"
+				},
+				"sterrain": {
+					"url": 			"http://{S}tile.stamen.com/terrain/{Z}/{X}/{Y}.jpg",
+					"minZoom": 		4,
+					"maxZoom": 		20,
+					"attribution": 	"stamen"
+				},
+				"apple": {
+					"url": 			"http://gsp2.apple.com/tile?api=1&style=slideshow&layers=default&lang=en_US&z={z}&x={x}&y={y}&v=9",
+					"minZoom": 		4,
+					"maxZoom": 		14,
+					"attribution": 	"apple"
+				},
+				"watercolor": {
+					"url": 			"http://{S}tile.stamen.com/watercolor/{Z}/{X}/{Y}.jpg",
+					"minZoom": 		3,
+					"maxZoom": 		16,
+					"attribution": 	"stamen"
+				}
+			}
+		},
+
+		googleplus: {
+
+			get: function(m) {
+				var api_key;
+				var gplus = {user: m.user, activity: m.id, id: m.uid};
+
+				VMM.master_config.googleplus.que.push(gplus);
+				VMM.master_config.googleplus.active = true;
+			},
+
+			create: function(gplus, callback) {
+				var mediaElem			= "",
+					api_key				= "",
+					g_activity			= "",
+					g_content			= "",
+					g_attachments		= "",
+					gperson_api_url,
+					gactivity_api_url;
+					googleplus_timeout	= setTimeout(VMM.ExternalAPI.googleplus.errorTimeOut, VMM.master_config.timers.api, gplus),
+					callback_timeout	= setTimeout(callback, VMM.master_config.timers.api, gplus);
+
+
+				if (VMM.master_config.Timeline.api_keys.google != "") {
+					api_key = VMM.master_config.Timeline.api_keys.google;
+				} else {
+					api_key = Aes.Ctr.decrypt(VMM.master_config.api_keys_master.google, VMM.master_config.vp, 256);
+				}
+
+				gperson_api_url = "https://www.googleapis.com/plus/v1/people/" + gplus.user + "/activities/public?alt=json&maxResults=100&fields=items(id,url)&key=" + api_key;
+
+				//mediaElem	=	"<iframe class='doc' frameborder='0' width='100%' height='100%' src='" + gplus.url + "&amp;embedded=true'></iframe>";
+				mediaElem = "GOOGLE PLUS API CALL";
+
+				VMM.getJSON(gperson_api_url, function(p_data) {
+					for(var i = 0; i < p_data.items.length; i++) {
+						trace("loop");
+						if (p_data.items[i].url.split("posts/")[1] == gplus.activity) {
+							trace("FOUND IT!!");
+
+							g_activity = p_data.items[i].id;
+							gactivity_api_url = "https://www.googleapis.com/plus/v1/activities/" + g_activity + "?alt=json&key=" + api_key;
+
+							VMM.getJSON(gactivity_api_url, function(a_data) {
+								trace(a_data);
+								//a_data.url
+								//a_data.image.url
+								//a_data.actor.displayName
+								//a_data.provider.title
+								//a_data.object.content
+
+								//g_content		+=	"<h4>" + a_data.title + "</h4>";
+
+								if (typeof a_data.annotation != 'undefined') {
+									g_content	+=	"<div class='googleplus-annotation'>'" + a_data.annotation + "</div>";
+									g_content	+=	a_data.object.content;
+								} else {
+									g_content	+=	a_data.object.content;
+								}
+
+								if (typeof a_data.object.attachments != 'undefined') {
+
+									//g_attachments	+=	"<div class='googleplus-attachemnts'>";
+
+									for(var k = 0; k < a_data.object.attachments.length; k++) {
+										if (a_data.object.attachments[k].objectType == "photo") {
+											g_attachments	=	"<a href='" + a_data.object.url + "' target='_blank'>" + "<img src='" + a_data.object.attachments[k].image.url + "' class='article-thumb'></a>" + g_attachments;
+										} else if (a_data.object.attachments[k].objectType == "video") {
+											g_attachments	=	"<img src='" + a_data.object.attachments[k].image.url + "' class='article-thumb'>" + g_attachments;
+											g_attachments	+=	"<div>";
+											g_attachments	+=	"<a href='" + a_data.object.attachments[k].url + "' target='_blank'>"
+											g_attachments	+=	"<h5>" + a_data.object.attachments[k].displayName + "</h5>";
+											//g_attachments	+=	"<p>" + a_data.object.attachments[k].content + "</p>";
+											g_attachments	+=	"</a>";
+											g_attachments	+=	"</div>";
+										} else if (a_data.object.attachments[k].objectType == "article") {
+											g_attachments	+=	"<div>";
+											g_attachments	+=	"<a href='" + a_data.object.attachments[k].url + "' target='_blank'>"
+											g_attachments	+=	"<h5>" + a_data.object.attachments[k].displayName + "</h5>";
+											g_attachments	+=	"<p>" + a_data.object.attachments[k].content + "</p>";
+											g_attachments	+=	"</a>";
+											g_attachments	+=	"</div>";
+										}
+
+										trace(a_data.object.attachments[k]);
+									}
+
+									g_attachments	=	"<div class='googleplus-attachments'>" + g_attachments + "</div>";
+								}
+
+								//mediaElem		=	"<div class='googleplus'>";
+								mediaElem		=	"<div class='googleplus-content'>" + g_content + g_attachments + "</div>";
+
+								mediaElem		+=	"<div class='vcard author'><a class='screen-name url' href='" + a_data.url + "' target='_blank'>";
+								mediaElem		+=	"<span class='avatar'><img src='" + a_data.actor.image.url + "' style='max-width: 32px; max-height: 32px;'></span>"
+								mediaElem		+=	"<span class='fn'>" + a_data.actor.displayName + "</span>";
+								mediaElem		+=	"<span class='nickname'><span class='thumbnail-inline'></span></span>";
+								mediaElem		+=	"</a></div>";
+
+								VMM.attachElement("#googleplus_" + gplus.activity, mediaElem);
+
+
+							});
+
+							break;
+						}
+					}
+
+
+
+				})
+				.error(function(jqXHR, textStatus, errorThrown) {
+					var error_obj = VMM.parseJSON(jqXHR.responseText);
+					trace(error_obj.error.message);
+					VMM.attachElement("#googleplus_" + gplus.activity, VMM.MediaElement.loadingmessage("<p>ERROR LOADING GOOGLE+ </p><p>" + error_obj.error.message + "</p>"));
+				})
+				.success(function(d) {
+					clearTimeout(googleplus_timeout);
+					clearTimeout(callback_timeout);
+					callback();
+				});
+
+
+
+			},
+
+			pushQue: function() {
+				if (VMM.master_config.googleplus.que.length > 0) {
+					VMM.ExternalAPI.googleplus.create(VMM.master_config.googleplus.que[0], VMM.ExternalAPI.googleplus.pushQue);
+					VMM.master_config.googleplus.que.remove(0);
+				}
+				/*
+				for(var i = 0; i < VMM.master_config.googleplus.que.length; i++) {
+					VMM.ExternalAPI.googleplus.create(VMM.master_config.googleplus.que[i]);
+				}
+				VMM.master_config.googleplus.que = [];
+				*/
+			},
+
+			errorTimeOut: function(gplus) {
+				trace("GOOGLE+ JSON ERROR TIMEOUT " + gplus.activity);
+				VMM.attachElement("#googleplus_" + gplus.activity, VMM.MediaElement.loadingmessage("<p>Still waiting on GOOGLE+ </p><p>" + gplus.activity + "</p>"));
+
+			}
+
+		},
+
+		googledocs: {
+
+			get: function(m) {
+				VMM.master_config.googledocs.que.push(m);
+				VMM.master_config.googledocs.active = true;
+			},
+
+			create: function(m) {
+				var mediaElem = "";
+				if (m.id.match(/docs.google.com/i)) {
+					mediaElem	=	"<iframe class='doc' frameborder='0' width='100%' height='100%' src='" + m.id + "&amp;embedded=true'></iframe>";
+				} else {
+					mediaElem	=	"<iframe class='doc' frameborder='0' width='100%' height='100%' src='" + "http://docs.google.com/viewer?url=" + m.id + "&amp;embedded=true'></iframe>";
+				}
+				VMM.attachElement("#"+m.uid, mediaElem);
+			},
+
+			pushQue: function() {
+
+				for(var i = 0; i < VMM.master_config.googledocs.que.length; i++) {
+					VMM.ExternalAPI.googledocs.create(VMM.master_config.googledocs.que[i]);
+				}
+				VMM.master_config.googledocs.que = [];
+			}
+
+		},
+
+		flickr: {
+
+			get: function(m) {
+				VMM.master_config.flickr.que.push(m);
+				VMM.master_config.flickr.active = true;
+			},
+
+			create: function(m, callback) {
+				var api_key,
+					callback_timeout= setTimeout(callback, VMM.master_config.timers.api, m);
+
+				if (typeof VMM.master_config.Timeline != 'undefined' && VMM.master_config.Timeline.api_keys.flickr != "") {
+					api_key = VMM.master_config.Timeline.api_keys.flickr;
+				} else {
+					api_key = Aes.Ctr.decrypt(VMM.master_config.api_keys_master.flickr, VMM.master_config.vp, 256)
+				}
+				var the_url = "http://api.flickr.com/services/rest/?method=flickr.photos.getSizes&api_key=" + api_key + "&photo_id=" + m.id + "&format=json&jsoncallback=?";
+
+				VMM.getJSON(the_url, function(d) {
+					var flickr_id = d.sizes.size[0].url.split("photos\/")[1].split("/")[1];
+
+					var flickr_large_id = "#" + m.uid,
+						flickr_thumb_id = "#" + m.uid + "_thumb";
+						//flickr_thumb_id = "flickr_" + uid + "_thumb";
+
+					var flickr_img_size,
+						flickr_img_thumb,
+						flickr_size_found = false,
+						flickr_best_size = "Large";
+
+					flickr_best_size = VMM.ExternalAPI.flickr.sizes(VMM.master_config.sizes.api.height);
+					for(var i = 0; i < d.sizes.size.length; i++) {
+						if (d.sizes.size[i].label == flickr_best_size) {
+
+							flickr_size_found = true;
+							flickr_img_size = d.sizes.size[i].source;
+						}
+					}
+					if (!flickr_size_found) {
+						flickr_img_size = d.sizes.size[d.sizes.size.length - 2].source;
+					}
+
+					flickr_img_thumb = d.sizes.size[0].source;
+					VMM.Lib.attr(flickr_large_id, "src", flickr_img_size);
+					//VMM.attachElement(flickr_large_id, "<a href='" + flick.link + "' target='_blank'><img src='" + flickr_img_size + "'></a>");
+					VMM.attachElement(flickr_thumb_id, "<img src='" + flickr_img_thumb + "'>");
+
+				})
+				.error(function(jqXHR, textStatus, errorThrown) {
+					trace("FLICKR error");
+					trace("FLICKR ERROR: " + textStatus + " " + jqXHR.responseText);
+				})
+				.success(function(d) {
+					clearTimeout(callback_timeout);
+					callback();
+				});
+
+			},
+
+			pushQue: function() {
+				if (VMM.master_config.flickr.que.length > 0) {
+					VMM.ExternalAPI.flickr.create(VMM.master_config.flickr.que[0], VMM.ExternalAPI.flickr.pushQue);
+					VMM.master_config.flickr.que.remove(0);
+				}
+			},
+
+			sizes: function(s) {
+				var _size = "";
+				if (s <= 75) {
+					_size = "Thumbnail";
+				} else if (s <= 180) {
+					_size = "Small";
+				} else if (s <= 240) {
+					_size = "Small 320";
+				} else if (s <= 375) {
+					_size = "Medium";
+				} else if (s <= 480) {
+					_size = "Medium 640";
+				} else if (s <= 600) {
+					_size = "Large";
+				} else {
+					_size = "Large";
+				}
+
+				return _size;
+			}
+
+		},
+
+		instagram: {
+			get: function(m, thumb) {
+				if (thumb) {
+					return "http://instagr.am/p/" + m.id + "/media/?size=t";
+				} else {
+					return "http://instagr.am/p/" + m.id + "/media/?size=" + VMM.ExternalAPI.instagram.sizes(VMM.master_config.sizes.api.height);
+				}
+			},
+
+			sizes: function(s) {
+				var _size = "";
+				if (s <= 150) {
+					_size = "t";
+				} else if (s <= 306) {
+					_size = "m";
+				} else {
+					_size = "l";
+				}
+
+				return _size;
+			}
+		},
+
+		soundcloud: {
+
+			get: function(m) {
+				VMM.master_config.soundcloud.que.push(m);
+				VMM.master_config.soundcloud.active = true;
+			},
+
+			create: function(m, callback) {
+				var the_url = "http://soundcloud.com/oembed?url=" + m.id + "&format=js&callback=?";
+				VMM.getJSON(the_url, function(d) {
+					VMM.attachElement("#"+m.uid, d.html);
+					callback();
+				});
+			},
+
+			pushQue: function() {
+				if (VMM.master_config.soundcloud.que.length > 0) {
+					VMM.ExternalAPI.soundcloud.create(VMM.master_config.soundcloud.que[0], VMM.ExternalAPI.soundcloud.pushQue);
+					VMM.master_config.soundcloud.que.remove(0);
+				}
+			}
+
+		},
+
+		wikipedia: {
+
+			get: function(m) {
+				VMM.master_config.wikipedia.que.push(m);
+				VMM.master_config.wikipedia.active = true;
+			},
+
+			create: function(m, callback) {
+				var the_url = "http://" + m.lang + ".wikipedia.org/w/api.php?action=query&prop=extracts&redirects=&titles=" + m.id + "&exintro=1&format=json&callback=?";
+				callback_timeout= setTimeout(callback, VMM.master_config.timers.api, m);
+
+				if ( VMM.Browser.browser == "Explorer" && parseInt(VMM.Browser.version, 10) >= 7 && window.XDomainRequest) {
+					var temp_text	=	"<h4><a href='http://" + VMM.master_config.language.api.wikipedia + ".wikipedia.org/wiki/" + m.id + "' target='_blank'>" + m.url + "</a></h4>";
+					temp_text		+=	"<span class='wiki-source'>" + VMM.master_config.language.messages.wikipedia + "</span>";
+					temp_text		+=	"<p>Wikipedia entry unable to load using Internet Explorer 8 or below.</p>";
+					VMM.attachElement("#"+m.uid, temp_text );
+				}
+
+				VMM.getJSON(the_url, function(d) {
+					if (d.query) {
+						var wiki_extract,
+							wiki_title,
+							_wiki = "",
+							wiki_text = "",
+							wiki_number_of_paragraphs = 1,
+							wiki_text_array = [];
+
+						wiki_extract = VMM.Util.getObjectAttributeByIndex(d.query.pages, 0).extract;
+						wiki_title = VMM.Util.getObjectAttributeByIndex(d.query.pages, 0).title;
+
+						if (wiki_extract.match("<p>")) {
+							wiki_text_array = wiki_extract.split("<p>");
+						} else {
+							wiki_text_array.push(wiki_extract);
+						}
+
+						for(var i = 0; i < wiki_text_array.length; i++) {
+							if (i+1 <= wiki_number_of_paragraphs && i+1 < wiki_text_array.length) {
+								wiki_text	+= "<p>" + wiki_text_array[i+1];
+							}
+						}
+
+						_wiki		=	"<h4><a href='http://" + VMM.master_config.language.api.wikipedia + ".wikipedia.org/wiki/" + wiki_title + "' target='_blank'>" + wiki_title + "</a></h4>";
+						_wiki		+=	"<span class='wiki-source'>" + VMM.master_config.language.messages.wikipedia + "</span>";
+						_wiki		+=	VMM.Util.linkify_wikipedia(wiki_text);
+
+						if (wiki_extract.match("REDIRECT")) {
+
+						} else {
+							VMM.attachElement("#"+m.uid, _wiki );
+						}
+					}
+					//callback();
+				})
+				.error(function(jqXHR, textStatus, errorThrown) {
+					trace("WIKIPEDIA error");
+					trace("WIKIPEDIA ERROR: " + textStatus + " " + jqXHR.responseText);
+					trace(errorThrown);
+
+					VMM.attachElement("#"+m.uid, VMM.MediaElement.loadingmessage("<p>Wikipedia is not responding</p>"));
+					// TRY AGAIN?
+					clearTimeout(callback_timeout);
+					if (VMM.master_config.wikipedia.tries < 4) {
+						trace("WIKIPEDIA ATTEMPT " + VMM.master_config.wikipedia.tries);
+						trace(m);
+						VMM.master_config.wikipedia.tries++;
+						VMM.ExternalAPI.wikipedia.create(m, callback);
+					} else {
+						callback();
+					}
+
+				})
+				.success(function(d) {
+					VMM.master_config.wikipedia.tries = 0;
+					clearTimeout(callback_timeout);
+					callback();
+				});
+
+
+			},
+
+			pushQue: function() {
+
+				if (VMM.master_config.wikipedia.que.length > 0) {
+					trace("WIKIPEDIA PUSH QUE " + VMM.master_config.wikipedia.que.length);
+					VMM.ExternalAPI.wikipedia.create(VMM.master_config.wikipedia.que[0], VMM.ExternalAPI.wikipedia.pushQue);
+					VMM.master_config.wikipedia.que.remove(0);
+				}
+
+			}
+
+		},
+
+		youtube: {
+
+			get: function(m) {
+				var the_url = "http://gdata.youtube.com/feeds/api/videos/" + m.id + "?v=2&alt=jsonc&callback=?";
+
+				VMM.master_config.youtube.que.push(m);
+
+				if (!VMM.master_config.youtube.active) {
+					if (!VMM.master_config.youtube.api_loaded) {
+						LoadLib.js('http://www.youtube.com/player_api', function() {
+							trace("YouTube API Library Loaded");
+						});
+					}
+				}
+
+				// THUMBNAIL
+				VMM.getJSON(the_url, function(d) {
+					VMM.ExternalAPI.youtube.createThumb(d, m)
+				});
+
+			},
+
+			create: function(m) {
+				if (typeof(m.start) != 'undefined') {
+
+					var vidstart			= m.start.toString(),
+						vid_start_minutes	= 0,
+						vid_start_seconds	= 0;
+
+					if (vidstart.match('m')) {
+						vid_start_minutes = parseInt(vidstart.split("m")[0], 10);
+						vid_start_seconds = parseInt(vidstart.split("m")[1].split("s")[0], 10);
+						m.start = (vid_start_minutes * 60) + vid_start_seconds;
+					} else {
+						m.start = 0;
+					}
+				} else {
+					m.start = 0;
+				}
+
+				var p = {
+					active: 				false,
+					player: 				{},
+					name:					m.uid,
+					playing:				false,
+					hd:						false
+				};
+
+				if (typeof(m.hd) != 'undefined') {
+					p.hd = true;
+				}
+
+				p.player[m.id] = new YT.Player(m.uid, {
+					height: 				'390',
+					width: 					'640',
+					playerVars: {
+						enablejsapi:		1,
+						color: 				'white',
+						showinfo:			0,
+						theme:				'light',
+						start:				m.start,
+						rel:				0
+					},
+					videoId: m.id,
+					events: {
+						'onReady': 			VMM.ExternalAPI.youtube.onPlayerReady,
+						'onStateChange': 	VMM.ExternalAPI.youtube.onStateChange
+					}
+				});
+
+				VMM.master_config.youtube.array.push(p);
+			},
+
+			createThumb: function(d, m) {
+				trace("CREATE THUMB");
+				trace(d);
+				trace(m);
+				if (typeof d.data != 'undefined') {
+					var thumb_id = "#" + m.uid + "_thumb";
+					VMM.attachElement(thumb_id, "<img src='" + d.data.thumbnail.sqDefault + "'>");
+
+				}
+			},
+
+			pushQue: function() {
+				for(var i = 0; i < VMM.master_config.youtube.que.length; i++) {
+					VMM.ExternalAPI.youtube.create(VMM.master_config.youtube.que[i]);
+				}
+				VMM.master_config.youtube.que = [];
+			},
+
+			onAPIReady: function() {
+				VMM.master_config.youtube.active = true;
+				VMM.ExternalAPI.youtube.pushQue();
+			},
+
+			stopPlayers: function() {
+				for(var i = 0; i < VMM.master_config.youtube.array.length; i++) {
+					if (VMM.master_config.youtube.array[i].playing) {
+						var the_name = VMM.master_config.youtube.array[i].name;
+						VMM.master_config.youtube.array[i].player[the_name].stopVideo();
+					}
+				}
+			},
+
+			onStateChange: function(e) {
+				for(var i = 0; i < VMM.master_config.youtube.array.length; i++) {
+					var the_name = VMM.master_config.youtube.array[i].name;
+					if (VMM.master_config.youtube.array[i].player[the_name] == e.target) {
+						if (e.data == YT.PlayerState.PLAYING) {
+							VMM.master_config.youtube.array[i].playing = true;
+							trace(VMM.master_config.youtube.array[i].hd)
+							if (VMM.master_config.youtube.array[i].hd) {
+								// SET TO HD
+								// DOESN'T WORK AS OF NOW
+								//VMM.master_config.youtube.array[i].player.setPlaybackQuality("hd720");
+							}
+						}
+					}
+				}
+			},
+
+			onPlayerReady: function(e) {
+
+			}
+
+
+		},
+
+		vimeo: {
+
+			get: function(m) {
+				VMM.master_config.vimeo.que.push(m);
+				VMM.master_config.vimeo.active = true;
+			},
+
+			create: function(m, callback) {
+				trace("VIMEO CREATE");
+
+				// THUMBNAIL
+				var thumb_url	= "http://vimeo.com/api/v2/video/" + m.id + ".json",
+					video_url	= "http://player.vimeo.com/video/" + m.id + "?title=0&amp;byline=0&amp;portrait=0&amp;color=ffffff";
+
+				VMM.getJSON(thumb_url, function(d) {
+					VMM.ExternalAPI.vimeo.createThumb(d, m);
+					callback();
+				});
+
+
+				// VIDEO
+				VMM.attachElement("#" + m.uid, "<iframe autostart='false' frameborder='0' width='100%' height='100%' src='" + video_url + "'></iframe>");
+
+			},
+
+			createThumb: function(d, m) {
+				trace("VIMEO CREATE THUMB");
+				var thumb_id = "#" + m.uid + "_thumb";
+				VMM.attachElement(thumb_id, "<img src='" + d[0].thumbnail_small + "'>");
+			},
+
+			pushQue: function() {
+				if (VMM.master_config.vimeo.que.length > 0) {
+					VMM.ExternalAPI.vimeo.create(VMM.master_config.vimeo.que[0], VMM.ExternalAPI.vimeo.pushQue);
+					VMM.master_config.vimeo.que.remove(0);
+				}
+			}
+
+		},
+
+		vine: {
+
+			get: function(m) {
+				VMM.master_config.vine.que.push(m);
+				VMM.master_config.vine.active = true;
+			},
+
+			create: function(m, callback) {
+				trace("VINE CREATE");
+
+				var video_url	= "https://vine.co/v/" + m.id + "/embed/simple";
+
+
+
+				// VIDEO
+				// TODO: NEED TO ADD ASYNC SCRIPT TO TIMELINE FLOW
+				VMM.attachElement("#" + m.uid, "<iframe frameborder='0' width='100%' height='100%' src='" + video_url + "'></iframe><script async src='http://platform.vine.co/static/scripts/embed.js' charset='utf-8'></script>");
+
+			},
+
+			pushQue: function() {
+				if (VMM.master_config.vine.que.length > 0) {
+					VMM.ExternalAPI.vine.create(VMM.master_config.vine.que[0], VMM.ExternalAPI.vine.pushQue);
+					VMM.master_config.vine.que.remove(0);
+				}
+			}
+
+		},
+
+		webthumb: {
+
+			get: function(m, thumb) {
+				VMM.master_config.webthumb.que.push(m);
+				VMM.master_config.webthumb.active = true;
+			},
+
+			sizes: function(s) {
+				var _size = "";
+				if (s <= 150) {
+					_size = "t";
+				} else if (s <= 306) {
+					_size = "m";
+				} else {
+					_size = "l";
+				}
+
+				return _size;
+			},
+
+			create: function(m) {
+				trace("WEB THUMB CREATE");
+
+				var thumb_url	= "http://free.pagepeeker.com/v2/thumbs.php?";
+					url			= m.id.replace("http://", "");//.split("/")[0];
+
+				// Main Image
+				VMM.attachElement("#" + m.uid, "<a href='" + m.id + "' target='_blank'><img src='" + thumb_url + "size=x&url=" + url + "'></a>");
+
+				// Thumb
+				VMM.attachElement("#" + m.uid + "_thumb", "<img src='" + thumb_url + "size=t&url=" + url + "'>");
+			},
+
+			pushQue: function() {
+				for(var i = 0; i < VMM.master_config.webthumb.que.length; i++) {
+					VMM.ExternalAPI.webthumb.create(VMM.master_config.webthumb.que[i]);
+				}
+				VMM.master_config.webthumb.que = [];
+			}
+		}
+
+	}).init();
+
+}
+
+/*  YOUTUBE API READY
+	Can't find a way to customize this callback and keep it in the VMM namespace
+	Youtube wants it to be this function.
+================================================== */
+function onYouTubePlayerAPIReady() {
+	trace("GLOBAL YOUTUBE API CALLED")
+	VMM.ExternalAPI.youtube.onAPIReady();
+}
+
+/* **********************************************
+     Begin VMM.MediaElement.js
+********************************************** */
+
+/* MediaElement
+================================================== */
+if(typeof VMM != 'undefined' && typeof VMM.MediaElement == 'undefined') {
+
+	VMM.MediaElement = ({
+
+		init: function() {
+			return this;
+		},
+
+		loadingmessage: function(m) {
+			return "<div class='vco-loading'><div class='vco-loading-container'><div class='vco-loading-icon'></div>" + "<div class='vco-message'><p>" + m + "</p></div></div></div>";
+		},
+
+		thumbnail: function(data, w, h, uid) {
+			var _w		= 16,
+				_h		= 24,
+				_uid	= "";
+
+			if (w != null && w != "") {_w = w};
+			if (h != null && h != "") {_h = h};
+			if (uid != null && uid != "") {_uid = uid};
+
+			if (data.media != null && data.media != "") {
+				var _valid		= true,
+					mediaElem	= "",
+					m			= VMM.MediaType(data.media); //returns an object with .type and .id
+
+				// DETERMINE THUMBNAIL OR ICON
+				if (data.thumbnail != null && data.thumbnail != "") {
+					trace("CUSTOM THUMB");
+					mediaElem		=	"<div class='thumbnail thumb-custom' id='" + uid + "_custom_thumb'><img src='" + data.thumbnail + "'></div>";
+					return mediaElem;
+				} else if (m.type == "image") {
+					mediaElem		=	"<div class='thumbnail thumb-photo'></div>";
+					return mediaElem;
+				} else if (m.type	==	"flickr") {
+					mediaElem		=	"<div class='thumbnail thumb-photo' id='" + uid + "_thumb'></div>";
+					return mediaElem;
+				} else if (m.type	==	"instagram") {
+					mediaElem		=	"<div class='thumbnail thumb-instagram' id='" + uid + "_thumb'><img src='" + VMM.ExternalAPI.instagram.get(m.id, true) + "'></div>";
+					return mediaElem;
+				} else if (m.type	==	"youtube") {
+					mediaElem		=	"<div class='thumbnail thumb-youtube' id='" + uid + "_thumb'></div>";
+					return mediaElem;
+				} else if (m.type	==	"googledoc") {
+					mediaElem		=	"<div class='thumbnail thumb-document'></div>";
+					return mediaElem;
+				} else if (m.type	==	"vimeo") {
+					mediaElem		=	"<div class='thumbnail thumb-vimeo' id='" + uid + "_thumb'></div>";
+					return mediaElem;
+				} else if (m.type  ==  "vine") {
+					mediaElem		=  "<div class='thumbnail thumb-vine'></div>";
+					return mediaElem;
+				} else if (m.type  ==  "dailymotion") {
+					mediaElem		=  "<div class='thumbnail thumb-video'></div>";
+					return mediaElem;
+				} else if (m.type	==	"twitter"){
+					mediaElem		=	"<div class='thumbnail thumb-twitter'></div>";
+					return mediaElem;
+				} else if (m.type	==	"twitter-ready") {
+					mediaElem		=	"<div class='thumbnail thumb-twitter'></div>";
+					return mediaElem;
+				} else if (m.type	==	"soundcloud") {
+					mediaElem		=	"<div class='thumbnail thumb-audio'></div>";
+					return mediaElem;
+				} else if (m.type	==	"google-map") {
+					mediaElem		=	"<div class='thumbnail thumb-map'></div>";
+					return mediaElem;
+				} else if (m.type		==	"googleplus") {
+					mediaElem		=	"<div class='thumbnail thumb-googleplus'></div>";
+					return mediaElem;
+				} else if (m.type	==	"wikipedia") {
+					mediaElem		=	"<div class='thumbnail thumb-wikipedia'></div>";
+					return mediaElem;
+				} else if (m.type	==	"storify") {
+					mediaElem		=	"<div class='thumbnail thumb-storify'></div>";
+					return mediaElem;
+				} else if (m.type	==	"quote") {
+					mediaElem		=	"<div class='thumbnail thumb-quote'></div>";
+					return mediaElem;
+				} else if (m.type	==	"iframe") {
+					mediaElem		=	"<div class='thumbnail thumb-video'></div>";
+					return mediaElem;
+				} else if (m.type	==	"unknown") {
+					if (m.id.match("blockquote")) {
+						mediaElem	=	"<div class='thumbnail thumb-quote'></div>";
+					} else {
+						mediaElem	=	"<div class='thumbnail thumb-plaintext'></div>";
+					}
+					return mediaElem;
+				} else if (m.type	==	"website") {
+					mediaElem		=	"<div class='thumbnail thumb-website' id='" + uid + "_thumb'></div>";
+					return mediaElem;
+				} else {
+					mediaElem = "<div class='thumbnail thumb-plaintext'></div>";
+					return mediaElem;
+				}
+			}
+		},
+
+		create: function(data, uid) {
+			var _valid = false,
+				//loading_messege			=	"<span class='messege'><p>" + VMM.master_config.language.messages.loading + "</p></span>";
+				loading_messege			=	VMM.MediaElement.loadingmessage(VMM.master_config.language.messages.loading + "...");
+
+			if (data.media != null && data.media != "") {
+				var mediaElem = "", captionElem = "", creditElem = "", _id = "", isTextMedia = false, m;
+
+				m = VMM.MediaType(data.media); //returns an object with .type and .id
+				m.uid = uid;
+				_valid = true;
+
+			// CREDIT
+				if (data.credit != null && data.credit != "") {
+					creditElem			=	"<div class='credit'>" + VMM.Util.linkify_with_twitter(data.credit, "_blank") + "</div>";
+				}
+			// CAPTION
+				if (data.caption != null && data.caption != "") {
+					captionElem			=	"<div class='caption'>" + VMM.Util.linkify_with_twitter(data.caption, "_blank") + "</div>";
+				}
+			// IMAGE
+				if (m.type				==	"image") {
+					if (m.id.match("https://")) {
+						m.id = m.id.replace("https://","http://");
+					}
+					mediaElem			=	"<div class='media-image media-shadow'><img src='" + m.id + "' class='media-image'></div>";
+			// FLICKR
+				} else if (m.type		==	"flickr") {
+					//mediaElem			=	"<div class='media-image media-shadow' id='" + uid + "'>" + loading_messege + "</div>";
+					mediaElem			=	"<div class='media-image media-shadow'><a href='" + m.link + "' target='_blank'><img id='" + uid + "'></a></div>";
+					VMM.ExternalAPI.flickr.get(m);
+			// INSTAGRAM
+				} else if (m.type		==	"instagram") {
+					mediaElem			=	"<div class='media-image media-shadow'><a href='" + m.link + "' target='_blank'><img src='" + VMM.ExternalAPI.instagram.get(m) + "'></a></div>";
+					//VMM.ExternalAPI.instagram.get(m.id, uid);
+			// GOOGLE DOCS
+				} else if (m.type		==	"googledoc") {
+					mediaElem			=	"<div class='media-frame media-shadow doc' id='" + m.uid + "'>" + loading_messege + "</div>";
+					VMM.ExternalAPI.googledocs.get(m);
+			// YOUTUBE
+				} else if (m.type		==	"youtube") {
+					mediaElem			=	"<div class='media-shadow'><div class='media-frame video youtube' id='" + m.uid + "'>" + loading_messege + "</div></div>";
+					VMM.ExternalAPI.youtube.get(m);
+			// VIMEO
+				} else if (m.type		==	"vimeo") {
+					mediaElem			=	"<div class='media-shadow media-frame video vimeo' id='" + m.uid + "'>" + loading_messege + "</div>";
+					VMM.ExternalAPI.vimeo.get(m);
+			// DAILYMOTION
+				} else if (m.type		==	"dailymotion") {
+					mediaElem			=	"<div class='media-shadow'><iframe class='media-frame video dailymotion' autostart='false' frameborder='0' width='100%' height='100%' src='http://www.dailymotion.com/embed/video/" + m.id + "'></iframe></div>";
+			// VINE
+				} else if (m.type		==	"vine") {
+					mediaElem			=	"<div class='media-shadow media-frame video vine' id='" + m.uid + "'>" + loading_messege + "</div>";
+					VMM.ExternalAPI.vine.get(m);
+			// TWITTER
+				} else if (m.type		==	"twitter"){
+					mediaElem			=	"<div class='twitter' id='" + m.uid + "'>" + loading_messege + "</div>";
+					isTextMedia			=	true;
+					VMM.ExternalAPI.twitter.get(m);
+			// TWITTER
+				} else if (m.type		==	"twitter-ready") {
+					isTextMedia			=	true;
+					mediaElem			=	m.id;
+			// SOUNDCLOUD
+				} else if (m.type		==	"soundcloud") {
+					mediaElem			=	"<div class='media-frame media-shadow soundcloud' id='" + m.uid + "'>" + loading_messege + "</div>";
+					VMM.ExternalAPI.soundcloud.get(m);
+			// GOOGLE MAPS
+				} else if (m.type		==	"google-map") {
+					mediaElem			=	"<div class='media-frame media-shadow map' id='" + m.uid + "'>" + loading_messege + "</div>";
+					VMM.ExternalAPI.googlemaps.get(m);
+			// GOOGLE PLUS
+				} else if (m.type		==	"googleplus") {
+					_id					=	"googleplus_" + m.id;
+					mediaElem			=	"<div class='googleplus' id='" + _id + "'>" + loading_messege + "</div>";
+					isTextMedia			=	true;
+					VMM.ExternalAPI.googleplus.get(m);
+			// WIKIPEDIA
+				} else if (m.type		==	"wikipedia") {
+					mediaElem			=	"<div class='wikipedia' id='" + m.uid + "'>" + loading_messege + "</div>";
+					isTextMedia			=	true;
+					VMM.ExternalAPI.wikipedia.get(m);
+			// STORIFY
+				} else if (m.type		==	"storify") {
+					isTextMedia			=	true;
+					mediaElem			=	"<div class='plain-text-quote'>" + m.id + "</div>";
+			// IFRAME
+				} else if (m.type		==	"iframe") {
+					isTextMedia			=	true;
+					mediaElem			=	"<div class='media-shadow'><iframe class='media-frame video' autostart='false' frameborder='0' width='100%' height='100%' src='" + m.id + "'></iframe></div>";
+			// QUOTE
+				} else if (m.type		==	"quote") {
+					isTextMedia			=	true;
+					mediaElem			=	"<div class='plain-text-quote'>" + m.id + "</div>";
+			// UNKNOWN
+				} else if (m.type		==	"unknown") {
+					trace("NO KNOWN MEDIA TYPE FOUND TRYING TO JUST PLACE THE HTML");
+					isTextMedia			=	true;
+					mediaElem			=	"<div class='plain-text'><div class='container'>" + VMM.Util.properQuotes(m.id) + "</div></div>";
+			// WEBSITE
+				} else if (m.type		==	"website") {
+
+					mediaElem			=	"<div class='media-shadow website' id='" + m.uid + "'>" + loading_messege + "</div>";
+					VMM.ExternalAPI.webthumb.get(m);
+					//mediaElem			=	"<div class='media-shadow website'><a href='" + m.id + "' target='_blank'>" + "<img src='http://api1.thumbalizr.com/?url=" + m.id.replace(/[\./]$/g, "") + "&width=300' class='media-image'></a></div>";
+
+			// NO MATCH
+				} else {
+					trace("NO KNOWN MEDIA TYPE FOUND");
+					trace(m.type);
+				}
+
+			// WRAP THE MEDIA ELEMENT
+				mediaElem				=	"<div class='media-container' >" + mediaElem + creditElem + captionElem + "</div>";
+			// RETURN
+				if (isTextMedia) {
+					return "<div class='text-media'><div class='media-wrapper'>" + mediaElem + "</div></div>";
+				} else {
+					return "<div class='media-wrapper'>" + mediaElem + "</div>";
+				}
+
+			};
+
+		}
+
+	}).init();
+}
+
+/* **********************************************
+     Begin VMM.MediaType.js
+********************************************** */
+
+/*	MediaType
+	Determines the type of media the url string is.
+	returns an object with .type and .id
+	the id is a key piece of information needed to make
+	the request of the api.
+================================================== */
+if(typeof VMM != 'undefined' && typeof VMM.MediaType == 'undefined') {
+
+	VMM.MediaType = function(_d) {
+		var d		= _d.replace(/^\s\s*/, '').replace(/\s\s*$/, ''),
+			success	= false,
+			media	= {
+				type:		"unknown",
+				id:			"",
+				start:		0,
+				hd:			false,
+				link:		"",
+				lang:		VMM.Language.lang,
+				uniqueid:	VMM.Util.unique_ID(6)
+			};
+
+		if (d.match("div class='twitter'")) {
+			media.type = "twitter-ready";
+		    media.id = d;
+		    success = true;
+		} else if (d.match('(www.)?youtube|youtu\.be')) {
+			if (d.match('v=')) {
+				media.id	= VMM.Util.getUrlVars(d)["v"];
+			} else if (d.match('\/embed\/')) {
+				media.id	= d.split("embed\/")[1].split(/[?&]/)[0];
+			} else if (d.match(/v\/|v=|youtu\.be\//)){
+				media.id	= d.split(/v\/|v=|youtu\.be\//)[1].split(/[?&]/)[0];
+			} else {
+				trace("YOUTUBE IN URL BUT NOT A VALID VIDEO");
+			}
+			media.start	= VMM.Util.getUrlVars(d)["t"];
+			media.hd	= VMM.Util.getUrlVars(d)["hd"];
+		    media.type = "youtube";
+		    success = true;
+		} else if (d.match('(player.)?vimeo\.com')) {
+		    media.type = "vimeo";
+		    media.id = d.split(/video\/|\/\/vimeo\.com\//)[1].split(/[?&]/)[0];;
+		    success = true;
+	    } else if (d.match('(www.)?dailymotion\.com')) {
+			media.id = d.split(/video\/|\/\/dailymotion\.com\//)[1];
+			media.type = "dailymotion";
+			success = true;
+	    } else if (d.match('(www.)?vine\.co')) {
+			trace("VINE");
+			//https://vine.co/v/b55LOA1dgJU
+			if (d.match("vine.co/v/")) {
+				media.id = d.split("vine.co/v/")[1];
+				trace(media.id);
+			}
+			trace(d);
+			media.type = "vine";
+			success = true;
+		} else if (d.match('(player.)?soundcloud\.com')) {
+			media.type = "soundcloud";
+			media.id = d;
+			success = true;
+		} else if (d.match('(www.)?twitter\.com') && d.match('status') ) {
+			if (d.match("status\/")) {
+				media.id = d.split("status\/")[1];
+			} else if (d.match("statuses\/")) {
+				media.id = d.split("statuses\/")[1];
+			} else {
+				media.id = "";
+			}
+			media.type = "twitter";
+			success = true;
+		} else if (d.match("maps.google") && !d.match("staticmap")) {
+			media.type = "google-map";
+		    media.id = d.split(/src=['|"][^'|"]*?['|"]/gi);
+			success = true;
+		} else if (d.match("plus.google")) {
+			media.type = "googleplus";
+		    media.id = d.split("/posts/")[1];
+			//https://plus.google.com/u/0/112374836634096795698/posts/bRJSvCb5mUU
+			//https://plus.google.com/107096716333816995401/posts/J5iMpEDHWNL
+			if (d.split("/posts/")[0].match("u/0/")) {
+				media.user = d.split("u/0/")[1].split("/posts")[0];
+			} else {
+				media.user = d.split("google.com/")[1].split("/posts/")[0];
+			}
+			success = true;
+		} else if (d.match("flickr.com/photos")) {
+			media.type = "flickr";
+			media.id = d.split("photos\/")[1].split("/")[1];
+			media.link = d;
+			success = true;
+		} else if (d.match("instagr.am/p/")) {
+			media.type = "instagram";
+			media.link = d;
+			media.id = d.split("\/p\/")[1].split("/")[0];
+			success = true;
+		} else if (d.match(/jpg|jpeg|png|gif/i) || d.match("staticmap") || d.match("yfrog.com") || d.match("twitpic.com")) {
+			media.type = "image";
+			media.id = d;
+			success = true;
+		} else if (VMM.FileExtention.googleDocType(d)) {
+			media.type = "googledoc";
+			media.id = d;
+			success = true;
+		} else if (d.match('(www.)?wikipedia\.org')) {
+			media.type = "wikipedia";
+			//media.id = d.split("wiki\/")[1];
+			var wiki_id = d.split("wiki\/")[1].split("#")[0].replace("_", " ");
+			media.id = wiki_id.replace(" ", "%20");
+			media.lang = d.split("//")[1].split(".wikipedia")[0];
+			success = true;
+		} else if (d.indexOf('http://') == 0) {
+			media.type = "website";
+			media.id = d;
+			success = true;
+		} else if (d.match('storify')) {
+			media.type = "storify";
+			media.id = d;
+			success = true;
+		} else if (d.match('blockquote')) {
+			media.type = "quote";
+			media.id = d;
+			success = true;
+		} else if (d.match('iframe')) {
+			media.type = "iframe";
+			trace("IFRAME")
+			trace( d.match(/src\=([^\s]*)\s/)[1].split(/"/)[1]);
+			media.id = d.match(/src\=([^\s]*)\s/)[1].split(/"/)[1];
+			success = true;
+		} else {
+			trace("unknown media");
+			media.type = "unknown";
+			media.id = d;
+			success = true;
+		}
+
+		if (success) {
+			return media;
+		} else {
+			trace("No valid media id detected");
+			trace(d);
+		}
+		return false;
+	}
+}
+
+/* **********************************************
+     Begin VMM.TextElement.js
+********************************************** */
+
+/* TextElement
+================================================== */
+if(typeof VMM != 'undefined' && typeof VMM.TextElement == 'undefined') {
+
+	VMM.TextElement = ({
+
+		init: function() {
+			return this;
+		},
+
+		create: function(data) {
+			return data;
+		}
+
+	}).init();
+}
+
+/* **********************************************
+     Begin VMM.Media.js
+********************************************** */
+
+/* Media
+================================================== */
+
+/*	* CodeKit Import
+	* http://incident57.com/codekit/
+================================================== */
+// @codekit-prepend "VMM.ExternalAPI.js";
+// @codekit-prepend "VMM.MediaElement.js";
+// @codekit-prepend "VMM.MediaType.js";
+// @codekit-prepend "VMM.TextElement.js";
+
+
+/* **********************************************
+     Begin VMM.DragSlider.js
+********************************************** */
+
+/* DRAG SLIDER
+================================================== */
+if(typeof VMM != 'undefined' && typeof VMM.DragSlider == 'undefined') {
+
+	VMM.DragSlider = function() {
+		var drag = {
+			element:		"",
+			element_move:	"",
+			constraint:		"",
+			sliding:		false,
+			pagex: {
+				start:		0,
+				end:		0
+			},
+			pagey: {
+				start:		0,
+				end:		0
+			},
+			left: {
+				start:		0,
+				end:		0
+			},
+			time: {
+				start:		0,
+				end:		0
+			},
+			touch:			false,
+			ease:			"easeOutExpo"
+		},
+		dragevent = {
+			down:		"mousedown",
+			up:			"mouseup",
+			leave:		"mouseleave",
+			move:		"mousemove"
+		},
+		mousedrag = {
+			down:		"mousedown",
+			up:			"mouseup",
+			leave:		"mouseleave",
+			move:		"mousemove"
+		},
+		touchdrag = {
+			down:		"touchstart",
+			up:			"touchend",
+			leave:		"mouseleave",
+			move:		"touchmove"
+		},
+		dragslider		= this,
+		is_sticky		= false;
+
+		/* PUBLIC FUNCTIONS
+		================================================== */
+		this.createPanel = function(drag_object, move_object, constraint, touch, sticky) {
+			drag.element		= drag_object;
+			drag.element_move	= move_object;
+			//dragslider			= drag_object;
+			if ( sticky != null && sticky != "") {
+				is_sticky = sticky;
+			}
+			if ( constraint != null && constraint != "") {
+				drag.constraint = constraint;
+			} else {
+				drag.constraint = false;
+			}
+			if ( touch) {
+				drag.touch = touch;
+			} else {
+				drag.touch = false;
+			}
+			trace("TOUCH" + drag.touch);
+			if (drag.touch) {
+				dragevent = touchdrag;
+			} else {
+				dragevent = mousedrag;
+			}
+
+			makeDraggable(drag.element, drag.element_move);
+		}
+
+		this.updateConstraint = function(constraint) {
+			trace("updateConstraint");
+			drag.constraint = constraint;
+		}
+
+		this.cancelSlide = function(e) {
+			VMM.unbindEvent(drag.element, onDragMove, dragevent.move);
+			return true;
+		}
+
+		/* PRIVATE FUNCTIONS
+		================================================== */
+		function makeDraggable(drag_object, move_object) {
+
+			VMM.bindEvent(drag_object, onDragStart, dragevent.down, {element: move_object, delement: drag_object});
+			VMM.bindEvent(drag_object, onDragEnd, dragevent.up, {element: move_object, delement: drag_object});
+			VMM.bindEvent(drag_object, onDragLeave, dragevent.leave, {element: move_object, delement: drag_object});
+
+	    }
+
+		function onDragLeave(e) {
+			VMM.unbindEvent(e.data.delement, onDragMove, dragevent.move);
+			if (!drag.touch) {
+				e.preventDefault();
+			}
+			e.stopPropagation();
+			if (drag.sliding) {
+				drag.sliding = false;
+				dragEnd(e.data.element, e.data.delement, e);
+				return false;
+			} else {
+				return true;
+			}
+		}
+
+		function onDragStart(e) {
+			dragStart(e.data.element, e.data.delement, e);
+			if (!drag.touch) {
+				e.preventDefault();
+			}
+			//e.stopPropagation();
+			return true;
+		}
+
+		function onDragEnd(e) {
+			if (!drag.touch) {
+				e.preventDefault();
+			}
+			//e.stopPropagation();
+			if (drag.sliding) {
+				drag.sliding = false;
+				dragEnd(e.data.element, e.data.delement, e);
+				return false;
+			} else {
+				return true;
+			}
+		}
+
+		function onDragMove(e) {
+			dragMove(e.data.element, e);
+
+		}
+
+		function dragStart(elem, delem, e) {
+			if (drag.touch) {
+				trace("IS TOUCH")
+				VMM.Lib.css(elem, '-webkit-transition-duration', '0');
+				drag.pagex.start = e.originalEvent.touches[0].screenX;
+				drag.pagey.start = e.originalEvent.touches[0].screenY;
+			} else {
+				drag.pagex.start = e.pageX;
+				drag.pagey.start = e.pageY;
+			}
+			drag.left.start = getLeft(elem);
+			drag.time.start = new Date().getTime();
+
+			VMM.Lib.stop(elem);
+			VMM.bindEvent(delem, onDragMove, dragevent.move, {element: elem});
+
+	    }
+
+		function dragEnd(elem, delem, e) {
+			VMM.unbindEvent(delem, onDragMove, dragevent.move);
+			dragMomentum(elem, e);
+		}
+
+		function dragMove(elem, e) {
+			var drag_to, drag_to_y;
+			drag.sliding = true;
+			if (drag.touch) {
+				drag.pagex.end = e.originalEvent.touches[0].screenX;
+				drag.pagey.end = e.originalEvent.touches[0].screenY;
+			} else {
+				drag.pagex.end = e.pageX;
+				drag.pagey.end = e.pageY;
+			}
+
+			drag.left.end	= getLeft(elem);
+			drag_to			= -(drag.pagex.start - drag.pagex.end - drag.left.start);
+
+
+			if (Math.abs(drag.pagey.start) - Math.abs(drag.pagey.end) > 10) {
+				trace("SCROLLING Y")
+				trace(Math.abs(drag.pagey.start) - Math.abs(drag.pagey.end));
+			}
+			if (Math.abs(drag_to - drag.left.start) > 10) {
+				VMM.Lib.css(elem, 'left', drag_to);
+				e.preventDefault();
+				e.stopPropagation();
+			}
+		}
+
+		function dragMomentum(elem, e) {
+			var drag_info = {
+					left:			drag.left.end,
+					left_adjust:	0,
+					change: {
+						x:			0
+					},
+					time:			(new Date().getTime() - drag.time.start) * 10,
+					time_adjust:	(new Date().getTime() - drag.time.start) * 10
+				},
+				multiplier = 3000;
+
+			if (drag.touch) {
+				multiplier = 6000;
+			}
+
+			drag_info.change.x = multiplier * (Math.abs(drag.pagex.end) - Math.abs(drag.pagex.start));
+
+
+			drag_info.left_adjust = Math.round(drag_info.change.x / drag_info.time);
+
+			drag_info.left = Math.min(drag_info.left + drag_info.left_adjust);
+
+			if (drag.constraint) {
+				if (drag_info.left > drag.constraint.left) {
+					drag_info.left = drag.constraint.left;
+					if (drag_info.time > 5000) {
+						drag_info.time = 5000;
+					}
+				} else if (drag_info.left < drag.constraint.right) {
+					drag_info.left = drag.constraint.right;
+					if (drag_info.time > 5000) {
+						drag_info.time = 5000;
+					}
+				}
+			}
+
+			VMM.fireEvent(dragslider, "DRAGUPDATE", [drag_info]);
+
+			if (!is_sticky) {
+				if (drag_info.time > 0) {
+					if (drag.touch) {
+						VMM.Lib.animate(elem, drag_info.time, "easeOutCirc", {"left": drag_info.left});
+					} else {
+						VMM.Lib.animate(elem, drag_info.time, drag.ease, {"left": drag_info.left});
+					}
+				}
+			}
+		}
+
+		function getLeft(elem) {
+			return parseInt(VMM.Lib.css(elem, 'left').substring(0, VMM.Lib.css(elem, 'left').length - 2), 10);
+		}
+
+	}
+}
+
+/* **********************************************
+     Begin VMM.Slider.js
+********************************************** */
+
+/* Slider
+================================================== */
+/*	* CodeKit Import
+	* http://incident57.com/codekit/
+================================================== */
+// @codekit-append "VMM.Slider.Slide.js";
+
+if(typeof VMM != 'undefined' && typeof VMM.Slider == 'undefined') {
+
+	VMM.Slider = function(parent, parent_config) {
+
+		var config,
+			timer,
+			$slider,
+			$slider_mask,
+			$slider_container,
+			$slides_items,
+			$dragslide,
+			$explainer,
+			events				= {},
+			data				= [],
+			slides				= [],
+			slide_positions		= [],
+			slides_content		= "",
+			current_slide		= 0,
+			current_width		= 960,
+			touch = {
+				move:			false,
+				x:				10,
+				y:				0,
+				off:			0,
+				dampen:			48
+			},
+			content				= "",
+			_active				= false,
+			layout				= parent,
+			navigation = {
+				nextBtn:		"",
+				prevBtn:		"",
+				nextDate:		"",
+				prevDate:		"",
+				nextTitle:		"",
+				prevTitle:		""
+			};
+
+		// CONFIG
+		if(typeof parent_config != 'undefined') {
+			config	= parent_config;
+		} else {
+			config	= {
+				preload:			4,
+				current_slide:		0,
+				interval:			10,
+				something:			0,
+				width:				720,
+				height:				400,
+				ease:				"easeInOutExpo",
+				duration:			1000,
+				timeline:			false,
+				spacing:			15,
+                ajax_timeout:       3000,
+				slider: {
+					width:			720,
+					height:			400,
+					content: {
+						width:		720,
+						height:		400,
+						padding:	120,
+						padding_default: 120
+					},
+					nav: {
+						width:		100,
+						height:		200
+					}
+				}
+			};
+		}
+
+		/* PUBLIC VARS
+		================================================== */
+		this.ver = "0.6";
+
+		config.slider.width		= config.width;
+		config.slider.height	= config.height;
+
+		/* PUBLIC FUNCTIONS
+		================================================== */
+		this.init = function(d) {
+			slides			= [];
+			slide_positions	= [];
+
+			if(typeof d != 'undefined') {
+				this.setData(d);
+			} else {
+				trace("WAITING ON DATA");
+			}
+		};
+
+		this.width = function(w) {
+			if (w != null && w != "") {
+				config.slider.width = w;
+				reSize();
+			} else {
+				return config.slider.width;
+			}
+		}
+
+		this.height = function(h) {
+			if (h != null && h != "") {
+				config.slider.height = h;
+				reSize();
+			} else {
+				return config.slider.height;
+			}
+		}
+
+		/* GETTERS AND SETTERS
+		================================================== */
+		this.setData = function(d) {
+			if(typeof d != 'undefined') {
+				data = d;
+				build();
+			} else{
+				trace("NO DATA");
+			}
+		};
+
+		this.getData = function() {
+			return data;
+		};
+
+		this.setConfig = function(d) {
+			if(typeof d != 'undefined') {
+				config = d;
+			} else{
+				trace("NO CONFIG DATA");
+			}
+		}
+
+		this.getConfig = function() {
+			return config;
+		};
+
+		this.setSize = function(w, h) {
+			if (w != null) {config.slider.width = w};
+			if (h != null) {config.slider.height = h};
+			if (_active) {
+				reSize();
+			}
+
+		}
+
+		this.active = function() {
+			return _active;
+		};
+
+		this.getCurrentNumber = function() {
+			return current_slide;
+		};
+
+		this.setSlide = function(n) {
+			goToSlide(n);
+		};
+
+		/* ON EVENT
+		================================================== */
+		function onConfigSet() {
+			trace("onConfigSet");
+		};
+
+		function reSize(go_to_slide, from_start) {
+			var _go_to_slide	= true,
+				_from_start		= false;
+
+			if (go_to_slide != null) {_go_to_slide = go_to_slide};
+			if (from_start != null) {_from_start = from_start};
+
+			current_width = config.slider.width;
+
+			config.slider.nav.height = VMM.Lib.height(navigation.prevBtnContainer);
+
+			// Handle smaller sizes
+			if (VMM.Browser.device == "mobile" || current_width <= 640) {
+				config.slider.content.padding	= 10;
+			} else {
+				config.slider.content.padding	= config.slider.content.padding_default;
+			}
+
+			config.slider.content.width = current_width - (config.slider.content.padding *2);
+
+			VMM.Lib.width($slides_items, (slides.length * config.slider.content.width));
+
+			if (_from_start) {
+				VMM.Lib.css($slider_container, "left", slides[current_slide].leftpos());
+			}
+
+			// RESIZE SLIDES
+			sizeSlides();
+
+			// POSITION SLIDES
+			positionSlides();
+
+			// POSITION NAV
+			VMM.Lib.css(navigation.nextBtn, "left", (current_width - config.slider.nav.width));
+			VMM.Lib.height(navigation.prevBtn, config.slider.height);
+			VMM.Lib.height(navigation.nextBtn, config.slider.height);
+			VMM.Lib.css(navigation.nextBtnContainer, "top", ( (config.slider.height/2) - (config.slider.nav.height/2) ) + 10 );
+			VMM.Lib.css(navigation.prevBtnContainer, "top", ( (config.slider.height/2) - (config.slider.nav.height/2) ) + 10 );
+
+			// Animate Changes
+			VMM.Lib.height($slider_mask, config.slider.height);
+			VMM.Lib.width($slider_mask, current_width);
+
+			if (_go_to_slide) {
+				goToSlide(current_slide, "linear", 1);
+			};
+
+			if (current_slide == 0) {
+				VMM.Lib.visible(navigation.prevBtn, false);
+			}
+
+		}
+
+		function onDragFinish(e, d) {
+			trace("DRAG FINISH");
+			trace(d.left_adjust);
+			trace((config.slider.width / 2));
+
+			if (d.left_adjust < 0 ) {
+				if (Math.abs(d.left_adjust) > (config.slider.width / 2) ) {
+					//onNextClick(e);
+					if (current_slide == slides.length - 1) {
+						backToCurrentSlide();
+					} else {
+						goToSlide(current_slide+1, "easeOutExpo");
+						upDate();
+					}
+				} else {
+					backToCurrentSlide();
+
+				}
+			} else if (Math.abs(d.left_adjust) > (config.slider.width / 2) ) {
+				if (current_slide == 0) {
+					backToCurrentSlide();
+				} else {
+					goToSlide(current_slide-1, "easeOutExpo");
+					upDate();
+				}
+			} else {
+				backToCurrentSlide();
+			}
+
+
+
+		}
+		/* NAVIGATION
+		================================================== */
+		function onNextClick(e) {
+			if (current_slide == slides.length - 1) {
+				backToCurrentSlide();
+			} else {
+				goToSlide(current_slide+1);
+				upDate();
+			}
+		}
+
+		function onPrevClick(e) {
+			if (current_slide == 0) {
+				backToCurrentSlide();
+			} else {
+				goToSlide(current_slide-1);
+				upDate();
+			}
+		}
+
+		function onKeypressNav(e) {
+			switch(e.keyCode) {
+				case 39:
+					// RIGHT ARROW
+					onNextClick(e);
+					break;
+				case 37:
+					// LEFT ARROW
+					onPrevClick(e);
+					break;
+			}
+		}
+
+		function onTouchUpdate(e, b) {
+			if (slide_positions.length == 0) {
+				for(var i = 0; i < slides.length; i++) {
+					slide_positions.push( slides[i].leftpos() );
+				}
+			}
+			if (typeof b.left == "number") {
+				var _pos = b.left;
+				var _slide_pos = -(slides[current_slide].leftpos());
+				if (_pos < _slide_pos - (config.slider_width/3)) {
+					onNextClick();
+				} else if (_pos > _slide_pos + (config.slider_width/3)) {
+					onPrevClick();
+				} else {
+					VMM.Lib.animate($slider_container, config.duration, config.ease, {"left": _slide_pos });
+				}
+			} else {
+				VMM.Lib.animate($slider_container, config.duration, config.ease, {"left": _slide_pos });
+			}
+
+			if (typeof b.top == "number") {
+				VMM.Lib.animate($slider_container, config.duration, config.ease, {"top": -b.top});
+			} else {
+
+			}
+		};
+
+		function onExplainerClick(e) {
+			detachMessege();
+		}
+
+		/* UPDATE
+		================================================== */
+		function upDate() {
+			config.current_slide = current_slide;
+			VMM.fireEvent(layout, "UPDATE");
+		};
+
+		/* GET DATA
+		================================================== */
+		function getData(d) {
+			data = d;
+		};
+
+		/* BUILD SLIDES
+		================================================== */
+		function buildSlides(d) {
+			var i	= 0;
+
+			VMM.attachElement($slides_items, "");
+			slides = [];
+
+			for(i = 0; i < d.length; i++) {
+				var _slide = new VMM.Slider.Slide(d[i], $slides_items);
+				//_slide.show();
+				slides.push(_slide);
+			}
+		}
+
+		function preloadSlides(skip) {
+			var i	= 0;
+
+			if (skip) {
+				preloadTimeOutSlides();
+			} else {
+				for(i = 0; i < slides.length; i++) {
+					slides[i].clearTimers();
+				}
+				timer = setTimeout(preloadTimeOutSlides, config.duration);
+
+			}
+		}
+
+		function preloadTimeOutSlides() {
+			var i = 0;
+
+			for(i = 0; i < slides.length; i++) {
+				slides[i].enqueue = true;
+			}
+
+			for(i = 0; i < config.preload; i++) {
+				if ( !((current_slide + i) > slides.length - 1)) {
+					slides[current_slide + i].show();
+					slides[current_slide + i].enqueue = false;
+				}
+				if ( !( (current_slide - i) < 0 ) ) {
+					slides[current_slide - i].show();
+					slides[current_slide - i].enqueue = false;
+				}
+			}
+
+			if (slides.length > 50) {
+				for(i = 0; i < slides.length; i++) {
+					if (slides[i].enqueue) {
+						slides[i].hide();
+					}
+				}
+			}
+
+			sizeSlides();
+		}
+
+		function sizeSlide(slide_id) {
+
+		}
+
+		/* SIZE SLIDES
+		================================================== */
+		function sizeSlides() {
+			var i						= 0,
+				layout_text_media		= ".slider-item .layout-text-media .media .media-container ",
+				layout_media			= ".slider-item .layout-media .media .media-container ",
+				layout_both				= ".slider-item .media .media-container",
+				layout_caption			= ".slider-item .media .media-container .media-shadow .caption",
+				is_skinny				= false,
+				mediasize = {
+					text_media: {
+						width: 			(config.slider.content.width/100) * 60,
+						height: 		config.slider.height - 60,
+						video: {
+							width:		0,
+							height:		0
+						},
+						text: {
+							width:		((config.slider.content.width/100) * 40) - 30,
+							height:		config.slider.height
+						}
+					},
+					media: {
+						width: 			config.slider.content.width,
+						height: 		config.slider.height - 110,
+						video: {
+							width: 		0,
+							height: 	0
+						}
+					}
+				};
+
+			// Handle smaller sizes
+			if (VMM.Browser.device == "mobile" || current_width < 641) {
+				is_skinny = true;
+
+			}
+
+			VMM.master_config.sizes.api.width	= mediasize.media.width;
+			VMM.master_config.sizes.api.height	= mediasize.media.height;
+
+			mediasize.text_media.video			= VMM.Util.ratio.fit(mediasize.text_media.width, mediasize.text_media.height, 16, 9);
+			mediasize.media.video				= VMM.Util.ratio.fit(mediasize.media.width, mediasize.media.height, 16, 9);
+
+			VMM.Lib.css(".slider-item", "width", config.slider.content.width );
+			VMM.Lib.height(".slider-item", config.slider.height);
+
+
+
+			if (is_skinny) {
+
+				mediasize.text_media.width = 	config.slider.content.width - (config.slider.content.padding*2);
+				mediasize.media.width = 		config.slider.content.width - (config.slider.content.padding*2);
+				mediasize.text_media.height = 	((config.slider.height/100) * 50 ) - 50;
+				mediasize.media.height = 		((config.slider.height/100) * 70 ) - 40;
+
+				mediasize.text_media.video = 	VMM.Util.ratio.fit(mediasize.text_media.width, mediasize.text_media.height, 16, 9);
+				mediasize.media.video = 		VMM.Util.ratio.fit(mediasize.media.width, mediasize.media.height, 16, 9);
+
+				VMM.Lib.css(".slider-item .layout-text-media .text", "width", "100%" );
+				VMM.Lib.css(".slider-item .layout-text-media .text", "display", "block" );
+				VMM.Lib.css(".slider-item .layout-text-media .text .container", "display", "block" );
+				VMM.Lib.css(".slider-item .layout-text-media .text .container", "width", mediasize.media.width );
+				VMM.Lib.css(".slider-item .layout-text-media .text .container .start", "width", "auto" );
+
+				VMM.Lib.css(".slider-item .layout-text-media .media", "float", "none" );
+				VMM.Lib.addClass(".slider-item .content-container", "pad-top");
+
+				VMM.Lib.css(".slider-item .media blockquote p", "line-height", "18px" );
+				VMM.Lib.css(".slider-item .media blockquote p", "font-size", "16px" );
+
+				VMM.Lib.css(".slider-item", "overflow-y", "auto" );
+
+
+			} else {
+
+				VMM.Lib.css(".slider-item .layout-text-media .text", "width", "40%" );
+				VMM.Lib.css(".slider-item .layout-text-media .text", "display", "table-cell" );
+				VMM.Lib.css(".slider-item .layout-text-media .text .container", "display", "table-cell" );
+				VMM.Lib.css(".slider-item .layout-text-media .text .container", "width", "auto" );
+				VMM.Lib.css(".slider-item .layout-text-media .text .container .start", "width", mediasize.text_media.text.width );
+				//VMM.Lib.addClass(".slider-item .content-container", "pad-left");
+				VMM.Lib.removeClass(".slider-item .content-container", "pad-top");
+
+				VMM.Lib.css(".slider-item .layout-text-media .media", "float", "left" );
+				VMM.Lib.css(".slider-item .layout-text-media", "display", "table" );
+
+				VMM.Lib.css(".slider-item .media blockquote p", "line-height", "36px" );
+				VMM.Lib.css(".slider-item .media blockquote p", "font-size", "28px" );
+
+				VMM.Lib.css(".slider-item", "display", "table" );
+				VMM.Lib.css(".slider-item", "overflow-y", "auto" );
+			}
+
+			// MEDIA FRAME
+			VMM.Lib.css(	layout_text_media + ".media-frame", 		"max-width", 	mediasize.text_media.width);
+			VMM.Lib.height(	layout_text_media + ".media-frame", 						mediasize.text_media.height);
+			VMM.Lib.width(	layout_text_media + ".media-frame", 						mediasize.text_media.width);
+
+			// WEBSITES
+			//VMM.Lib.css(	layout_both + 		".website", 			"max-width", 	300 );
+
+			// IMAGES
+			VMM.Lib.css(	layout_text_media + "img", 					"max-height", 	mediasize.text_media.height );
+			VMM.Lib.css(	layout_media + 		"img", 					"max-height", 	mediasize.media.height );
+
+			// FIX FOR NON-WEBKIT BROWSERS
+			VMM.Lib.css(	layout_text_media + "img", 					"max-width", 	mediasize.text_media.width );
+			VMM.Lib.css(	layout_text_media + ".avatar img", "max-width", 			32 );
+			VMM.Lib.css(	layout_text_media + ".avatar img", "max-height", 			32 );
+			VMM.Lib.css(	layout_media + 		".avatar img", "max-width", 			32 );
+			VMM.Lib.css(	layout_media + 		".avatar img", "max-height", 			32 );
+
+			VMM.Lib.css(	layout_text_media + ".article-thumb", "max-width", 			"50%" );
+			//VMM.Lib.css(	layout_text_media + ".article-thumb", "max-height", 		100 );
+			VMM.Lib.css(	layout_media + 		".article-thumb", "max-width", 			200 );
+			//VMM.Lib.css(	layout_media + 		".article-thumb", "max-height", 		100 );
+
+
+			// IFRAME FULL SIZE VIDEO
+			VMM.Lib.width(	layout_text_media + ".media-frame", 						mediasize.text_media.video.width);
+			VMM.Lib.height(	layout_text_media + ".media-frame", 						mediasize.text_media.video.height);
+			VMM.Lib.width(	layout_media + 		".media-frame", 						mediasize.media.video.width);
+			VMM.Lib.height(	layout_media + 		".media-frame", 						mediasize.media.video.height);
+			VMM.Lib.css(	layout_media + 		".media-frame", 		"max-height", 	mediasize.media.video.height);
+			VMM.Lib.css(	layout_media + 		".media-frame", 		"max-width", 	mediasize.media.video.width);
+
+			// SOUNDCLOUD
+			VMM.Lib.height(	layout_media + 		".soundcloud", 							168);
+			VMM.Lib.height(	layout_text_media + ".soundcloud", 							168);
+			VMM.Lib.width(	layout_media + 		".soundcloud", 							mediasize.media.width);
+			VMM.Lib.width(	layout_text_media + ".soundcloud", 							mediasize.text_media.width);
+			VMM.Lib.css(	layout_both + 		".soundcloud", 			"max-height", 	168 );
+
+			// MAPS
+			VMM.Lib.height(	layout_text_media	+ ".map", 								mediasize.text_media.height);
+			VMM.Lib.width(	layout_text_media	+ ".map", 								mediasize.text_media.width);
+			VMM.Lib.css(	layout_media		+ ".map", 				"max-height", 	mediasize.media.height);
+			VMM.Lib.width(	layout_media		+ ".map", 								mediasize.media.width);
+
+
+			// DOCS
+			VMM.Lib.height(	layout_text_media + ".doc", 								mediasize.text_media.height);
+			VMM.Lib.width(	layout_text_media	+ ".doc", 								mediasize.text_media.width);
+			VMM.Lib.height(	layout_media + 		".doc", 								mediasize.media.height);
+			VMM.Lib.width(	layout_media		+ ".doc", 								mediasize.media.width);
+
+			// IE8 NEEDS THIS
+			VMM.Lib.width(	layout_media + 		".wikipedia", 							mediasize.media.width);
+			VMM.Lib.width(	layout_media + 		".twitter", 							mediasize.media.width);
+			VMM.Lib.width(	layout_media + 		".plain-text-quote", 					mediasize.media.width);
+			VMM.Lib.width(	layout_media + 		".plain-text", 							mediasize.media.width);
+
+			VMM.Lib.css(	layout_both, 		"max-width", 							mediasize.media.width);
+
+
+			// CAPTION WIDTH
+			VMM.Lib.css( layout_text_media + 	".caption",	"max-width",	mediasize.text_media.video.width);
+			VMM.Lib.css( layout_media + 		".caption",	"max-width",	mediasize.media.video.width);
+			//VMM.Lib.css( layout_text_media + 	".caption",	"max-width",	mediasize.text_media.width);
+			//VMM.Lib.css( layout_media + 		".caption",	"max-width",	mediasize.media.width);
+
+			// MAINTAINS VERTICAL CENTER IF IT CAN
+			for(i = 0; i < slides.length; i++) {
+
+				slides[i].layout(is_skinny);
+
+				if (slides[i].content_height() > config.slider.height + 20) {
+					slides[i].css("display", "block");
+				} else {
+					slides[i].css("display", "table");
+				}
+			}
+
+		}
+
+		/* POSITION SLIDES
+		================================================== */
+		function positionSlides() {
+			var pos = 0,
+				i	= 0;
+
+			for(i = 0; i < slides.length; i++) {
+				pos = i * (config.slider.width+config.spacing);
+				slides[i].leftpos(pos);
+			}
+		}
+
+		/* OPACITY SLIDES
+		================================================== */
+		function opacitySlides(n) {
+			var _ease	= "linear",
+				i		= 0;
+
+			for(i = 0; i < slides.length; i++) {
+				if (i == current_slide) {
+					slides[i].animate(config.duration, _ease, {"opacity": 1});
+				} else if (i == current_slide - 1 || i == current_slide + 1) {
+					slides[i].animate(config.duration, _ease, {"opacity": 0.1});
+				} else {
+					slides[i].opacity(n);
+				}
+			}
+		}
+
+		/* GO TO SLIDE
+			goToSlide(n, ease, duration);
+		================================================== */
+		function goToSlide(n, ease, duration, fast, firstrun) {
+			var _ease		= config.ease,
+				_duration	= config.duration,
+				is_last		= false,
+				is_first	= false,
+				_title		= "",
+				_pos;
+
+			/* STOP ANY VIDEO PLAYERS ACTIVE
+			================================================== */
+			VMM.ExternalAPI.youtube.stopPlayers();
+
+			// Set current slide
+			current_slide	= n;
+			_pos			= slides[current_slide].leftpos();
+
+
+			if (current_slide == 0) {is_first = true};
+			if (current_slide +1 >= slides.length) {is_last = true};
+			if (ease != null && ease != "") {_ease = ease};
+			if (duration != null && duration != "") {_duration = duration};
+
+			/*	NAVIGATION
+				set proper nav titles and dates etc.
+			================================================== */
+			// Handle smaller sizes
+			if (VMM.Browser.device == "mobile") {
+			//if (VMM.Browser.device == "mobile" || current_width <= 640) {
+				VMM.Lib.visible(navigation.prevBtn, false);
+				VMM.Lib.visible(navigation.nextBtn, false);
+			} else {
+				if (is_first) {
+					VMM.Lib.visible(navigation.prevBtn, false);
+				} else {
+					VMM.Lib.visible(navigation.prevBtn, true);
+					_title = VMM.Util.unlinkify(data[current_slide - 1].title)
+					if (config.type == "timeline") {
+						if(typeof data[current_slide - 1].date === "undefined") {
+							VMM.attachElement(navigation.prevDate, _title);
+							VMM.attachElement(navigation.prevTitle, "");
+						} else {
+							VMM.attachElement(navigation.prevDate, VMM.Date.prettyDate(data[current_slide - 1].startdate, false, data[current_slide - 1].precisiondate));
+							VMM.attachElement(navigation.prevTitle, _title);
+						}
+					} else {
+						VMM.attachElement(navigation.prevTitle, _title);
+					}
+
+				}
+				if (is_last) {
+					VMM.Lib.visible(navigation.nextBtn, false);
+				} else {
+					VMM.Lib.visible(navigation.nextBtn, true);
+					_title = VMM.Util.unlinkify(data[current_slide + 1].title);
+					if (config.type == "timeline") {
+						if(typeof data[current_slide + 1].date === "undefined") {
+							VMM.attachElement(navigation.nextDate, _title);
+							VMM.attachElement(navigation.nextTitle, "");
+						} else {
+							VMM.attachElement(navigation.nextDate, VMM.Date.prettyDate(data[current_slide + 1].startdate, false, data[current_slide + 1].precisiondate) );
+							VMM.attachElement(navigation.nextTitle, _title);
+						}
+					} else {
+						VMM.attachElement(navigation.nextTitle,  _title);
+					}
+
+				}
+			}
+
+
+			/* ANIMATE SLIDE
+			================================================== */
+			if (fast) {
+				VMM.Lib.css($slider_container, "left", -(_pos - config.slider.content.padding));
+			} else{
+				VMM.Lib.stop($slider_container);
+				VMM.Lib.animate($slider_container, _duration, _ease, {"left": -(_pos - config.slider.content.padding)});
+			}
+
+			if (firstrun) {
+				VMM.fireEvent(layout, "LOADED");
+			}
+
+			/* SET Vertical Scoll
+			================================================== */
+			if (slides[current_slide].height() > config.slider_height) {
+				VMM.Lib.css(".slider", "overflow-y", "scroll" );
+			} else {
+				VMM.Lib.css(layout, "overflow-y", "hidden" );
+				var scroll_height = 0;
+				try {
+					scroll_height = VMM.Lib.prop(layout, "scrollHeight");
+					VMM.Lib.animate(layout, _duration, _ease, {scrollTop: scroll_height - VMM.Lib.height(layout) });
+				}
+				catch(err) {
+					scroll_height = VMM.Lib.height(layout);
+				}
+			}
+
+			preloadSlides();
+			VMM.fireEvent($slider, "MESSAGE", "TEST");
+		}
+
+		function backToCurrentSlide() {
+			VMM.Lib.stop($slider_container);
+			VMM.Lib.animate($slider_container, config.duration, "easeOutExpo", {"left": -(slides[current_slide].leftpos()) +  config.slider.content.padding} );
+		}
+
+		/* MESSEGES
+		================================================== */
+		function showMessege(e, msg, other) {
+			trace("showMessege " + msg);
+			//VMM.attachElement($timeline, $feedback);
+			VMM.attachElement($explainer, "<div class='vco-explainer'><div class='vco-explainer-container'><div class='vco-bezel'><div class='vco-gesture-icon'></div>" + "<div class='vco-message'><p>" + msg + "</p></div></div></div></div>");
+		};
+
+		function hideMessege() {
+			VMM.Lib.animate($explainer, config.duration, config.ease, {"opacity": 0}, detachMessege);
+		};
+
+		function detachMessege() {
+			VMM.Lib.detach($explainer);
+		}
+
+		/* BUILD NAVIGATION
+		================================================== */
+		function buildNavigation() {
+
+			var temp_icon = "<div class='icon'>&nbsp;</div>";
+
+			navigation.nextBtn = VMM.appendAndGetElement($slider, "<div>", "nav-next");
+			navigation.prevBtn = VMM.appendAndGetElement($slider, "<div>", "nav-previous");
+			navigation.nextBtnContainer = VMM.appendAndGetElement(navigation.nextBtn, "<div>", "nav-container", temp_icon);
+			navigation.prevBtnContainer = VMM.appendAndGetElement(navigation.prevBtn, "<div>", "nav-container", temp_icon);
+			if (config.type == "timeline") {
+				navigation.nextDate = VMM.appendAndGetElement(navigation.nextBtnContainer, "<div>", "date", "");
+				navigation.prevDate = VMM.appendAndGetElement(navigation.prevBtnContainer, "<div>", "date", "");
+			}
+			navigation.nextTitle = VMM.appendAndGetElement(navigation.nextBtnContainer, "<div>", "title", "");
+			navigation.prevTitle = VMM.appendAndGetElement(navigation.prevBtnContainer, "<div>", "title", "");
+
+			VMM.bindEvent(".nav-next", onNextClick);
+			VMM.bindEvent(".nav-previous", onPrevClick);
+			VMM.bindEvent(window, onKeypressNav, 'keydown');
+
+		}
+
+		/* BUILD
+		================================================== */
+		function build() {
+			var __duration = 3000;
+			// Clear out existing content
+			VMM.attachElement(layout, "");
+
+			// Get DOM Objects to local objects
+			$slider				= VMM.getElement(layout);
+			$slider_mask		= VMM.appendAndGetElement($slider, "<div>", "slider-container-mask");
+			$slider_container	= VMM.appendAndGetElement($slider_mask, "<div>", "slider-container");
+			$slides_items		= VMM.appendAndGetElement($slider_container, "<div>", "slider-item-container");
+
+
+			// BUILD NAVIGATION
+			buildNavigation();
+
+			// ATTACH SLIDES
+			buildSlides(data);
+
+			/* MAKE SLIDER DRAGGABLE/TOUCHABLE
+			================================================== */
+
+			if (VMM.Browser.device == "tablet" || VMM.Browser.device == "mobile") {
+				// Different Animation duration for touch
+				config.duration = 500;
+				__duration = 1000;
+
+				// Make touchable
+				$dragslide = new VMM.DragSlider();
+				$dragslide.createPanel($slider, $slider_container, "", config.touch, true);
+				VMM.bindEvent($dragslide, onDragFinish, 'DRAGUPDATE');
+
+				// EXPLAINER
+				$explainer = VMM.appendAndGetElement($slider_mask, "<div>", "vco-feedback", "");
+				showMessege(null, "Swipe to Navigate");
+				VMM.Lib.height($explainer, config.slider.height);
+				VMM.bindEvent($explainer, onExplainerClick);
+				VMM.bindEvent($explainer, onExplainerClick, 'touchend');
+			}
+
+			reSize(false, true);
+
+
+			VMM.Lib.visible(navigation.prevBtn, false);
+			goToSlide(config.current_slide, "easeOutExpo", __duration, true, true);
+
+			_active = true;
+		};
+
+	};
+
+}
+
+
+
+
+
+
+/* **********************************************
+     Begin VMM.Slider.Slide.js
+********************************************** */
+
+/* Slider Slide
+================================================== */
+
+if (typeof VMM.Slider != 'undefined') {
+	VMM.Slider.Slide = function(d, _parent) {
+
+		var $media, $text, $slide, $wrap, element, c,
+			data		= d,
+			slide		= {},
+			element		= "",
+			media		= "",
+			loaded		= false,
+			preloaded	= false,
+			is_skinny	= false,
+			_enqueue	= true,
+			_removeque	= false,
+			_id			= "slide_",
+			_class		= 0,
+			timer		= {pushque:"", render:"", relayout:"", remove:"", skinny:false},
+			times		= {pushque:500, render:100, relayout:100, remove:30000};
+
+		_id				= _id + data.uniqueid;
+		this.enqueue	= _enqueue;
+		this.id			= _id;
+
+
+		element		=	VMM.appendAndGetElement(_parent, "<div>", "slider-item");
+
+		if (typeof data.classname != 'undefined') {
+			trace("HAS CLASSNAME");
+			VMM.Lib.addClass(element, data.classname);
+		} else {
+			trace("NO CLASSNAME");
+			trace(data);
+		}
+
+		c = {slide:"", text: "", media: "", media_element: "", layout: "content-container layout", has: { headline: false, text: false, media: false }};
+
+		/* PUBLIC
+		================================================== */
+		this.show = function(skinny) {
+			_enqueue = false;
+			timer.skinny = skinny;
+			_removeque = false;
+			clearTimeout(timer.remove);
+
+			if (!loaded) {
+				if (preloaded) {
+					clearTimeout(timer.relayout);
+					timer.relayout = setTimeout(reloadLayout, times.relayout);
+				} else {
+					render(skinny);
+				}
+			}
+		};
+
+		this.hide = function() {
+			if (loaded && !_removeque) {
+				_removeque = true;
+				clearTimeout(timer.remove);
+				timer.remove = setTimeout(removeSlide, times.remove);
+			}
+		};
+
+		this.clearTimers = function() {
+			//clearTimeout(timer.remove);
+			clearTimeout(timer.relayout);
+			clearTimeout(timer.pushque);
+			clearTimeout(timer.render);
+		};
+
+		this.layout = function(skinny) {
+			if (loaded && preloaded) {
+				reLayout(skinny);
+			}
+		};
+
+		this.elem = function() {
+			return element;
+		};
+
+		this.position = function() {
+			return VMM.Lib.position(element);
+		};
+
+		this.leftpos = function(p) {
+			if(typeof p != 'undefined') {
+				VMM.Lib.css(element, "left", p);
+			} else {
+				return VMM.Lib.position(element).left
+			}
+		};
+
+		this.animate = function(d, e, p) {
+			VMM.Lib.animate(element, d, e, p);
+		};
+
+		this.css = function(p, v) {
+			VMM.Lib.css(element, p, v );
+		}
+
+		this.opacity = function(p) {
+			VMM.Lib.css(element, "opacity", p);
+		}
+
+		this.width = function() {
+			return VMM.Lib.width(element);
+		};
+
+		this.height = function() {
+			return VMM.Lib.height(element);
+		};
+
+		this.content_height = function () {
+			var ch = VMM.Lib.find( element, ".content")[0];
+
+			if (ch != 'undefined' && ch != null) {
+				return VMM.Lib.height(ch);
+			} else {
+				return 0;
+			}
+		}
+
+		/* PRIVATE
+		================================================== */
+		var render = function(skinny) {
+			trace("RENDER " + _id);
+
+			loaded = true;
+			preloaded = true;
+			timer.skinny = skinny;
+
+			buildSlide();
+
+			clearTimeout(timer.pushque);
+			clearTimeout(timer.render);
+			timer.pushque = setTimeout(VMM.ExternalAPI.pushQues, times.pushque);
+
+		};
+
+		var removeSlide = function() {
+			//VMM.attachElement(element, "");
+			trace("REMOVE SLIDE TIMER FINISHED");
+			loaded = false;
+			VMM.Lib.detach($text);
+			VMM.Lib.detach($media);
+
+		};
+
+		var reloadLayout = function() {
+			loaded = true;
+			reLayout(timer.skinny, true);
+		};
+
+		var reLayout = function(skinny, reload) {
+			if (c.has.text)	{
+				if (skinny) {
+					if (!is_skinny || reload) {
+						VMM.Lib.removeClass($slide, "pad-left");
+						VMM.Lib.detach($text);
+						VMM.Lib.detach($media);
+						VMM.Lib.append($slide, $text);
+						VMM.Lib.append($slide, $media);
+						is_skinny = true;
+					}
+				} else {
+					if (is_skinny || reload) {
+						VMM.Lib.addClass($slide, "pad-left");
+						VMM.Lib.detach($text);
+						VMM.Lib.detach($media);
+						VMM.Lib.append($slide, $media);
+						VMM.Lib.append($slide, $text);
+						is_skinny = false;
+
+					}
+				}
+			} else if (reload) {
+				if (c.has.headline) {
+					VMM.Lib.detach($text);
+					VMM.Lib.append($slide, $text);
+				}
+				VMM.Lib.detach($media);
+				VMM.Lib.append($slide, $media);
+			}
+		}
+
+		var buildSlide = function() {
+			trace("BUILDSLIDE");
+			$wrap	= VMM.appendAndGetElement(element, "<div>", "content");
+			$slide	= VMM.appendAndGetElement($wrap, "<div>");
+
+			/* DATE
+			================================================== */
+			if (data.startdate != null && data.startdate != "") {
+				if (type.of(data.startdate) == "date") {
+					if (data.type != "start") {
+						var st	= VMM.Date.prettyDate(data.startdate, false, data.precisiondate);
+						var en	= VMM.Date.prettyDate(data.enddate, false, data.precisiondate);
+						var tag	= "";
+						/* TAG / CATEGORY
+						================================================== */
+						if (data.tag != null && data.tag != "") {
+							tag		= VMM.createElement("span", data.tag, "slide-tag");
+						}
+
+						if (st != en) {
+							c.text += VMM.createElement("h2", st + " &mdash; " + en + tag, "date");
+						} else {
+							c.text += VMM.createElement("h2", st + tag, "date");
+						}
+					}
+				}
+			}
+
+			/* HEADLINE
+			================================================== */
+			if (data.headline != null && data.headline != "") {
+				c.has.headline	=	true;
+				if (data.type == "start") {
+					c.text		+=	VMM.createElement("h2", VMM.Util.linkify_with_twitter(data.headline, "_blank"), "start");
+				} else {
+					c.text		+=	VMM.createElement("h3", VMM.Util.linkify_with_twitter(data.headline, "_blank"));
+				}
+			}
+
+			/* TEXT
+			================================================== */
+			if (data.text != null && data.text != "") {
+				c.has.text		=  true;
+				c.text			+= VMM.createElement("p", VMM.Util.linkify_with_twitter(data.text, "_blank"));
+
+			}
+
+			if (c.has.text || c.has.headline) {
+				c.text		= VMM.createElement("div", c.text, "container");
+				//$text		=	VMM.appendAndGetElement($slide, "<div>", "text", c.text);
+
+				$text		= VMM.appendAndGetElement($slide, "<div>", "text", VMM.TextElement.create(c.text));
+
+			}
+
+			/* SLUG
+			================================================== */
+			if (data.needs_slug) {
+
+			}
+
+			/* MEDIA
+			================================================== */
+			if (data.asset != null && data.asset != "") {
+				if (data.asset.media != null && data.asset.media != "") {
+					c.has.media	= true;
+					$media		= VMM.appendAndGetElement($slide, "<div>", "media", VMM.MediaElement.create(data.asset, data.uniqueid));
+				}
+			}
+
+			/* COMBINE
+			================================================== */
+			if (c.has.text)	{ c.layout		+=	"-text"		};
+			if (c.has.media){ c.layout		+=	"-media"	};
+
+			if (c.has.text)	{
+				if (timer.skinny) {
+					VMM.Lib.addClass($slide, c.layout);
+					is_skinny = true;
+				} else {
+					VMM.Lib.addClass($slide, c.layout);
+					VMM.Lib.addClass($slide, "pad-left");
+					VMM.Lib.detach($text);
+					VMM.Lib.append($slide, $text);
+				}
+
+			} else {
+				VMM.Lib.addClass($slide, c.layout);
+			}
+
+			/* ADD MODALS
+			================================================== */
+			// MOVE TO EVENT LISTENER UP THE FOOD CHAIN
+			/*
+			VMM.modal('.vmm-modal', {
+				openEffect: 	'elastic',
+				closeEffect: 	'elastic',
+				padding: 		[2, 2, 2, 2]
+			});
+			*/
+		};
+
+	}
+
+};
+
+
+/* **********************************************
+     Begin jquery.fancybox.js
+********************************************** */
+
+/*!
+ * fancyBox - jQuery Plugin
+ * version: 2.1.5 (Fri, 14 Jun 2013)
+ * @requires jQuery v1.6 or later
+ *
+ * Examples at http://fancyapps.com/fancybox/
+ * License: www.fancyapps.com/fancybox/#license
+ *
+ * Copyright 2012 Janis Skarnelis - janis@fancyapps.com
+ *
+ */
+
+(function (window, document, $, undefined) {
+	"use strict";
+
+	var H = $("html"),
+		W = $(window),
+		D = $(document),
+		F = $.fancybox = function () {
+			F.open.apply( this, arguments );
+		},
+		IE =  navigator.userAgent.match(/msie/i),
+		didUpdate	= null,
+		isTouch		= document.createTouch !== undefined,
+
+		isQuery	= function(obj) {
+			return obj && obj.hasOwnProperty && obj instanceof $;
+		},
+		isString = function(str) {
+			return str && $.type(str) === "string";
+		},
+		isPercentage = function(str) {
+			return isString(str) && str.indexOf('%') > 0;
+		},
+		isScrollable = function(el) {
+			return (el && !(el.style.overflow && el.style.overflow === 'hidden') && ((el.clientWidth && el.scrollWidth > el.clientWidth) || (el.clientHeight && el.scrollHeight > el.clientHeight)));
+		},
+		getScalar = function(orig, dim) {
+			var value = parseInt(orig, 10) || 0;
+
+			if (dim && isPercentage(orig)) {
+				value = F.getViewport()[ dim ] / 100 * value;
+			}
+
+			return Math.ceil(value);
+		},
+		getValue = function(value, dim) {
+			return getScalar(value, dim) + 'px';
+		};
+
+	$.extend(F, {
+		// The current version of fancyBox
+		version: '2.1.5',
+
+		defaults: {
+			padding : 15,
+			margin  : 20,
+
+			width     : 800,
+			height    : 600,
+			minWidth  : 100,
+			minHeight : 100,
+			maxWidth  : 9999,
+			maxHeight : 9999,
+			pixelRatio: 1, // Set to 2 for retina display support
+
+			autoSize   : true,
+			autoHeight : false,
+			autoWidth  : false,
+
+			autoResize  : true,
+			autoCenter  : !isTouch,
+			fitToView   : true,
+			aspectRatio : false,
+			topRatio    : 0.5,
+			leftRatio   : 0.5,
+
+			scrolling : 'auto', // 'auto', 'yes' or 'no'
+			wrapCSS   : '',
+
+			arrows     : true,
+			closeBtn   : true,
+			closeClick : false,
+			nextClick  : false,
+			mouseWheel : true,
+			autoPlay   : false,
+			playSpeed  : 3000,
+			preload    : 3,
+			modal      : false,
+			loop       : true,
+
+			ajax  : {
+				dataType : 'html',
+				headers  : { 'X-fancyBox': true }
+			},
+			iframe : {
+				scrolling : 'auto',
+				preload   : true
+			},
+			swf : {
+				wmode: 'transparent',
+				allowfullscreen   : 'true',
+				allowscriptaccess : 'always'
+			},
+
+			keys  : {
+				next : {
+					13 : 'left', // enter
+					34 : 'up',   // page down
+					39 : 'left', // right arrow
+					40 : 'up'    // down arrow
+				},
+				prev : {
+					8  : 'right',  // backspace
+					33 : 'down',   // page up
+					37 : 'right',  // left arrow
+					38 : 'down'    // up arrow
+				},
+				close  : [27], // escape key
+				play   : [32], // space - start/stop slideshow
+				toggle : [70]  // letter "f" - toggle fullscreen
+			},
+
+			direction : {
+				next : 'left',
+				prev : 'right'
+			},
+
+			scrollOutside  : true,
+
+			// Override some properties
+			index   : 0,
+			type    : null,
+			href    : null,
+			content : null,
+			title   : null,
+
+			// HTML templates
+			tpl: {
+				wrap     : '<div class="fancybox-wrap" tabIndex="-1"><div class="fancybox-skin"><div class="fancybox-outer"><div class="fancybox-inner"></div></div></div></div>',
+				image    : '<img class="fancybox-image" src="{href}" alt="" />',
+				iframe   : '<iframe id="fancybox-frame{rnd}" name="fancybox-frame{rnd}" class="fancybox-iframe" frameborder="0" vspace="0" hspace="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen' + (IE ? ' allowtransparency="true"' : '') + '></iframe>',
+				error    : '<p class="fancybox-error">The requested content cannot be loaded.<br/>Please try again later.</p>',
+				closeBtn : '<a title="Close" class="fancybox-item fancybox-close" href="javascript:;"></a>',
+				next     : '<a title="Next" class="fancybox-nav fancybox-next" href="javascript:;"><span></span></a>',
+				prev     : '<a title="Previous" class="fancybox-nav fancybox-prev" href="javascript:;"><span></span></a>'
+			},
+
+			// Properties for each animation type
+			// Opening fancyBox
+			openEffect  : 'fade', // 'elastic', 'fade' or 'none'
+			openSpeed   : 250,
+			openEasing  : 'swing',
+			openOpacity : true,
+			openMethod  : 'zoomIn',
+
+			// Closing fancyBox
+			closeEffect  : 'fade', // 'elastic', 'fade' or 'none'
+			closeSpeed   : 250,
+			closeEasing  : 'swing',
+			closeOpacity : true,
+			closeMethod  : 'zoomOut',
+
+			// Changing next gallery item
+			nextEffect : 'elastic', // 'elastic', 'fade' or 'none'
+			nextSpeed  : 250,
+			nextEasing : 'swing',
+			nextMethod : 'changeIn',
+
+			// Changing previous gallery item
+			prevEffect : 'elastic', // 'elastic', 'fade' or 'none'
+			prevSpeed  : 250,
+			prevEasing : 'swing',
+			prevMethod : 'changeOut',
+
+			// Enable default helpers
+			helpers : {
+				overlay : true,
+				title   : true
+			},
+
+			// Callbacks
+			onCancel     : $.noop, // If canceling
+			beforeLoad   : $.noop, // Before loading
+			afterLoad    : $.noop, // After loading
+			beforeShow   : $.noop, // Before changing in current item
+			afterShow    : $.noop, // After opening
+			beforeChange : $.noop, // Before changing gallery item
+			beforeClose  : $.noop, // Before closing
+			afterClose   : $.noop  // After closing
+		},
+
+		//Current state
+		group    : {}, // Selected group
+		opts     : {}, // Group options
+		previous : null,  // Previous element
+		coming   : null,  // Element being loaded
+		current  : null,  // Currently loaded element
+		isActive : false, // Is activated
+		isOpen   : false, // Is currently open
+		isOpened : false, // Have been fully opened at least once
+
+		wrap  : null,
+		skin  : null,
+		outer : null,
+		inner : null,
+
+		player : {
+			timer    : null,
+			isActive : false
+		},
+
+		// Loaders
+		ajaxLoad   : null,
+		imgPreload : null,
+
+		// Some collections
+		transitions : {},
+		helpers     : {},
+
+		/*
+		 *	Static methods
+		 */
+
+		open: function (group, opts) {
+			if (!group) {
+				return;
+			}
+
+			if (!$.isPlainObject(opts)) {
+				opts = {};
+			}
+
+			// Close if already active
+			if (false === F.close(true)) {
+				return;
+			}
+
+			// Normalize group
+			if (!$.isArray(group)) {
+				group = isQuery(group) ? $(group).get() : [group];
+			}
+
+			// Recheck if the type of each element is `object` and set content type (image, ajax, etc)
+			$.each(group, function(i, element) {
+				var obj = {},
+					href,
+					title,
+					content,
+					type,
+					rez,
+					hrefParts,
+					selector;
+
+				if ($.type(element) === "object") {
+					// Check if is DOM element
+					if (element.nodeType) {
+						element = $(element);
+					}
+
+					if (isQuery(element)) {
+						obj = {
+							href    : element.data('fancybox-href') || element.attr('href'),
+							title   : element.data('fancybox-title') || element.attr('title'),
+							isDom   : true,
+							element : element
+						};
+
+						if ($.metadata) {
+							$.extend(true, obj, element.metadata());
+						}
+
+					} else {
+						obj = element;
+					}
+				}
+
+				href  = opts.href  || obj.href || (isString(element) ? element : null);
+				title = opts.title !== undefined ? opts.title : obj.title || '';
+
+				content = opts.content || obj.content;
+				type    = content ? 'html' : (opts.type  || obj.type);
+
+				if (!type && obj.isDom) {
+					type = element.data('fancybox-type');
+
+					if (!type) {
+						rez  = element.prop('class').match(/fancybox\.(\w+)/);
+						type = rez ? rez[1] : null;
+					}
+				}
+
+				if (isString(href)) {
+					// Try to guess the content type
+					if (!type) {
+						if (F.isImage(href)) {
+							type = 'image';
+
+						} else if (F.isSWF(href)) {
+							type = 'swf';
+
+						} else if (href.charAt(0) === '#') {
+							type = 'inline';
+
+						} else if (isString(element)) {
+							type    = 'html';
+							content = element;
+						}
+					}
+
+					// Split url into two pieces with source url and content selector, e.g,
+					// "/mypage.html #my_id" will load "/mypage.html" and display element having id "my_id"
+					if (type === 'ajax') {
+						hrefParts = href.split(/\s+/, 2);
+						href      = hrefParts.shift();
+						selector  = hrefParts.shift();
+					}
+				}
+
+				if (!content) {
+					if (type === 'inline') {
+						if (href) {
+							content = $( isString(href) ? href.replace(/.*(?=#[^\s]+$)/, '') : href ); //strip for ie7
+
+						} else if (obj.isDom) {
+							content = element;
+						}
+
+					} else if (type === 'html') {
+						content = href;
+
+					} else if (!type && !href && obj.isDom) {
+						type    = 'inline';
+						content = element;
+					}
+				}
+
+				$.extend(obj, {
+					href     : href,
+					type     : type,
+					content  : content,
+					title    : title,
+					selector : selector
+				});
+
+				group[ i ] = obj;
+			});
+
+			// Extend the defaults
+			F.opts = $.extend(true, {}, F.defaults, opts);
+
+			// All options are merged recursive except keys
+			if (opts.keys !== undefined) {
+				F.opts.keys = opts.keys ? $.extend({}, F.defaults.keys, opts.keys) : false;
+			}
+
+			F.group = group;
+
+			return F._start(F.opts.index);
+		},
+
+		// Cancel image loading or abort ajax request
+		cancel: function () {
+			var coming = F.coming;
+
+			if (!coming || false === F.trigger('onCancel')) {
+				return;
+			}
+
+			F.hideLoading();
+
+			if (F.ajaxLoad) {
+				F.ajaxLoad.abort();
+			}
+
+			F.ajaxLoad = null;
+
+			if (F.imgPreload) {
+				F.imgPreload.onload = F.imgPreload.onerror = null;
+			}
+
+			if (coming.wrap) {
+				coming.wrap.stop(true, true).trigger('onReset').remove();
+			}
+
+			F.coming = null;
+
+			// If the first item has been canceled, then clear everything
+			if (!F.current) {
+				F._afterZoomOut( coming );
+			}
+		},
+
+		// Start closing animation if is open; remove immediately if opening/closing
+		close: function (event) {
+			F.cancel();
+
+			if (false === F.trigger('beforeClose')) {
+				return;
+			}
+
+			F.unbindEvents();
+
+			if (!F.isActive) {
+				return;
+			}
+
+			if (!F.isOpen || event === true) {
+				$('.fancybox-wrap').stop(true).trigger('onReset').remove();
+
+				F._afterZoomOut();
+
+			} else {
+				F.isOpen = F.isOpened = false;
+				F.isClosing = true;
+
+				$('.fancybox-item, .fancybox-nav').remove();
+
+				F.wrap.stop(true, true).removeClass('fancybox-opened');
+
+				F.transitions[ F.current.closeMethod ]();
+			}
+		},
+
+		// Manage slideshow:
+		//   $.fancybox.play(); - toggle slideshow
+		//   $.fancybox.play( true ); - start
+		//   $.fancybox.play( false ); - stop
+		play: function ( action ) {
+			var clear = function () {
+					clearTimeout(F.player.timer);
+				},
+				set = function () {
+					clear();
+
+					if (F.current && F.player.isActive) {
+						F.player.timer = setTimeout(F.next, F.current.playSpeed);
+					}
+				},
+				stop = function () {
+					clear();
+
+					D.unbind('.player');
+
+					F.player.isActive = false;
+
+					F.trigger('onPlayEnd');
+				},
+				start = function () {
+					if (F.current && (F.current.loop || F.current.index < F.group.length - 1)) {
+						F.player.isActive = true;
+
+						D.bind({
+							'onCancel.player beforeClose.player' : stop,
+							'onUpdate.player'   : set,
+							'beforeLoad.player' : clear
+						});
+
+						set();
+
+						F.trigger('onPlayStart');
+					}
+				};
+
+			if (action === true || (!F.player.isActive && action !== false)) {
+				start();
+			} else {
+				stop();
+			}
+		},
+
+		// Navigate to next gallery item
+		next: function ( direction ) {
+			var current = F.current;
+
+			if (current) {
+				if (!isString(direction)) {
+					direction = current.direction.next;
+				}
+
+				F.jumpto(current.index + 1, direction, 'next');
+			}
+		},
+
+		// Navigate to previous gallery item
+		prev: function ( direction ) {
+			var current = F.current;
+
+			if (current) {
+				if (!isString(direction)) {
+					direction = current.direction.prev;
+				}
+
+				F.jumpto(current.index - 1, direction, 'prev');
+			}
+		},
+
+		// Navigate to gallery item by index
+		jumpto: function ( index, direction, router ) {
+			var current = F.current;
+
+			if (!current) {
+				return;
+			}
+
+			index = getScalar(index);
+
+			F.direction = direction || current.direction[ (index >= current.index ? 'next' : 'prev') ];
+			F.router    = router || 'jumpto';
+
+			if (current.loop) {
+				if (index < 0) {
+					index = current.group.length + (index % current.group.length);
+				}
+
+				index = index % current.group.length;
+			}
+
+			if (current.group[ index ] !== undefined) {
+				F.cancel();
+
+				F._start(index);
+			}
+		},
+
+		// Center inside viewport and toggle position type to fixed or absolute if needed
+		reposition: function (e, onlyAbsolute) {
+			var current = F.current,
+				wrap    = current ? current.wrap : null,
+				pos;
+
+			if (wrap) {
+				pos = F._getPosition(onlyAbsolute);
+
+				if (e && e.type === 'scroll') {
+					delete pos.position;
+
+					wrap.stop(true, true).animate(pos, 200);
+
+				} else {
+					wrap.css(pos);
+
+					current.pos = $.extend({}, current.dim, pos);
+				}
+			}
+		},
+
+		update: function (e) {
+			var type = (e && e.type),
+				anyway = !type || type === 'orientationchange';
+
+			if (anyway) {
+				clearTimeout(didUpdate);
+
+				didUpdate = null;
+			}
+
+			if (!F.isOpen || didUpdate) {
+				return;
+			}
+
+			didUpdate = setTimeout(function() {
+				var current = F.current;
+
+				if (!current || F.isClosing) {
+					return;
+				}
+
+				F.wrap.removeClass('fancybox-tmp');
+
+				if (anyway || type === 'load' || (type === 'resize' && current.autoResize)) {
+					F._setDimension();
+				}
+
+				if (!(type === 'scroll' && current.canShrink)) {
+					F.reposition(e);
+				}
+
+				F.trigger('onUpdate');
+
+				didUpdate = null;
+
+			}, (anyway && !isTouch ? 0 : 300));
+		},
+
+		// Shrink content to fit inside viewport or restore if resized
+		toggle: function ( action ) {
+			if (F.isOpen) {
+				F.current.fitToView = $.type(action) === "boolean" ? action : !F.current.fitToView;
+
+				// Help browser to restore document dimensions
+				if (isTouch) {
+					F.wrap.removeAttr('style').addClass('fancybox-tmp');
+
+					F.trigger('onUpdate');
+				}
+
+				F.update();
+			}
+		},
+
+		hideLoading: function () {
+			D.unbind('.loading');
+
+			$('#fancybox-loading').remove();
+		},
+
+		showLoading: function () {
+			var el, viewport;
+
+			F.hideLoading();
+
+			el = $('<div id="fancybox-loading"><div></div></div>').click(F.cancel).appendTo('body');
+
+			// If user will press the escape-button, the request will be canceled
+			D.bind('keydown.loading', function(e) {
+				if ((e.which || e.keyCode) === 27) {
+					e.preventDefault();
+
+					F.cancel();
+				}
+			});
+
+			if (!F.defaults.fixed) {
+				viewport = F.getViewport();
+
+				el.css({
+					position : 'absolute',
+					top  : (viewport.h * 0.5) + viewport.y,
+					left : (viewport.w * 0.5) + viewport.x
+				});
+			}
+		},
+
+		getViewport: function () {
+			var locked = (F.current && F.current.locked) || false,
+				rez    = {
+					x: W.scrollLeft(),
+					y: W.scrollTop()
+				};
+
+			if (locked) {
+				rez.w = locked[0].clientWidth;
+				rez.h = locked[0].clientHeight;
+
+			} else {
+				// See http://bugs.jquery.com/ticket/6724
+				rez.w = isTouch && window.innerWidth  ? window.innerWidth  : W.width();
+				rez.h = isTouch && window.innerHeight ? window.innerHeight : W.height();
+			}
+
+			return rez;
+		},
+
+		// Unbind the keyboard / clicking actions
+		unbindEvents: function () {
+			if (F.wrap && isQuery(F.wrap)) {
+				F.wrap.unbind('.fb');
+			}
+
+			D.unbind('.fb');
+			W.unbind('.fb');
+		},
+
+		bindEvents: function () {
+			var current = F.current,
+				keys;
+
+			if (!current) {
+				return;
+			}
+
+			// Changing document height on iOS devices triggers a 'resize' event,
+			// that can change document height... repeating infinitely
+			W.bind('orientationchange.fb' + (isTouch ? '' : ' resize.fb') + (current.autoCenter && !current.locked ? ' scroll.fb' : ''), F.update);
+
+			keys = current.keys;
+
+			if (keys) {
+				D.bind('keydown.fb', function (e) {
+					var code   = e.which || e.keyCode,
+						target = e.target || e.srcElement;
+
+					// Skip esc key if loading, because showLoading will cancel preloading
+					if (code === 27 && F.coming) {
+						return false;
+					}
+
+					// Ignore key combinations and key events within form elements
+					if (!e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && !(target && (target.type || $(target).is('[contenteditable]')))) {
+						$.each(keys, function(i, val) {
+							if (current.group.length > 1 && val[ code ] !== undefined) {
+								F[ i ]( val[ code ] );
+
+								e.preventDefault();
+								return false;
+							}
+
+							if ($.inArray(code, val) > -1) {
+								F[ i ] ();
+
+								e.preventDefault();
+								return false;
+							}
+						});
+					}
+				});
+			}
+
+			if ($.fn.mousewheel && current.mouseWheel) {
+				F.wrap.bind('mousewheel.fb', function (e, delta, deltaX, deltaY) {
+					var target = e.target || null,
+						parent = $(target),
+						canScroll = false;
+
+					while (parent.length) {
+						if (canScroll || parent.is('.fancybox-skin') || parent.is('.fancybox-wrap')) {
+							break;
+						}
+
+						canScroll = isScrollable( parent[0] );
+						parent    = $(parent).parent();
+					}
+
+					if (delta !== 0 && !canScroll) {
+						if (F.group.length > 1 && !current.canShrink) {
+							if (deltaY > 0 || deltaX > 0) {
+								F.prev( deltaY > 0 ? 'down' : 'left' );
+
+							} else if (deltaY < 0 || deltaX < 0) {
+								F.next( deltaY < 0 ? 'up' : 'right' );
+							}
+
+							e.preventDefault();
+						}
+					}
+				});
+			}
+		},
+
+		trigger: function (event, o) {
+			var ret, obj = o || F.coming || F.current;
+
+			if (!obj) {
+				return;
+			}
+
+			if ($.isFunction( obj[event] )) {
+				ret = obj[event].apply(obj, Array.prototype.slice.call(arguments, 1));
+			}
+
+			if (ret === false) {
+				return false;
+			}
+
+			if (obj.helpers) {
+				$.each(obj.helpers, function (helper, opts) {
+					if (opts && F.helpers[helper] && $.isFunction(F.helpers[helper][event])) {
+						F.helpers[helper][event]($.extend(true, {}, F.helpers[helper].defaults, opts), obj);
+					}
+				});
+			}
+
+			D.trigger(event);
+		},
+
+		isImage: function (str) {
+			return isString(str) && str.match(/(^data:image\/.*,)|(\.(jp(e|g|eg)|gif|png|bmp|webp|svg)((\?|#).*)?$)/i);
+		},
+
+		isSWF: function (str) {
+			return isString(str) && str.match(/\.(swf)((\?|#).*)?$/i);
+		},
+
+		_start: function (index) {
+			var coming = {},
+				obj,
+				href,
+				type,
+				margin,
+				padding;
+
+			index = getScalar( index );
+			obj   = F.group[ index ] || null;
+
+			if (!obj) {
+				return false;
+			}
+
+			coming = $.extend(true, {}, F.opts, obj);
+
+			// Convert margin and padding properties to array - top, right, bottom, left
+			margin  = coming.margin;
+			padding = coming.padding;
+
+			if ($.type(margin) === 'number') {
+				coming.margin = [margin, margin, margin, margin];
+			}
+
+			if ($.type(padding) === 'number') {
+				coming.padding = [padding, padding, padding, padding];
+			}
+
+			// 'modal' propery is just a shortcut
+			if (coming.modal) {
+				$.extend(true, coming, {
+					closeBtn   : false,
+					closeClick : false,
+					nextClick  : false,
+					arrows     : false,
+					mouseWheel : false,
+					keys       : null,
+					helpers: {
+						overlay : {
+							closeClick : false
+						}
+					}
+				});
+			}
+
+			// 'autoSize' property is a shortcut, too
+			if (coming.autoSize) {
+				coming.autoWidth = coming.autoHeight = true;
+			}
+
+			if (coming.width === 'auto') {
+				coming.autoWidth = true;
+			}
+
+			if (coming.height === 'auto') {
+				coming.autoHeight = true;
+			}
+
+			/*
+			 * Add reference to the group, so it`s possible to access from callbacks, example:
+			 * afterLoad : function() {
+			 *     this.title = 'Image ' + (this.index + 1) + ' of ' + this.group.length + (this.title ? ' - ' + this.title : '');
+			 * }
+			 */
+
+			coming.group  = F.group;
+			coming.index  = index;
+
+			// Give a chance for callback or helpers to update coming item (type, title, etc)
+			F.coming = coming;
+
+			if (false === F.trigger('beforeLoad')) {
+				F.coming = null;
+
+				return;
+			}
+
+			type = coming.type;
+			href = coming.href;
+
+			if (!type) {
+				F.coming = null;
+
+				//If we can not determine content type then drop silently or display next/prev item if looping through gallery
+				if (F.current && F.router && F.router !== 'jumpto') {
+					F.current.index = index;
+
+					return F[ F.router ]( F.direction );
+				}
+
+				return false;
+			}
+
+			F.isActive = true;
+
+			if (type === 'image' || type === 'swf') {
+				coming.autoHeight = coming.autoWidth = false;
+				coming.scrolling  = 'visible';
+			}
+
+			if (type === 'image') {
+				coming.aspectRatio = true;
+			}
+
+			if (type === 'iframe' && isTouch) {
+				coming.scrolling = 'scroll';
+			}
+
+			// Build the neccessary markup
+			coming.wrap = $(coming.tpl.wrap).addClass('fancybox-' + (isTouch ? 'mobile' : 'desktop') + ' fancybox-type-' + type + ' fancybox-tmp ' + coming.wrapCSS).appendTo( coming.parent || 'body' );
+
+			$.extend(coming, {
+				skin  : $('.fancybox-skin',  coming.wrap),
+				outer : $('.fancybox-outer', coming.wrap),
+				inner : $('.fancybox-inner', coming.wrap)
+			});
+
+			$.each(["Top", "Right", "Bottom", "Left"], function(i, v) {
+				coming.skin.css('padding' + v, getValue(coming.padding[ i ]));
+			});
+
+			F.trigger('onReady');
+
+			// Check before try to load; 'inline' and 'html' types need content, others - href
+			if (type === 'inline' || type === 'html') {
+				if (!coming.content || !coming.content.length) {
+					return F._error( 'content' );
+				}
+
+			} else if (!href) {
+				return F._error( 'href' );
+			}
+
+			if (type === 'image') {
+				F._loadImage();
+
+			} else if (type === 'ajax') {
+				F._loadAjax();
+
+			} else if (type === 'iframe') {
+				F._loadIframe();
+
+			} else {
+				F._afterLoad();
+			}
+		},
+
+		_error: function ( type ) {
+			$.extend(F.coming, {
+				type       : 'html',
+				autoWidth  : true,
+				autoHeight : true,
+				minWidth   : 0,
+				minHeight  : 0,
+				scrolling  : 'no',
+				hasError   : type,
+				content    : F.coming.tpl.error
+			});
+
+			F._afterLoad();
+		},
+
+		_loadImage: function () {
+			// Reset preload image so it is later possible to check "complete" property
+			var img = F.imgPreload = new Image();
+
+			img.onload = function () {
+				this.onload = this.onerror = null;
+
+				F.coming.width  = this.width / F.opts.pixelRatio;
+				F.coming.height = this.height / F.opts.pixelRatio;
+
+				F._afterLoad();
+			};
+
+			img.onerror = function () {
+				this.onload = this.onerror = null;
+
+				F._error( 'image' );
+			};
+
+			img.src = F.coming.href;
+
+			if (img.complete !== true) {
+				F.showLoading();
+			}
+		},
+
+		_loadAjax: function () {
+			var coming = F.coming;
+
+			F.showLoading();
+
+			F.ajaxLoad = $.ajax($.extend({}, coming.ajax, {
+				url: coming.href,
+				error: function (jqXHR, textStatus) {
+					if (F.coming && textStatus !== 'abort') {
+						F._error( 'ajax', jqXHR );
+
+					} else {
+						F.hideLoading();
+					}
+				},
+				success: function (data, textStatus) {
+					if (textStatus === 'success') {
+						coming.content = data;
+
+						F._afterLoad();
+					}
+				}
+			}));
+		},
+
+		_loadIframe: function() {
+			var coming = F.coming,
+				iframe = $(coming.tpl.iframe.replace(/\{rnd\}/g, new Date().getTime()))
+					.attr('scrolling', isTouch ? 'auto' : coming.iframe.scrolling)
+					.attr('src', coming.href);
+
+			// This helps IE
+			$(coming.wrap).bind('onReset', function () {
+				try {
+					$(this).find('iframe').hide().attr('src', '//about:blank').end().empty();
+				} catch (e) {}
+			});
+
+			if (coming.iframe.preload) {
+				F.showLoading();
+
+				iframe.one('load', function() {
+					$(this).data('ready', 1);
+
+					// iOS will lose scrolling if we resize
+					if (!isTouch) {
+						$(this).bind('load.fb', F.update);
+					}
+
+					// Without this trick:
+					//   - iframe won't scroll on iOS devices
+					//   - IE7 sometimes displays empty iframe
+					$(this).parents('.fancybox-wrap').width('100%').removeClass('fancybox-tmp').show();
+
+					F._afterLoad();
+				});
+			}
+
+			coming.content = iframe.appendTo( coming.inner );
+
+			if (!coming.iframe.preload) {
+				F._afterLoad();
+			}
+		},
+
+		_preloadImages: function() {
+			var group   = F.group,
+				current = F.current,
+				len     = group.length,
+				cnt     = current.preload ? Math.min(current.preload, len - 1) : 0,
+				item,
+				i;
+
+			for (i = 1; i <= cnt; i += 1) {
+				item = group[ (current.index + i ) % len ];
+
+				if (item.type === 'image' && item.href) {
+					new Image().src = item.href;
+				}
+			}
+		},
+
+		_afterLoad: function () {
+			var coming   = F.coming,
+				previous = F.current,
+				placeholder = 'fancybox-placeholder',
+				current,
+				content,
+				type,
+				scrolling,
+				href,
+				embed;
+
+			F.hideLoading();
+
+			if (!coming || F.isActive === false) {
+				return;
+			}
+
+			if (false === F.trigger('afterLoad', coming, previous)) {
+				coming.wrap.stop(true).trigger('onReset').remove();
+
+				F.coming = null;
+
+				return;
+			}
+
+			if (previous) {
+				F.trigger('beforeChange', previous);
+
+				previous.wrap.stop(true).removeClass('fancybox-opened')
+					.find('.fancybox-item, .fancybox-nav')
+					.remove();
+			}
+
+			F.unbindEvents();
+
+			current   = coming;
+			content   = coming.content;
+			type      = coming.type;
+			scrolling = coming.scrolling;
+
+			$.extend(F, {
+				wrap  : current.wrap,
+				skin  : current.skin,
+				outer : current.outer,
+				inner : current.inner,
+				current  : current,
+				previous : previous
+			});
+
+			href = current.href;
+
+			switch (type) {
+				case 'inline':
+				case 'ajax':
+				case 'html':
+					if (current.selector) {
+						content = $('<div>').html(content).find(current.selector);
+
+					} else if (isQuery(content)) {
+						if (!content.data(placeholder)) {
+							content.data(placeholder, $('<div class="' + placeholder + '"></div>').insertAfter( content ).hide() );
+						}
+
+						content = content.show().detach();
+
+						current.wrap.bind('onReset', function () {
+							if ($(this).find(content).length) {
+								content.hide().replaceAll( content.data(placeholder) ).data(placeholder, false);
+							}
+						});
+					}
+				break;
+
+				case 'image':
+					content = current.tpl.image.replace('{href}', href);
+				break;
+
+				case 'swf':
+					content = '<object id="fancybox-swf" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="100%" height="100%"><param name="movie" value="' + href + '"></param>';
+					embed   = '';
+
+					$.each(current.swf, function(name, val) {
+						content += '<param name="' + name + '" value="' + val + '"></param>';
+						embed   += ' ' + name + '="' + val + '"';
+					});
+
+					content += '<embed src="' + href + '" type="application/x-shockwave-flash" width="100%" height="100%"' + embed + '></embed></object>';
+				break;
+			}
+
+			if (!(isQuery(content) && content.parent().is(current.inner))) {
+				current.inner.append( content );
+			}
+
+			// Give a chance for helpers or callbacks to update elements
+			F.trigger('beforeShow');
+
+			// Set scrolling before calculating dimensions
+			current.inner.css('overflow', scrolling === 'yes' ? 'scroll' : (scrolling === 'no' ? 'hidden' : scrolling));
+
+			// Set initial dimensions and start position
+			F._setDimension();
+
+			F.reposition();
+
+			F.isOpen = false;
+			F.coming = null;
+
+			F.bindEvents();
+
+			if (!F.isOpened) {
+				$('.fancybox-wrap').not( current.wrap ).stop(true).trigger('onReset').remove();
+
+			} else if (previous.prevMethod) {
+				F.transitions[ previous.prevMethod ]();
+			}
+
+			F.transitions[ F.isOpened ? current.nextMethod : current.openMethod ]();
+
+			F._preloadImages();
+		},
+
+		_setDimension: function () {
+			var viewport   = F.getViewport(),
+				steps      = 0,
+				canShrink  = false,
+				canExpand  = false,
+				wrap       = F.wrap,
+				skin       = F.skin,
+				inner      = F.inner,
+				current    = F.current,
+				width      = current.width,
+				height     = current.height,
+				minWidth   = current.minWidth,
+				minHeight  = current.minHeight,
+				maxWidth   = current.maxWidth,
+				maxHeight  = current.maxHeight,
+				scrolling  = current.scrolling,
+				scrollOut  = current.scrollOutside ? current.scrollbarWidth : 0,
+				margin     = current.margin,
+				wMargin    = getScalar(margin[1] + margin[3]),
+				hMargin    = getScalar(margin[0] + margin[2]),
+				wPadding,
+				hPadding,
+				wSpace,
+				hSpace,
+				origWidth,
+				origHeight,
+				origMaxWidth,
+				origMaxHeight,
+				ratio,
+				width_,
+				height_,
+				maxWidth_,
+				maxHeight_,
+				iframe,
+				body;
+
+			// Reset dimensions so we could re-check actual size
+			wrap.add(skin).add(inner).width('auto').height('auto').removeClass('fancybox-tmp');
+
+			wPadding = getScalar(skin.outerWidth(true)  - skin.width());
+			hPadding = getScalar(skin.outerHeight(true) - skin.height());
+
+			// Any space between content and viewport (margin, padding, border, title)
+			wSpace = wMargin + wPadding;
+			hSpace = hMargin + hPadding;
+
+			origWidth  = isPercentage(width)  ? (viewport.w - wSpace) * getScalar(width)  / 100 : width;
+			origHeight = isPercentage(height) ? (viewport.h - hSpace) * getScalar(height) / 100 : height;
+
+			if (current.type === 'iframe') {
+				iframe = current.content;
+
+				if (current.autoHeight && iframe.data('ready') === 1) {
+					try {
+						if (iframe[0].contentWindow.document.location) {
+							inner.width( origWidth ).height(9999);
+
+							body = iframe.contents().find('body');
+
+							if (scrollOut) {
+								body.css('overflow-x', 'hidden');
+							}
+
+							origHeight = body.outerHeight(true);
+						}
+
+					} catch (e) {}
+				}
+
+			} else if (current.autoWidth || current.autoHeight) {
+				inner.addClass( 'fancybox-tmp' );
+
+				// Set width or height in case we need to calculate only one dimension
+				if (!current.autoWidth) {
+					inner.width( origWidth );
+				}
+
+				if (!current.autoHeight) {
+					inner.height( origHeight );
+				}
+
+				if (current.autoWidth) {
+					origWidth = inner.width();
+				}
+
+				if (current.autoHeight) {
+					origHeight = inner.height();
+				}
+
+				inner.removeClass( 'fancybox-tmp' );
+			}
+
+			width  = getScalar( origWidth );
+			height = getScalar( origHeight );
+
+			ratio  = origWidth / origHeight;
+
+			// Calculations for the content
+			minWidth  = getScalar(isPercentage(minWidth) ? getScalar(minWidth, 'w') - wSpace : minWidth);
+			maxWidth  = getScalar(isPercentage(maxWidth) ? getScalar(maxWidth, 'w') - wSpace : maxWidth);
+
+			minHeight = getScalar(isPercentage(minHeight) ? getScalar(minHeight, 'h') - hSpace : minHeight);
+			maxHeight = getScalar(isPercentage(maxHeight) ? getScalar(maxHeight, 'h') - hSpace : maxHeight);
+
+			// These will be used to determine if wrap can fit in the viewport
+			origMaxWidth  = maxWidth;
+			origMaxHeight = maxHeight;
+
+			if (current.fitToView) {
+				maxWidth  = Math.min(viewport.w - wSpace, maxWidth);
+				maxHeight = Math.min(viewport.h - hSpace, maxHeight);
+			}
+
+			maxWidth_  = viewport.w - wMargin;
+			maxHeight_ = viewport.h - hMargin;
+
+			if (current.aspectRatio) {
+				if (width > maxWidth) {
+					width  = maxWidth;
+					height = getScalar(width / ratio);
+				}
+
+				if (height > maxHeight) {
+					height = maxHeight;
+					width  = getScalar(height * ratio);
+				}
+
+				if (width < minWidth) {
+					width  = minWidth;
+					height = getScalar(width / ratio);
+				}
+
+				if (height < minHeight) {
+					height = minHeight;
+					width  = getScalar(height * ratio);
+				}
+
+			} else {
+				width = Math.max(minWidth, Math.min(width, maxWidth));
+
+				if (current.autoHeight && current.type !== 'iframe') {
+					inner.width( width );
+
+					height = inner.height();
+				}
+
+				height = Math.max(minHeight, Math.min(height, maxHeight));
+			}
+
+			// Try to fit inside viewport (including the title)
+			if (current.fitToView) {
+				inner.width( width ).height( height );
+
+				wrap.width( width + wPadding );
+
+				// Real wrap dimensions
+				width_  = wrap.width();
+				height_ = wrap.height();
+
+				if (current.aspectRatio) {
+					while ((width_ > maxWidth_ || height_ > maxHeight_) && width > minWidth && height > minHeight) {
+						if (steps++ > 19) {
+							break;
+						}
+
+						height = Math.max(minHeight, Math.min(maxHeight, height - 10));
+						width  = getScalar(height * ratio);
+
+						if (width < minWidth) {
+							width  = minWidth;
+							height = getScalar(width / ratio);
+						}
+
+						if (width > maxWidth) {
+							width  = maxWidth;
+							height = getScalar(width / ratio);
+						}
+
+						inner.width( width ).height( height );
+
+						wrap.width( width + wPadding );
+
+						width_  = wrap.width();
+						height_ = wrap.height();
+					}
+
+				} else {
+					width  = Math.max(minWidth,  Math.min(width,  width  - (width_  - maxWidth_)));
+					height = Math.max(minHeight, Math.min(height, height - (height_ - maxHeight_)));
+				}
+			}
+
+			if (scrollOut && scrolling === 'auto' && height < origHeight && (width + wPadding + scrollOut) < maxWidth_) {
+				width += scrollOut;
+			}
+
+			inner.width( width ).height( height );
+
+			wrap.width( width + wPadding );
+
+			width_  = wrap.width();
+			height_ = wrap.height();
+
+			canShrink = (width_ > maxWidth_ || height_ > maxHeight_) && width > minWidth && height > minHeight;
+			canExpand = current.aspectRatio ? (width < origMaxWidth && height < origMaxHeight && width < origWidth && height < origHeight) : ((width < origMaxWidth || height < origMaxHeight) && (width < origWidth || height < origHeight));
+
+			$.extend(current, {
+				dim : {
+					width	: getValue( width_ ),
+					height	: getValue( height_ )
+				},
+				origWidth  : origWidth,
+				origHeight : origHeight,
+				canShrink  : canShrink,
+				canExpand  : canExpand,
+				wPadding   : wPadding,
+				hPadding   : hPadding,
+				wrapSpace  : height_ - skin.outerHeight(true),
+				skinSpace  : skin.height() - height
+			});
+
+			if (!iframe && current.autoHeight && height > minHeight && height < maxHeight && !canExpand) {
+				inner.height('auto');
+			}
+		},
+
+		_getPosition: function (onlyAbsolute) {
+			var current  = F.current,
+				viewport = F.getViewport(),
+				margin   = current.margin,
+				width    = F.wrap.width()  + margin[1] + margin[3],
+				height   = F.wrap.height() + margin[0] + margin[2],
+				rez      = {
+					position: 'absolute',
+					top  : margin[0],
+					left : margin[3]
+				};
+
+			if (current.autoCenter && current.fixed && !onlyAbsolute && height <= viewport.h && width <= viewport.w) {
+				rez.position = 'fixed';
+
+			} else if (!current.locked) {
+				rez.top  += viewport.y;
+				rez.left += viewport.x;
+			}
+
+			rez.top  = getValue(Math.max(rez.top,  rez.top  + ((viewport.h - height) * current.topRatio)));
+			rez.left = getValue(Math.max(rez.left, rez.left + ((viewport.w - width)  * current.leftRatio)));
+
+			return rez;
+		},
+
+		_afterZoomIn: function () {
+			var current = F.current;
+
+			if (!current) {
+				return;
+			}
+
+			F.isOpen = F.isOpened = true;
+
+			F.wrap.css('overflow', 'visible').addClass('fancybox-opened');
+
+			F.update();
+
+			// Assign a click event
+			if ( current.closeClick || (current.nextClick && F.group.length > 1) ) {
+				F.inner.css('cursor', 'pointer').bind('click.fb', function(e) {
+					if (!$(e.target).is('a') && !$(e.target).parent().is('a')) {
+						e.preventDefault();
+
+						F[ current.closeClick ? 'close' : 'next' ]();
+					}
+				});
+			}
+
+			// Create a close button
+			if (current.closeBtn) {
+				$(current.tpl.closeBtn).appendTo(F.skin).bind('click.fb', function(e) {
+					e.preventDefault();
+
+					F.close();
+				});
+			}
+
+			// Create navigation arrows
+			if (current.arrows && F.group.length > 1) {
+				if (current.loop || current.index > 0) {
+					$(current.tpl.prev).appendTo(F.outer).bind('click.fb', F.prev);
+				}
+
+				if (current.loop || current.index < F.group.length - 1) {
+					$(current.tpl.next).appendTo(F.outer).bind('click.fb', F.next);
+				}
+			}
+
+			F.trigger('afterShow');
+
+			// Stop the slideshow if this is the last item
+			if (!current.loop && current.index === current.group.length - 1) {
+				F.play( false );
+
+			} else if (F.opts.autoPlay && !F.player.isActive) {
+				F.opts.autoPlay = false;
+
+				F.play();
+			}
+		},
+
+		_afterZoomOut: function ( obj ) {
+			obj = obj || F.current;
+
+			$('.fancybox-wrap').trigger('onReset').remove();
+
+			$.extend(F, {
+				group  : {},
+				opts   : {},
+				router : false,
+				current   : null,
+				isActive  : false,
+				isOpened  : false,
+				isOpen    : false,
+				isClosing : false,
+				wrap   : null,
+				skin   : null,
+				outer  : null,
+				inner  : null
+			});
+
+			F.trigger('afterClose', obj);
+		}
+	});
+
+	/*
+	 *	Default transitions
+	 */
+
+	F.transitions = {
+		getOrigPosition: function () {
+			var current  = F.current,
+				element  = current.element,
+				orig     = current.orig,
+				pos      = {},
+				width    = 50,
+				height   = 50,
+				hPadding = current.hPadding,
+				wPadding = current.wPadding,
+				viewport = F.getViewport();
+
+			if (!orig && current.isDom && element.is(':visible')) {
+				orig = element.find('img:first');
+
+				if (!orig.length) {
+					orig = element;
+				}
+			}
+
+			if (isQuery(orig)) {
+				pos = orig.offset();
+
+				if (orig.is('img')) {
+					width  = orig.outerWidth();
+					height = orig.outerHeight();
+				}
+
+			} else {
+				pos.top  = viewport.y + (viewport.h - height) * current.topRatio;
+				pos.left = viewport.x + (viewport.w - width)  * current.leftRatio;
+			}
+
+			if (F.wrap.css('position') === 'fixed' || current.locked) {
+				pos.top  -= viewport.y;
+				pos.left -= viewport.x;
+			}
+
+			pos = {
+				top     : getValue(pos.top  - hPadding * current.topRatio),
+				left    : getValue(pos.left - wPadding * current.leftRatio),
+				width   : getValue(width  + wPadding),
+				height  : getValue(height + hPadding)
+			};
+
+			return pos;
+		},
+
+		step: function (now, fx) {
+			var ratio,
+				padding,
+				value,
+				prop       = fx.prop,
+				current    = F.current,
+				wrapSpace  = current.wrapSpace,
+				skinSpace  = current.skinSpace;
+
+			if (prop === 'width' || prop === 'height') {
+				ratio = fx.end === fx.start ? 1 : (now - fx.start) / (fx.end - fx.start);
+
+				if (F.isClosing) {
+					ratio = 1 - ratio;
+				}
+
+				padding = prop === 'width' ? current.wPadding : current.hPadding;
+				value   = now - padding;
+
+				F.skin[ prop ](  getScalar( prop === 'width' ?  value : value - (wrapSpace * ratio) ) );
+				F.inner[ prop ]( getScalar( prop === 'width' ?  value : value - (wrapSpace * ratio) - (skinSpace * ratio) ) );
+			}
+		},
+
+		zoomIn: function () {
+			var current  = F.current,
+				startPos = current.pos,
+				effect   = current.openEffect,
+				elastic  = effect === 'elastic',
+				endPos   = $.extend({opacity : 1}, startPos);
+
+			// Remove "position" property that breaks older IE
+			delete endPos.position;
+
+			if (elastic) {
+				startPos = this.getOrigPosition();
+
+				if (current.openOpacity) {
+					startPos.opacity = 0.1;
+				}
+
+			} else if (effect === 'fade') {
+				startPos.opacity = 0.1;
+			}
+
+			F.wrap.css(startPos).animate(endPos, {
+				duration : effect === 'none' ? 0 : current.openSpeed,
+				easing   : current.openEasing,
+				step     : elastic ? this.step : null,
+				complete : F._afterZoomIn
+			});
+		},
+
+		zoomOut: function () {
+			var current  = F.current,
+				effect   = current.closeEffect,
+				elastic  = effect === 'elastic',
+				endPos   = {opacity : 0.1};
+
+			if (elastic) {
+				endPos = this.getOrigPosition();
+
+				if (current.closeOpacity) {
+					endPos.opacity = 0.1;
+				}
+			}
+
+			F.wrap.animate(endPos, {
+				duration : effect === 'none' ? 0 : current.closeSpeed,
+				easing   : current.closeEasing,
+				step     : elastic ? this.step : null,
+				complete : F._afterZoomOut
+			});
+		},
+
+		changeIn: function () {
+			var current   = F.current,
+				effect    = current.nextEffect,
+				startPos  = current.pos,
+				endPos    = { opacity : 1 },
+				direction = F.direction,
+				distance  = 200,
+				field;
+
+			startPos.opacity = 0.1;
+
+			if (effect === 'elastic') {
+				field = direction === 'down' || direction === 'up' ? 'top' : 'left';
+
+				if (direction === 'down' || direction === 'right') {
+					startPos[ field ] = getValue(getScalar(startPos[ field ]) - distance);
+					endPos[ field ]   = '+=' + distance + 'px';
+
+				} else {
+					startPos[ field ] = getValue(getScalar(startPos[ field ]) + distance);
+					endPos[ field ]   = '-=' + distance + 'px';
+				}
+			}
+
+			// Workaround for http://bugs.jquery.com/ticket/12273
+			if (effect === 'none') {
+				F._afterZoomIn();
+
+			} else {
+				F.wrap.css(startPos).animate(endPos, {
+					duration : current.nextSpeed,
+					easing   : current.nextEasing,
+					complete : F._afterZoomIn
+				});
+			}
+		},
+
+		changeOut: function () {
+			var previous  = F.previous,
+				effect    = previous.prevEffect,
+				endPos    = { opacity : 0.1 },
+				direction = F.direction,
+				distance  = 200;
+
+			if (effect === 'elastic') {
+				endPos[ direction === 'down' || direction === 'up' ? 'top' : 'left' ] = ( direction === 'up' || direction === 'left' ? '-' : '+' ) + '=' + distance + 'px';
+			}
+
+			previous.wrap.animate(endPos, {
+				duration : effect === 'none' ? 0 : previous.prevSpeed,
+				easing   : previous.prevEasing,
+				complete : function () {
+					$(this).trigger('onReset').remove();
+				}
+			});
+		}
+	};
+
+	/*
+	 *	Overlay helper
+	 */
+
+	F.helpers.overlay = {
+		defaults : {
+			closeClick : true,      // if true, fancyBox will be closed when user clicks on the overlay
+			speedOut   : 200,       // duration of fadeOut animation
+			showEarly  : true,      // indicates if should be opened immediately or wait until the content is ready
+			css        : {},        // custom CSS properties
+			locked     : !isTouch,  // if true, the content will be locked into overlay
+			fixed      : true       // if false, the overlay CSS position property will not be set to "fixed"
+		},
+
+		overlay : null,      // current handle
+		fixed   : false,     // indicates if the overlay has position "fixed"
+		el      : $('html'), // element that contains "the lock"
+
+		// Public methods
+		create : function(opts) {
+			opts = $.extend({}, this.defaults, opts);
+
+			if (this.overlay) {
+				this.close();
+			}
+
+			this.overlay = $('<div class="fancybox-overlay"></div>').appendTo( F.coming ? F.coming.parent : opts.parent );
+			this.fixed   = false;
+
+			if (opts.fixed && F.defaults.fixed) {
+				this.overlay.addClass('fancybox-overlay-fixed');
+
+				this.fixed = true;
+			}
+		},
+
+		open : function(opts) {
+			var that = this;
+
+			opts = $.extend({}, this.defaults, opts);
+
+			if (this.overlay) {
+				this.overlay.unbind('.overlay').width('auto').height('auto');
+
+			} else {
+				this.create(opts);
+			}
+
+			if (!this.fixed) {
+				W.bind('resize.overlay', $.proxy( this.update, this) );
+
+				this.update();
+			}
+
+			if (opts.closeClick) {
+				this.overlay.bind('click.overlay', function(e) {
+					if ($(e.target).hasClass('fancybox-overlay')) {
+						if (F.isActive) {
+							F.close();
+						} else {
+							that.close();
+						}
+
+						return false;
+					}
+				});
+			}
+
+			this.overlay.css( opts.css ).show();
+		},
+
+		close : function() {
+			var scrollV, scrollH;
+
+			W.unbind('resize.overlay');
+
+			if (this.el.hasClass('fancybox-lock')) {
+				$('.fancybox-margin').removeClass('fancybox-margin');
+
+				scrollV = W.scrollTop();
+				scrollH = W.scrollLeft();
+
+				this.el.removeClass('fancybox-lock');
+
+				W.scrollTop( scrollV ).scrollLeft( scrollH );
+			}
+
+			$('.fancybox-overlay').remove().hide();
+
+			$.extend(this, {
+				overlay : null,
+				fixed   : false
+			});
+		},
+
+		// Private, callbacks
+
+		update : function () {
+			var width = '100%', offsetWidth;
+
+			// Reset width/height so it will not mess
+			this.overlay.width(width).height('100%');
+
+			// jQuery does not return reliable result for IE
+			if (IE) {
+				offsetWidth = Math.max(document.documentElement.offsetWidth, document.body.offsetWidth);
+
+				if (D.width() > offsetWidth) {
+					width = D.width();
+				}
+
+			} else if (D.width() > W.width()) {
+				width = D.width();
+			}
+
+			this.overlay.width(width).height(D.height());
+		},
+
+		// This is where we can manipulate DOM, because later it would cause iframes to reload
+		onReady : function (opts, obj) {
+			var overlay = this.overlay;
+
+			$('.fancybox-overlay').stop(true, true);
+
+			if (!overlay) {
+				this.create(opts);
+			}
+
+			if (opts.locked && this.fixed && obj.fixed) {
+				if (!overlay) {
+					this.margin = D.height() > W.height() ? $('html').css('margin-right').replace("px", "") : false;
+				}
+
+				obj.locked = this.overlay.append( obj.wrap );
+				obj.fixed  = false;
+			}
+
+			if (opts.showEarly === true) {
+				this.beforeShow.apply(this, arguments);
+			}
+		},
+
+		beforeShow : function(opts, obj) {
+			var scrollV, scrollH;
+
+			if (obj.locked) {
+				if (this.margin !== false) {
+					$('*').filter(function(){
+						return ($(this).css('position') === 'fixed' && !$(this).hasClass("fancybox-overlay") && !$(this).hasClass("fancybox-wrap") );
+					}).addClass('fancybox-margin');
+
+					this.el.addClass('fancybox-margin');
+				}
+
+				scrollV = W.scrollTop();
+				scrollH = W.scrollLeft();
+
+				this.el.addClass('fancybox-lock');
+
+				W.scrollTop( scrollV ).scrollLeft( scrollH );
+			}
+
+			this.open(opts);
+		},
+
+		onUpdate : function() {
+			if (!this.fixed) {
+				this.update();
+			}
+		},
+
+		afterClose: function (opts) {
+			// Remove overlay if exists and fancyBox is not opening
+			// (e.g., it is not being open using afterClose callback)
+			//if (this.overlay && !F.isActive) {
+			if (this.overlay && !F.coming) {
+				this.overlay.fadeOut(opts.speedOut, $.proxy( this.close, this ));
+			}
+		}
+	};
+
+	/*
+	 *	Title helper
+	 */
+
+	F.helpers.title = {
+		defaults : {
+			type     : 'float', // 'float', 'inside', 'outside' or 'over',
+			position : 'bottom' // 'top' or 'bottom'
+		},
+
+		beforeShow: function (opts) {
+			var current = F.current,
+				text    = current.title,
+				type    = opts.type,
+				title,
+				target;
+
+			if ($.isFunction(text)) {
+				text = text.call(current.element, current);
+			}
+
+			if (!isString(text) || $.trim(text) === '') {
+				return;
+			}
+
+			title = $('<div class="fancybox-title fancybox-title-' + type + '-wrap">' + text + '</div>');
+
+			switch (type) {
+				case 'inside':
+					target = F.skin;
+				break;
+
+				case 'outside':
+					target = F.wrap;
+				break;
+
+				case 'over':
+					target = F.inner;
+				break;
+
+				default: // 'float'
+					target = F.skin;
+
+					title.appendTo('body');
+
+					if (IE) {
+						title.width( title.width() );
+					}
+
+					title.wrapInner('<span class="child"></span>');
+
+					//Increase bottom margin so this title will also fit into viewport
+					F.current.margin[2] += Math.abs( getScalar(title.css('margin-bottom')) );
+				break;
+			}
+
+			title[ (opts.position === 'top' ? 'prependTo'  : 'appendTo') ](target);
+		}
+	};
+
+	// jQuery plugin initialization
+	$.fn.fancybox = function (options) {
+		var index,
+			that     = $(this),
+			selector = this.selector || '',
+			run      = function(e) {
+				var what = $(this).blur(), idx = index, relType, relVal;
+
+				if (!(e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) && !what.is('.fancybox-wrap')) {
+					relType = options.groupAttr || 'data-fancybox-group';
+					relVal  = what.attr(relType);
+
+					if (!relVal) {
+						relType = 'rel';
+						relVal  = what.get(0)[ relType ];
+					}
+
+					if (relVal && relVal !== '' && relVal !== 'nofollow') {
+						what = selector.length ? $(selector) : that;
+						what = what.filter('[' + relType + '="' + relVal + '"]');
+						idx  = what.index(this);
+					}
+
+					options.index = idx;
+
+					// Stop an event from bubbling if everything is fine
+					if (F.open(what, options) !== false) {
+						e.preventDefault();
+					}
+				}
+			};
+
+		options = options || {};
+		index   = options.index || 0;
+
+		if (!selector || options.live === false) {
+			that.unbind('click.fb-start').bind('click.fb-start', run);
+
+		} else {
+			D.undelegate(selector, 'click.fb-start').delegate(selector + ":not('.fancybox-item, .fancybox-nav')", 'click.fb-start', run);
+		}
+
+		this.filter('[data-fancybox-start=1]').trigger('click');
+
+		return this;
+	};
+
+	// Tests that need a body at doc ready
+	D.ready(function() {
+		var w1, w2;
+
+		if ( $.scrollbarWidth === undefined ) {
+			// http://benalman.com/projects/jquery-misc-plugins/#scrollbarwidth
+			$.scrollbarWidth = function() {
+				var parent = $('<div style="width:50px;height:50px;overflow:auto"><div/></div>').appendTo('body'),
+					child  = parent.children(),
+					width  = child.innerWidth() - child.height( 99 ).innerWidth();
+
+				parent.remove();
+
+				return width;
+			};
+		}
+
+		if ( $.support.fixedPosition === undefined ) {
+			$.support.fixedPosition = (function() {
+				var elem  = $('<div style="position:fixed;top:20px;"></div>').appendTo('body'),
+					fixed = ( elem[0].offsetTop === 20 || elem[0].offsetTop === 15 );
+
+				elem.remove();
+
+				return fixed;
+			}());
+		}
+
+		$.extend(F.defaults, {
+			scrollbarWidth : $.scrollbarWidth(),
+			fixed  : $.support.fixedPosition,
+			parent : $('body')
+		});
+
+		//Get real width of page scroll-bar
+		w1 = $(window).width();
+
+		H.addClass('fancybox-lock-test');
+
+		w2 = $(window).width();
+
+		H.removeClass('fancybox-lock-test');
+
+		$("<style type='text/css'>.fancybox-margin{margin-right:" + (w2 - w1) + "px;}</style>").appendTo("head");
+	});
+
+}(window, document, jQuery));
+
+/* **********************************************
+     Begin AES.js
+********************************************** */
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/*  AES implementation in JavaScript (c) Chris Veness 2005-2011                                   */
+/*   - see http://csrc.nist.gov/publications/PubsFIPS.html#197                                    */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+var Aes = {};  // Aes namespace
+
+/**
+ * AES Cipher function: encrypt 'input' state with Rijndael algorithm
+ *   applies Nr rounds (10/12/14) using key schedule w for 'add round key' stage
+ *
+ * @param {Number[]} input 16-byte (128-bit) input state array
+ * @param {Number[][]} w   Key schedule as 2D byte-array (Nr+1 x Nb bytes)
+ * @returns {Number[]}     Encrypted output state array
+ */
+Aes.cipher = function(input, w) {    // main Cipher function [§5.1]
+  var Nb = 4;               // block size (in words): no of columns in state (fixed at 4 for AES)
+  var Nr = w.length/Nb - 1; // no of rounds: 10/12/14 for 128/192/256-bit keys
+
+  var state = [[],[],[],[]];  // initialise 4xNb byte-array 'state' with input [§3.4]
+  for (var i=0; i<4*Nb; i++) state[i%4][Math.floor(i/4)] = input[i];
+
+  state = Aes.addRoundKey(state, w, 0, Nb);
+
+  for (var round=1; round<Nr; round++) {
+    state = Aes.subBytes(state, Nb);
+    state = Aes.shiftRows(state, Nb);
+    state = Aes.mixColumns(state, Nb);
+    state = Aes.addRoundKey(state, w, round, Nb);
+  }
+
+  state = Aes.subBytes(state, Nb);
+  state = Aes.shiftRows(state, Nb);
+  state = Aes.addRoundKey(state, w, Nr, Nb);
+
+  var output = new Array(4*Nb);  // convert state to 1-d array before returning [§3.4]
+  for (var i=0; i<4*Nb; i++) output[i] = state[i%4][Math.floor(i/4)];
+  return output;
+}
+
+/**
+ * Perform Key Expansion to generate a Key Schedule
+ *
+ * @param {Number[]} key Key as 16/24/32-byte array
+ * @returns {Number[][]} Expanded key schedule as 2D byte-array (Nr+1 x Nb bytes)
+ */
+Aes.keyExpansion = function(key) {  // generate Key Schedule (byte-array Nr+1 x Nb) from Key [§5.2]
+  var Nb = 4;            // block size (in words): no of columns in state (fixed at 4 for AES)
+  var Nk = key.length/4  // key length (in words): 4/6/8 for 128/192/256-bit keys
+  var Nr = Nk + 6;       // no of rounds: 10/12/14 for 128/192/256-bit keys
+
+  var w = new Array(Nb*(Nr+1));
+  var temp = new Array(4);
+
+  for (var i=0; i<Nk; i++) {
+    var r = [key[4*i], key[4*i+1], key[4*i+2], key[4*i+3]];
+    w[i] = r;
+  }
+
+  for (var i=Nk; i<(Nb*(Nr+1)); i++) {
+    w[i] = new Array(4);
+    for (var t=0; t<4; t++) temp[t] = w[i-1][t];
+    if (i % Nk == 0) {
+      temp = Aes.subWord(Aes.rotWord(temp));
+      for (var t=0; t<4; t++) temp[t] ^= Aes.rCon[i/Nk][t];
+    } else if (Nk > 6 && i%Nk == 4) {
+      temp = Aes.subWord(temp);
+    }
+    for (var t=0; t<4; t++) w[i][t] = w[i-Nk][t] ^ temp[t];
+  }
+
+  return w;
+}
+
+/*
+ * ---- remaining routines are private, not called externally ----
+ */
+
+Aes.subBytes = function(s, Nb) {    // apply SBox to state S [§5.1.1]
+  for (var r=0; r<4; r++) {
+    for (var c=0; c<Nb; c++) s[r][c] = Aes.sBox[s[r][c]];
+  }
+  return s;
+}
+
+Aes.shiftRows = function(s, Nb) {    // shift row r of state S left by r bytes [§5.1.2]
+  var t = new Array(4);
+  for (var r=1; r<4; r++) {
+    for (var c=0; c<4; c++) t[c] = s[r][(c+r)%Nb];  // shift into temp copy
+    for (var c=0; c<4; c++) s[r][c] = t[c];         // and copy back
+  }          // note that this will work for Nb=4,5,6, but not 7,8 (always 4 for AES):
+  return s;  // see asmaes.sourceforge.net/rijndael/rijndaelImplementation.pdf
+}
+
+Aes.mixColumns = function(s, Nb) {   // combine bytes of each col of state S [§5.1.3]
+  for (var c=0; c<4; c++) {
+    var a = new Array(4);  // 'a' is a copy of the current column from 's'
+    var b = new Array(4);  // 'b' is a•{02} in GF(2^8)
+    for (var i=0; i<4; i++) {
+      a[i] = s[i][c];
+      b[i] = s[i][c]&0x80 ? s[i][c]<<1 ^ 0x011b : s[i][c]<<1;
+
+    }
+    // a[n] ^ b[n] is a•{03} in GF(2^8)
+    s[0][c] = b[0] ^ a[1] ^ b[1] ^ a[2] ^ a[3]; // 2*a0 + 3*a1 + a2 + a3
+    s[1][c] = a[0] ^ b[1] ^ a[2] ^ b[2] ^ a[3]; // a0 * 2*a1 + 3*a2 + a3
+    s[2][c] = a[0] ^ a[1] ^ b[2] ^ a[3] ^ b[3]; // a0 + a1 + 2*a2 + 3*a3
+    s[3][c] = a[0] ^ b[0] ^ a[1] ^ a[2] ^ b[3]; // 3*a0 + a1 + a2 + 2*a3
+  }
+  return s;
+}
+
+Aes.addRoundKey = function(state, w, rnd, Nb) {  // xor Round Key into state S [§5.1.4]
+  for (var r=0; r<4; r++) {
+    for (var c=0; c<Nb; c++) state[r][c] ^= w[rnd*4+c][r];
+  }
+  return state;
+}
+
+Aes.subWord = function(w) {    // apply SBox to 4-byte word w
+  for (var i=0; i<4; i++) w[i] = Aes.sBox[w[i]];
+  return w;
+}
+
+Aes.rotWord = function(w) {    // rotate 4-byte word w left by one byte
+  var tmp = w[0];
+  for (var i=0; i<3; i++) w[i] = w[i+1];
+  w[3] = tmp;
+  return w;
+}
+
+// sBox is pre-computed multiplicative inverse in GF(2^8) used in subBytes and keyExpansion [§5.1.1]
+Aes.sBox =  [0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,
+             0xca,0x82,0xc9,0x7d,0xfa,0x59,0x47,0xf0,0xad,0xd4,0xa2,0xaf,0x9c,0xa4,0x72,0xc0,
+             0xb7,0xfd,0x93,0x26,0x36,0x3f,0xf7,0xcc,0x34,0xa5,0xe5,0xf1,0x71,0xd8,0x31,0x15,
+             0x04,0xc7,0x23,0xc3,0x18,0x96,0x05,0x9a,0x07,0x12,0x80,0xe2,0xeb,0x27,0xb2,0x75,
+             0x09,0x83,0x2c,0x1a,0x1b,0x6e,0x5a,0xa0,0x52,0x3b,0xd6,0xb3,0x29,0xe3,0x2f,0x84,
+             0x53,0xd1,0x00,0xed,0x20,0xfc,0xb1,0x5b,0x6a,0xcb,0xbe,0x39,0x4a,0x4c,0x58,0xcf,
+             0xd0,0xef,0xaa,0xfb,0x43,0x4d,0x33,0x85,0x45,0xf9,0x02,0x7f,0x50,0x3c,0x9f,0xa8,
+             0x51,0xa3,0x40,0x8f,0x92,0x9d,0x38,0xf5,0xbc,0xb6,0xda,0x21,0x10,0xff,0xf3,0xd2,
+             0xcd,0x0c,0x13,0xec,0x5f,0x97,0x44,0x17,0xc4,0xa7,0x7e,0x3d,0x64,0x5d,0x19,0x73,
+             0x60,0x81,0x4f,0xdc,0x22,0x2a,0x90,0x88,0x46,0xee,0xb8,0x14,0xde,0x5e,0x0b,0xdb,
+             0xe0,0x32,0x3a,0x0a,0x49,0x06,0x24,0x5c,0xc2,0xd3,0xac,0x62,0x91,0x95,0xe4,0x79,
+             0xe7,0xc8,0x37,0x6d,0x8d,0xd5,0x4e,0xa9,0x6c,0x56,0xf4,0xea,0x65,0x7a,0xae,0x08,
+             0xba,0x78,0x25,0x2e,0x1c,0xa6,0xb4,0xc6,0xe8,0xdd,0x74,0x1f,0x4b,0xbd,0x8b,0x8a,
+             0x70,0x3e,0xb5,0x66,0x48,0x03,0xf6,0x0e,0x61,0x35,0x57,0xb9,0x86,0xc1,0x1d,0x9e,
+             0xe1,0xf8,0x98,0x11,0x69,0xd9,0x8e,0x94,0x9b,0x1e,0x87,0xe9,0xce,0x55,0x28,0xdf,
+             0x8c,0xa1,0x89,0x0d,0xbf,0xe6,0x42,0x68,0x41,0x99,0x2d,0x0f,0xb0,0x54,0xbb,0x16];
+
+// rCon is Round Constant used for the Key Expansion [1st col is 2^(r-1) in GF(2^8)] [§5.2]
+Aes.rCon = [ [0x00, 0x00, 0x00, 0x00],
+             [0x01, 0x00, 0x00, 0x00],
+             [0x02, 0x00, 0x00, 0x00],
+             [0x04, 0x00, 0x00, 0x00],
+             [0x08, 0x00, 0x00, 0x00],
+             [0x10, 0x00, 0x00, 0x00],
+             [0x20, 0x00, 0x00, 0x00],
+             [0x40, 0x00, 0x00, 0x00],
+             [0x80, 0x00, 0x00, 0x00],
+             [0x1b, 0x00, 0x00, 0x00],
+             [0x36, 0x00, 0x00, 0x00] ];
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/*  AES Counter-mode implementation in JavaScript (c) Chris Veness 2005-2011                      */
+/*   - see http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf                       */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+Aes.Ctr = {};  // Aes.Ctr namespace: a subclass or extension of Aes
+
+/**
+ * Encrypt a text using AES encryption in Counter mode of operation
+ *
+ * Unicode multi-byte character safe
+ *
+ * @param {String} plaintext Source text to be encrypted
+ * @param {String} password  The password to use to generate a key
+ * @param {Number} nBits     Number of bits to be used in the key (128, 192, or 256)
+ * @returns {string}         Encrypted text
+ */
+Aes.Ctr.encrypt = function(plaintext, password, nBits) {
+  var blockSize = 16;  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
+  if (!(nBits==128 || nBits==192 || nBits==256)) return '';  // standard allows 128/192/256 bit keys
+  plaintext = Utf8.encode(plaintext);
+  password = Utf8.encode(password);
+  //var t = new Date();  // timer
+
+  // use AES itself to encrypt password to get cipher key (using plain password as source for key
+  // expansion) - gives us well encrypted key (though hashed key might be preferred for prod'n use)
+  var nBytes = nBits/8;  // no bytes in key (16/24/32)
+  var pwBytes = new Array(nBytes);
+  for (var i=0; i<nBytes; i++) {  // use 1st 16/24/32 chars of password for key
+    pwBytes[i] = isNaN(password.charCodeAt(i)) ? 0 : password.charCodeAt(i);
+  }
+  var key = Aes.cipher(pwBytes, Aes.keyExpansion(pwBytes));  // gives us 16-byte key
+  key = key.concat(key.slice(0, nBytes-16));  // expand key to 16/24/32 bytes long
+
+  // initialise 1st 8 bytes of counter block with nonce (NIST SP800-38A §B.2): [0-1] = millisec,
+  // [2-3] = random, [4-7] = seconds, together giving full sub-millisec uniqueness up to Feb 2106
+  var counterBlock = new Array(blockSize);
+
+  var nonce = (new Date()).getTime();  // timestamp: milliseconds since 1-Jan-1970
+  var nonceMs = nonce%1000;
+  var nonceSec = Math.floor(nonce/1000);
+  var nonceRnd = Math.floor(Math.random()*0xffff);
+
+  for (var i=0; i<2; i++) counterBlock[i]   = (nonceMs  >>> i*8) & 0xff;
+  for (var i=0; i<2; i++) counterBlock[i+2] = (nonceRnd >>> i*8) & 0xff;
+  for (var i=0; i<4; i++) counterBlock[i+4] = (nonceSec >>> i*8) & 0xff;
+
+  // and convert it to a string to go on the front of the ciphertext
+  var ctrTxt = '';
+  for (var i=0; i<8; i++) ctrTxt += String.fromCharCode(counterBlock[i]);
+
+  // generate key schedule - an expansion of the key into distinct Key Rounds for each round
+  var keySchedule = Aes.keyExpansion(key);
+
+  var blockCount = Math.ceil(plaintext.length/blockSize);
+  var ciphertxt = new Array(blockCount);  // ciphertext as array of strings
+
+  for (var b=0; b<blockCount; b++) {
+    // set counter (block #) in last 8 bytes of counter block (leaving nonce in 1st 8 bytes)
+    // done in two stages for 32-bit ops: using two words allows us to go past 2^32 blocks (68GB)
+    for (var c=0; c<4; c++) counterBlock[15-c] = (b >>> c*8) & 0xff;
+    for (var c=0; c<4; c++) counterBlock[15-c-4] = (b/0x100000000 >>> c*8)
+
+    var cipherCntr = Aes.cipher(counterBlock, keySchedule);  // -- encrypt counter block --
+
+    // block size is reduced on final block
+    var blockLength = b<blockCount-1 ? blockSize : (plaintext.length-1)%blockSize+1;
+    var cipherChar = new Array(blockLength);
+
+    for (var i=0; i<blockLength; i++) {  // -- xor plaintext with ciphered counter char-by-char --
+      cipherChar[i] = cipherCntr[i] ^ plaintext.charCodeAt(b*blockSize+i);
+      cipherChar[i] = String.fromCharCode(cipherChar[i]);
+    }
+    ciphertxt[b] = cipherChar.join('');
+  }
+
+  // Array.join is more efficient than repeated string concatenation in IE
+  var ciphertext = ctrTxt + ciphertxt.join('');
+  ciphertext = Base64.encode(ciphertext);  // encode in base64
+
+  //alert((new Date()) - t);
+  return ciphertext;
+}
+
+/**
+ * Decrypt a text encrypted by AES in counter mode of operation
+ *
+ * @param {String} ciphertext Source text to be encrypted
+ * @param {String} password   The password to use to generate a key
+ * @param {Number} nBits      Number of bits to be used in the key (128, 192, or 256)
+ * @returns {String}          Decrypted text
+ */
+Aes.Ctr.decrypt = function(ciphertext, password, nBits) {
+  var blockSize = 16;  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
+  if (!(nBits==128 || nBits==192 || nBits==256)) return '';  // standard allows 128/192/256 bit keys
+  ciphertext = Base64.decode(ciphertext);
+  password = Utf8.encode(password);
+  //var t = new Date();  // timer
+
+  // use AES to encrypt password (mirroring encrypt routine)
+  var nBytes = nBits/8;  // no bytes in key
+  var pwBytes = new Array(nBytes);
+  for (var i=0; i<nBytes; i++) {
+    pwBytes[i] = isNaN(password.charCodeAt(i)) ? 0 : password.charCodeAt(i);
+  }
+  var key = Aes.cipher(pwBytes, Aes.keyExpansion(pwBytes));
+  key = key.concat(key.slice(0, nBytes-16));  // expand key to 16/24/32 bytes long
+
+  // recover nonce from 1st 8 bytes of ciphertext
+  var counterBlock = new Array(8);
+  ctrTxt = ciphertext.slice(0, 8);
+  for (var i=0; i<8; i++) counterBlock[i] = ctrTxt.charCodeAt(i);
+
+  // generate key schedule
+  var keySchedule = Aes.keyExpansion(key);
+
+  // separate ciphertext into blocks (skipping past initial 8 bytes)
+  var nBlocks = Math.ceil((ciphertext.length-8) / blockSize);
+  var ct = new Array(nBlocks);
+  for (var b=0; b<nBlocks; b++) ct[b] = ciphertext.slice(8+b*blockSize, 8+b*blockSize+blockSize);
+  ciphertext = ct;  // ciphertext is now array of block-length strings
+
+  // plaintext will get generated block-by-block into array of block-length strings
+  var plaintxt = new Array(ciphertext.length);
+
+  for (var b=0; b<nBlocks; b++) {
+    // set counter (block #) in last 8 bytes of counter block (leaving nonce in 1st 8 bytes)
+    for (var c=0; c<4; c++) counterBlock[15-c] = ((b) >>> c*8) & 0xff;
+    for (var c=0; c<4; c++) counterBlock[15-c-4] = (((b+1)/0x100000000-1) >>> c*8) & 0xff;
+
+    var cipherCntr = Aes.cipher(counterBlock, keySchedule);  // encrypt counter block
+
+    var plaintxtByte = new Array(ciphertext[b].length);
+    for (var i=0; i<ciphertext[b].length; i++) {
+      // -- xor plaintxt with ciphered counter byte-by-byte --
+      plaintxtByte[i] = cipherCntr[i] ^ ciphertext[b].charCodeAt(i);
+      plaintxtByte[i] = String.fromCharCode(plaintxtByte[i]);
+    }
+    plaintxt[b] = plaintxtByte.join('');
+  }
+
+  // join array of blocks into single plaintext string
+  var plaintext = plaintxt.join('');
+  plaintext = Utf8.decode(plaintext);  // decode from UTF8 back to Unicode multi-byte chars
+
+  //alert((new Date()) - t);
+  return plaintext;
+}
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/*  Base64 class: Base 64 encoding / decoding (c) Chris Veness 2002-2011                          */
+/*    note: depends on Utf8 class                                                                 */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+var Base64 = {};  // Base64 namespace
+
+Base64.code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+/**
+ * Encode string into Base64, as defined by RFC 4648 [http://tools.ietf.org/html/rfc4648]
+ * (instance method extending String object). As per RFC 4648, no newlines are added.
+ *
+ * @param {String} str The string to be encoded as base-64
+ * @param {Boolean} [utf8encode=false] Flag to indicate whether str is Unicode string to be encoded
+ *   to UTF8 before conversion to base64; otherwise string is assumed to be 8-bit characters
+ * @returns {String} Base64-encoded string
+ */
+Base64.encode = function(str, utf8encode) {  // http://tools.ietf.org/html/rfc4648
+  utf8encode =  (typeof utf8encode == 'undefined') ? false : utf8encode;
+  var o1, o2, o3, bits, h1, h2, h3, h4, e=[], pad = '', c, plain, coded;
+  var b64 = Base64.code;
+
+  plain = utf8encode ? str.encodeUTF8() : str;
+
+  c = plain.length % 3;  // pad string to length of multiple of 3
+  if (c > 0) { while (c++ < 3) { pad += '='; plain += '\0'; } }
+  // note: doing padding here saves us doing special-case packing for trailing 1 or 2 chars
+
+  for (c=0; c<plain.length; c+=3) {  // pack three octets into four hexets
+    o1 = plain.charCodeAt(c);
+    o2 = plain.charCodeAt(c+1);
+    o3 = plain.charCodeAt(c+2);
+
+    bits = o1<<16 | o2<<8 | o3;
+
+    h1 = bits>>18 & 0x3f;
+    h2 = bits>>12 & 0x3f;
+    h3 = bits>>6 & 0x3f;
+    h4 = bits & 0x3f;
+
+    // use hextets to index into code string
+    e[c/3] = b64.charAt(h1) + b64.charAt(h2) + b64.charAt(h3) + b64.charAt(h4);
+  }
+  coded = e.join('');  // join() is far faster than repeated string concatenation in IE
+
+  // replace 'A's from padded nulls with '='s
+  coded = coded.slice(0, coded.length-pad.length) + pad;
+
+  return coded;
+}
+
+/**
+ * Decode string from Base64, as defined by RFC 4648 [http://tools.ietf.org/html/rfc4648]
+ * (instance method extending String object). As per RFC 4648, newlines are not catered for.
+ *
+ * @param {String} str The string to be decoded from base-64
+ * @param {Boolean} [utf8decode=false] Flag to indicate whether str is Unicode string to be decoded
+ *   from UTF8 after conversion from base64
+ * @returns {String} decoded string
+ */
+Base64.decode = function(str, utf8decode) {
+  utf8decode =  (typeof utf8decode == 'undefined') ? false : utf8decode;
+  var o1, o2, o3, h1, h2, h3, h4, bits, d=[], plain, coded;
+  var b64 = Base64.code;
+
+  coded = utf8decode ? str.decodeUTF8() : str;
+
+
+  for (var c=0; c<coded.length; c+=4) {  // unpack four hexets into three octets
+    h1 = b64.indexOf(coded.charAt(c));
+    h2 = b64.indexOf(coded.charAt(c+1));
+    h3 = b64.indexOf(coded.charAt(c+2));
+    h4 = b64.indexOf(coded.charAt(c+3));
+
+    bits = h1<<18 | h2<<12 | h3<<6 | h4;
+
+    o1 = bits>>>16 & 0xff;
+    o2 = bits>>>8 & 0xff;
+    o3 = bits & 0xff;
+
+    d[c/4] = String.fromCharCode(o1, o2, o3);
+    // check for padding
+    if (h4 == 0x40) d[c/4] = String.fromCharCode(o1, o2);
+    if (h3 == 0x40) d[c/4] = String.fromCharCode(o1);
+  }
+  plain = d.join('');  // join() is far faster than repeated string concatenation in IE
+
+  return utf8decode ? plain.decodeUTF8() : plain;
+}
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/*  Utf8 class: encode / decode between multi-byte Unicode characters and UTF-8 multiple          */
+/*              single-byte character encoding (c) Chris Veness 2002-2011                         */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+var Utf8 = {};  // Utf8 namespace
+
+/**
+ * Encode multi-byte Unicode string into utf-8 multiple single-byte characters
+ * (BMP / basic multilingual plane only)
+ *
+ * Chars in range U+0080 - U+07FF are encoded in 2 chars, U+0800 - U+FFFF in 3 chars
+ *
+ * @param {String} strUni Unicode string to be encoded as UTF-8
+ * @returns {String} encoded string
+ */
+Utf8.encode = function(strUni) {
+  // use regular expressions & String.replace callback function for better efficiency
+  // than procedural approaches
+  var strUtf = strUni.replace(
+      /[\u0080-\u07ff]/g,  // U+0080 - U+07FF => 2 bytes 110yyyyy, 10zzzzzz
+      function(c) {
+        var cc = c.charCodeAt(0);
+        return String.fromCharCode(0xc0 | cc>>6, 0x80 | cc&0x3f); }
+    );
+  strUtf = strUtf.replace(
+      /[\u0800-\uffff]/g,  // U+0800 - U+FFFF => 3 bytes 1110xxxx, 10yyyyyy, 10zzzzzz
+      function(c) {
+        var cc = c.charCodeAt(0);
+        return String.fromCharCode(0xe0 | cc>>12, 0x80 | cc>>6&0x3F, 0x80 | cc&0x3f); }
+    );
+  return strUtf;
+}
+
+/**
+ * Decode utf-8 encoded string back into multi-byte Unicode characters
+ *
+ * @param {String} strUtf UTF-8 string to be decoded back to Unicode
+ * @returns {String} decoded string
+ */
+Utf8.decode = function(strUtf) {
+  // note: decode 3-byte chars first as decoded 2-byte strings could appear to be 3-byte char!
+  var strUni = strUtf.replace(
+      /[\u00e0-\u00ef][\u0080-\u00bf][\u0080-\u00bf]/g,  // 3-byte chars
+      function(c) {  // (note parentheses for precence)
+        var cc = ((c.charCodeAt(0)&0x0f)<<12) | ((c.charCodeAt(1)&0x3f)<<6) | ( c.charCodeAt(2)&0x3f);
+        return String.fromCharCode(cc); }
+    );
+  strUni = strUni.replace(
+      /[\u00c0-\u00df][\u0080-\u00bf]/g,                 // 2-byte chars
+      function(c) {  // (note parentheses for precence)
+        var cc = (c.charCodeAt(0)&0x1f)<<6 | c.charCodeAt(1)&0x3f;
+        return String.fromCharCode(cc); }
+    );
+  return strUni;
+}
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+/* **********************************************
+     Begin bootstrap-tooltip.js
+********************************************** */
+
+/* ===========================================================
+ * bootstrap-tooltip.js v2.0.1
+ * http://twitter.github.com/bootstrap/javascript.html#tooltips
+ * Inspired by the original jQuery.tipsy by Jason Frame
+ * ===========================================================
+ * Copyright 2012 Twitter, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ========================================================== */
+
+!function( $ ) {
+
+  "use strict"
+
+ /* TOOLTIP PUBLIC CLASS DEFINITION
+  * =============================== */
+
+  var Tooltip = function ( element, options ) {
+    this.init('tooltip', element, options)
+  }
+
+  Tooltip.prototype = {
+
+    constructor: Tooltip
+
+  , init: function ( type, element, options ) {
+      var eventIn
+        , eventOut
+
+      this.type = type
+      this.$element = $(element)
+      this.options = this.getOptions(options)
+      this.enabled = true
+
+      if (this.options.trigger != 'manual') {
+        eventIn  = this.options.trigger == 'hover' ? 'mouseenter' : 'focus'
+        eventOut = this.options.trigger == 'hover' ? 'mouseleave' : 'blur'
+        this.$element.on(eventIn, this.options.selector, $.proxy(this.enter, this))
+        this.$element.on(eventOut, this.options.selector, $.proxy(this.leave, this))
+      }
+
+      this.options.selector ?
+        (this._options = $.extend({}, this.options, { trigger: 'manual', selector: '' })) :
+        this.fixTitle()
+    }
+
+  , getOptions: function ( options ) {
+      options = $.extend({}, $.fn[this.type].defaults, options, this.$element.data())
+
+      if (options.delay && typeof options.delay == 'number') {
+        options.delay = {
+          show: options.delay
+        , hide: options.delay
+        }
+      }
+
+      return options
+    }
+
+  , enter: function ( e ) {
+      var self = $(e.currentTarget)[this.type](this._options).data(this.type)
+
+      if (!self.options.delay || !self.options.delay.show) {
+        self.show()
+      } else {
+        self.hoverState = 'in'
+        setTimeout(function() {
+          if (self.hoverState == 'in') {
+            self.show()
+          }
+        }, self.options.delay.show)
+      }
+    }
+
+  , leave: function ( e ) {
+      var self = $(e.currentTarget)[this.type](this._options).data(this.type)
+
+      if (!self.options.delay || !self.options.delay.hide) {
+        self.hide()
+      } else {
+        self.hoverState = 'out'
+        setTimeout(function() {
+          if (self.hoverState == 'out') {
+            self.hide()
+          }
+        }, self.options.delay.hide)
+      }
+    }
+
+  , show: function () {
+      var $tip
+        , inside
+        , pos
+        , actualWidth
+        , actualHeight
+        , placement
+        , tp
+
+      if (this.hasContent() && this.enabled) {
+        $tip = this.tip()
+        this.setContent()
+
+        if (this.options.animation) {
+          $tip.addClass('fade')
+        }
+
+        placement = typeof this.options.placement == 'function' ?
+          this.options.placement.call(this, $tip[0], this.$element[0]) :
+          this.options.placement
+
+        inside = /in/.test(placement)
+
+        $tip
+          .remove()
+          .css({ top: 0, left: 0, display: 'block' })
+          .appendTo(inside ? this.$element : document.body)
+
+        pos = this.getPosition(inside)
+
+        actualWidth = $tip[0].offsetWidth
+        actualHeight = $tip[0].offsetHeight
+
+        switch (inside ? placement.split(' ')[1] : placement) {
+          case 'bottom':
+            tp = {top: pos.top + pos.height, left: pos.left + pos.width / 2 - actualWidth / 2}
+            break
+          case 'top':
+            tp = {top: pos.top - actualHeight, left: pos.left + pos.width / 2 - actualWidth / 2}
+            break
+          case 'left':
+            tp = {top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left - actualWidth}
+            break
+          case 'right':
+            tp = {top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left + pos.width}
+            break
+        }
+
+        $tip
+          .css(tp)
+          .addClass(placement)
+          .addClass('in')
+      }
+    }
+
+  , setContent: function () {
+      var $tip = this.tip()
+      $tip.find('.timeline-tooltip-inner').html(this.getTitle())
+      $tip.removeClass('fade in top bottom left right')
+    }
+
+  , hide: function () {
+      var that = this
+        , $tip = this.tip()
+
+      $tip.removeClass('in')
+
+      function removeWithAnimation() {
+        var timeout = setTimeout(function () {
+          $tip.off($.support.transition.end).remove()
+        }, 500)
+
+        $tip.one($.support.transition.end, function () {
+          clearTimeout(timeout)
+          $tip.remove()
+        })
+      }
+
+      $.support.transition && this.$tip.hasClass('fade') ?
+        removeWithAnimation() :
+        $tip.remove()
+    }
+
+  , fixTitle: function () {
+      var $e = this.$element
+      if ($e.attr('title') || typeof($e.attr('data-original-title')) != 'string') {
+        $e.attr('data-original-title', $e.attr('title') || '').removeAttr('title')
+      }
+    }
+
+  , hasContent: function () {
+      return this.getTitle()
+    }
+
+  , getPosition: function (inside) {
+      return $.extend({}, (inside ? {top: 0, left: 0} : this.$element.offset()), {
+        width: this.$element[0].offsetWidth
+      , height: this.$element[0].offsetHeight
+      })
+    }
+
+  , getTitle: function () {
+      var title
+        , $e = this.$element
+        , o = this.options
+
+      title = $e.attr('data-original-title')
+        || (typeof o.title == 'function' ? o.title.call($e[0]) :  o.title)
+
+      title = title.toString().replace(/(^\s*|\s*$)/, "")
+
+      return title
+    }
+
+  , tip: function () {
+      return this.$tip = this.$tip || $(this.options.template)
+    }
+
+  , validate: function () {
+      if (!this.$element[0].parentNode) {
+        this.hide()
+        this.$element = null
+        this.options = null
+      }
+    }
+
+  , enable: function () {
+      this.enabled = true
+    }
+
+  , disable: function () {
+      this.enabled = false
+    }
+
+  , toggleEnabled: function () {
+      this.enabled = !this.enabled
+    }
+
+  , toggle: function () {
+      this[this.tip().hasClass('in') ? 'hide' : 'show']()
+    }
+
+  }
+
+
+ /* TOOLTIP PLUGIN DEFINITION
+  * ========================= */
+
+  $.fn.tooltip = function ( option ) {
+    return this.each(function () {
+      var $this = $(this)
+        , data = $this.data('tooltip')
+        , options = typeof option == 'object' && option
+      if (!data) $this.data('tooltip', (data = new Tooltip(this, options)))
+      if (typeof option == 'string') data[option]()
+    })
+  }
+
+  $.fn.tooltip.Constructor = Tooltip
+
+  $.fn.tooltip.defaults = {
+    animation: true
+  , delay: 0
+  , selector: false
+  , placement: 'top'
+  , trigger: 'hover'
+  , title: ''
+  , template: '<div class="timeline-tooltip"><div class="timeline-tooltip-arrow"></div><div class="timeline-tooltip-inner"></div></div>'
+  }
+
+}( window.jQuery );
+
+/* **********************************************
+     Begin VMM.StoryJS.js
+********************************************** */
+
+/* VeriteCo StoryJS
+================================================== */
+
+/*	* CodeKit Import
+	* http://incident57.com/codekit/
+================================================== */
+// @codekit-prepend "VMM.StoryJS.License.js";
+// @codekit-prepend "Core/VMM.Core.js";
+// @codekit-prepend "Language/VMM.Language.js";
+// @codekit-prepend "Media/VMM.Media.js";
+// @codekit-prepend "Slider/VMM.DragSlider.js";
+// @codekit-prepend "Slider/VMM.Slider.js";
+// @codekit-prepend "Library/jquery.fancybox.js";
+// @codekit-prepend "Library/AES.js";
+// @codekit-prepend "Library/bootstrap-tooltip.js";
+
+
+if(typeof VMM != 'undefined' && typeof VMM.StoryJS == 'undefined') {
+
+	VMM.StoryJS = function() {
+
+		/* PRIVATE VARS
+		================================================== */
+
+		/* PUBLIC FUNCTIONS
+		================================================== */
+		this.init = function(d) {
+
+		};
+
+	}
+}
+
+
+/* **********************************************
+     Begin VMM.Timeline.js
+********************************************** */
+
+/**
+	* TimelineJS
+	* Designed and built by Zach Wise at VéritéCo
+
+	* This Source Code Form is subject to the terms of the Mozilla Public
+	* License, v. 2.0. If a copy of the MPL was not distributed with this
+	* file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+/*	* CodeKit Import
+	* http://incident57.com/codekit/
+================================================== */
+// @codekit-prepend "VMM.Timeline.License.js";
+
+// @codekit-prepend "Core/VMM.StoryJS.js";
+
+// @codekit-append "VMM.Timeline.TimeNav.js";
+// @codekit-append "VMM.Timeline.DataObj.js";
+
+
+/* Timeline
+================================================== */
+
+if(typeof VMM != 'undefined' && typeof VMM.Timeline == 'undefined') {
+
+	VMM.Timeline = function(_timeline_id, w, h) {
+
+		var $timeline,
+			$container,
+			$feature,
+			$feedback,
+			$slider,
+			$navigation,
+			slider,
+			timenav,
+			version		= "2.x",
+			timeline_id	= "#timelinejs",
+			events		= {},
+			data		= {},
+			_dates		= [],
+			config		= {},
+			has_width	= false,
+			has_height	= false,
+			ie7			= false,
+			is_moving	= false;
+
+
+		if (type.of(_timeline_id) == "string") {
+			if (_timeline_id.match("#")) {
+				timeline_id	= _timeline_id;
+			} else {
+				timeline_id	= "#" + _timeline_id;
+			}
+		} else {
+			timeline_id		= "#timelinejs";
+		}
+
+
+		/* CONFIG
+		================================================== */
+		config = {
+			embed:					false,
+			events: {
+				data_ready:			"DATAREADY",
+				messege:			"MESSEGE",
+				headline:			"HEADLINE",
+				slide_change:		"SLIDE_CHANGE",
+				resize:				"resize"
+			},
+			id: 					timeline_id,
+			source:					"nothing",
+			type: 					"timeline",
+			touch:					false,
+			orientation: 			"normal",
+			maptype: 				"toner",
+			version: 				"2.x",
+			preload:				4,
+			current_slide:			0,
+			hash_bookmark:			false,
+			start_at_end: 			false,
+			start_at_slide:			0,
+			start_zoom_adjust:		0,
+			start_page: 			false,
+			api_keys: {
+				google:				"",
+				flickr:				"",
+				twitter:			""
+			},
+			interval: 				10,
+			something: 				0,
+			width: 					960,
+			height: 				540,
+			spacing: 				15,
+			loaded: {
+				slider: 			false,
+				timenav: 			false,
+				percentloaded: 		0
+			},
+			nav: {
+				start_page: 		false,
+				interval_width: 	200,
+				interval_override: 	false, // change this to override the interval of years, months etc.
+				density: 			4,
+				minor_width: 		0,
+				minor_left:			0,
+				constraint: {
+					left:			0,
+					right:			0,
+					right_min:		0,
+					right_max:		0
+				},
+				zoom: {
+					adjust:			0
+				},
+				multiplier: {
+					current: 		6,
+					min: 			.1,
+					max: 			50
+				},
+				rows: 				[1, 1, 1],
+				width: 				960,
+				height: 			200,
+				marker: {
+					width: 			150,
+					height: 		50
+				}
+			},
+			feature: {
+				width: 				960,
+				height: 			540
+			},
+			slider: {
+				width: 				720,
+				height: 			400,
+				content: {
+					width: 			720,
+					height: 		400,
+					padding: 		130,
+					padding_default:130
+				},
+				nav: {
+					width: 			100,
+					height: 		200
+				}
+			},
+			ease: 					"easeInOutExpo",
+			duration: 				1000,
+			gmap_key: 				"",
+			language: 				VMM.Language
+		};
+
+		if ( w != null && w != "") {
+			config.width = w;
+			has_width = true;
+		}
+
+		if ( h != null && h != "") {
+			config.height = h;
+			has_height = true;
+		}
+
+		if(window.location.hash) {
+			 var hash					=	window.location.hash.substring(1);
+			 if (!isNaN(hash)) {
+			 	 config.current_slide	=	parseInt(hash);
+			 }
+		}
+
+		window.onhashchange = function () {
+			var hash					=	window.location.hash.substring(1);
+			if (config.hash_bookmark) {
+				if (is_moving) {
+					goToEvent(parseInt(hash));
+				} else {
+					is_moving = false;
+				}
+			} else {
+				goToEvent(parseInt(hash));
+			}
+		}
+
+		/* CREATE CONFIG
+		================================================== */
+		function createConfig(conf) {
+
+			// APPLY SUPPLIED CONFIG TO TIMELINE CONFIG
+			if (typeof embed_config == 'object') {
+				timeline_config = embed_config;
+			}
+			if (typeof timeline_config == 'object') {
+				trace("HAS TIMELINE CONFIG");
+				config = VMM.Util.mergeConfig(config, timeline_config);
+			} else if (typeof conf == 'object') {
+				config = VMM.Util.mergeConfig(config, conf);
+			}
+
+			if (VMM.Browser.device == "mobile" || VMM.Browser.device == "tablet") {
+				config.touch = true;
+			}
+
+			config.nav.width			= config.width;
+			config.nav.height			= 200;
+			config.feature.width		= config.width;
+			config.feature.height		= config.height - config.nav.height;
+			config.nav.zoom.adjust		= parseInt(config.start_zoom_adjust, 10);
+			VMM.Timeline.Config			= config;
+			VMM.master_config.Timeline	= VMM.Timeline.Config;
+			this.events					= config.events;
+
+			if (config.gmap_key != "") {
+				config.api_keys.google = config.gmap_key;
+			}
+
+			trace("VERSION " + config.version);
+			version = config.version;
+		}
+
+		/* CREATE TIMELINE STRUCTURE
+		================================================== */
+		function createStructure() {
+			// CREATE DOM STRUCTURE
+			$timeline	= VMM.getElement(timeline_id);
+			VMM.Lib.addClass($timeline, "vco-timeline");
+			VMM.Lib.addClass($timeline, "vco-storyjs");
+
+			$container	= VMM.appendAndGetElement($timeline, "<div>", "vco-container vco-main");
+			$feature	= VMM.appendAndGetElement($container, "<div>", "vco-feature");
+			$slider		= VMM.appendAndGetElement($feature, "<div>", "vco-slider");
+			$navigation	= VMM.appendAndGetElement($container, "<div>", "vco-navigation");
+			$feedback	= VMM.appendAndGetElement($timeline, "<div>", "vco-feedback", "");
+
+
+			if (typeof config.language.right_to_left != 'undefined') {
+				VMM.Lib.addClass($timeline, "vco-right-to-left");
+			}
+
+			slider		= new VMM.Slider($slider, config);
+			timenav		= new VMM.Timeline.TimeNav($navigation);
+
+			if (!has_width) {
+				config.width = VMM.Lib.width($timeline);
+			} else {
+				VMM.Lib.width($timeline, config.width);
+			}
+
+			if (!has_height) {
+				config.height = VMM.Lib.height($timeline);
+			} else {
+				VMM.Lib.height($timeline, config.height);
+			}
+
+			if (config.touch) {
+				VMM.Lib.addClass($timeline, "vco-touch");
+			} else {
+				VMM.Lib.addClass($timeline, "vco-notouch");
+			}
+
+
+		}
+
+		/* ON EVENT
+		================================================== */
+
+		function onDataReady(e, d) {
+			trace("onDataReady");
+			data = d.timeline;
+
+			if (type.of(data.era) != "array") {
+				data.era = [];
+			}
+
+			buildDates();
+
+		};
+
+		function onDatesProcessed() {
+			build();
+		}
+
+		function reSize() {
+
+			updateSize();
+
+			slider.setSize(config.feature.width, config.feature.height);
+			timenav.setSize(config.width, config.height);
+			if (orientationChange()) {
+				setViewport();
+			}
+
+		};
+
+		function onSliderLoaded(e) {
+			config.loaded.slider = true;
+			onComponentLoaded();
+		};
+
+		function onComponentLoaded(e) {
+			config.loaded.percentloaded = config.loaded.percentloaded + 25;
+
+			if (config.loaded.slider && config.loaded.timenav) {
+				hideMessege();
+			}
+		}
+
+		function onTimeNavLoaded(e) {
+			config.loaded.timenav = true;
+			onComponentLoaded();
+		}
+
+		function onSlideUpdate(e) {
+			is_moving = true;
+			config.current_slide = slider.getCurrentNumber();
+			setHash(config.current_slide);
+			timenav.setMarker(config.current_slide, config.ease,config.duration);
+		};
+
+		function onMarkerUpdate(e) {
+			is_moving = true;
+			config.current_slide = timenav.getCurrentNumber();
+			setHash(config.current_slide);
+			slider.setSlide(config.current_slide);
+		};
+
+		function goToEvent(n) {
+			if (n <= _dates.length - 1 && n >= 0) {
+				config.current_slide = n;
+				slider.setSlide(config.current_slide);
+				timenav.setMarker(config.current_slide, config.ease,config.duration);
+			}
+		}
+
+		function setHash(n) {
+			if (config.hash_bookmark) {
+				window.location.hash = "#" + n.toString();
+			}
+		}
+
+		function getViewport() {
+
+		}
+
+		function setViewport() {
+			var viewport_content		= "",
+				viewport_orientation	= searchOrientation(window.orientation);
+
+			if (VMM.Browser.device == "mobile") {
+				if (viewport_orientation == "portrait") {
+					//viewport_content	= "width=device-width; initial-scale=0.75, maximum-scale=0.75";
+					viewport_content	= "width=device-width; initial-scale=0.5, maximum-scale=0.5";
+				} else if (viewport_orientation == "landscape") {
+					viewport_content	= "width=device-width; initial-scale=0.5, maximum-scale=0.5";
+				} else {
+					viewport_content	= "width=device-width, initial-scale=1, maximum-scale=1.0";
+				}
+			} else if (VMM.Browser.device == "tablet") {
+				//viewport_content		= "width=device-width, initial-scale=1, maximum-scale=1.0";
+			}
+
+			if (document.getElementById("viewport")) {
+				//VMM.Lib.attr("#viewport", "content", viewport_content);
+			} else {
+				//VMM.appendElement("head", "<meta id='viewport' name='viewport' content=" + viewport_content + "/>");
+			}
+
+		}
+
+		/* ORIENTATION
+		================================================== */
+		function searchOrientation(orientation) {
+			var orient = "";
+
+			if ( orientation == 0  || orientation == 180) {
+				orient = "portrait";
+			} else if ( orientation == 90 || orientation == -90) {
+				orient = "landscape";
+			} else {
+				orient = "normal";
+			}
+
+			return orient;
+		}
+
+		function orientationChange() {
+			var orientation	= searchOrientation(window.orientation);
+
+			if (orientation == config.orientation) {
+				return false;
+			} else {
+				config.orientation = orientation;
+				return true;
+			}
+
+		}
+
+
+		/* PUBLIC FUNCTIONS
+		================================================== */
+		this.init = function(c, _data) {
+			trace('INIT');
+			setViewport();
+			createConfig(c);
+			createStructure();
+
+			if (type.of(_data) == "string") {
+				config.source	= _data;
+			}
+
+			// LANGUAGE
+			VMM.Date.setLanguage(config.language);
+			VMM.master_config.language = config.language;
+
+			// EXTERNAL API
+			VMM.ExternalAPI.setKeys(config.api_keys);
+			VMM.ExternalAPI.googlemaps.setMapType(config.maptype);
+
+			// EVENTS
+			VMM.bindEvent(global, onDataReady, config.events.data_ready);
+			VMM.bindEvent(global, showMessege, config.events.messege);
+
+			VMM.fireEvent(global, config.events.messege, config.language.messages.loading_timeline);
+
+			/* GET DATA
+			================================================== */
+			if (VMM.Browser.browser == "Explorer" || VMM.Browser.browser == "MSIE") {
+				if ( parseInt(VMM.Browser.version, 10) <= 7 ) {
+					ie7 = true;
+				}
+			}
+
+			if (type.of(config.source) == "string" || type.of(config.source) == "object") {
+				VMM.Timeline.DataObj.getData(config.source);
+			} else {
+				VMM.fireEvent(global, config.events.messege, "No data source provided");
+				//VMM.Timeline.DataObj.getData(VMM.getElement(timeline_id));
+			}
+
+		};
+
+		this.iframeLoaded = function() {
+			trace("iframeLoaded");
+		};
+
+		this.reload = function(_d) {
+			trace("Load new timeline data" + _d);
+			VMM.fireEvent(global, config.events.messege, config.language.messages.loading_timeline);
+			data = {};
+			VMM.Timeline.DataObj.getData(_d);
+			config.current_slide = 0;
+			slider.setSlide(0);
+			timenav.setMarker(0, config.ease,config.duration);
+		};
+
+		/* DATA
+		================================================== */
+		function getData(url) {
+			VMM.getJSON(url, function(d) {
+				data = VMM.Timeline.DataObj.getData(d);
+				VMM.fireEvent(global, config.events.data_ready);
+			});
+		};
+
+		/* MESSEGES
+		================================================== */
+		function showMessege(e, msg, other) {
+			trace("showMessege " + msg);
+			//VMM.attachElement($timeline, $feedback);
+			if (other) {
+				VMM.attachElement($feedback, msg);
+			} else{
+				VMM.attachElement($feedback, VMM.MediaElement.loadingmessage(msg));
+			}
+		};
+
+		function hideMessege() {
+			VMM.Lib.animate($feedback, config.duration, config.ease*4, {"opacity": 0}, detachMessege);
+		};
+
+		function detachMessege() {
+			VMM.Lib.detach($feedback);
+		}
+
+		/* BUILD DISPLAY
+		================================================== */
+		function build() {
+
+			// START AT SLIDE
+			if (parseInt(config.start_at_slide) > 0 && config.current_slide == 0) {
+				config.current_slide = parseInt(config.start_at_slide);
+			}
+			// START AT END
+			if (config.start_at_end && config.current_slide == 0) {
+				config.current_slide = _dates.length - 1;
+			}
+
+
+			// IE7
+			if (ie7) {
+				ie7 = true;
+				VMM.fireEvent(global, config.events.messege, "Internet Explorer " + VMM.Browser.version + " is not supported by TimelineJS. Please update your browser to version 8 or higher.");
+			} else {
+
+				detachMessege();
+				reSize();
+
+				// EVENT LISTENERS
+				VMM.bindEvent($slider, onSliderLoaded, "LOADED");
+				VMM.bindEvent($navigation, onTimeNavLoaded, "LOADED");
+				VMM.bindEvent($slider, onSlideUpdate, "UPDATE");
+				VMM.bindEvent($navigation, onMarkerUpdate, "UPDATE");
+
+				// INITIALIZE COMPONENTS
+				slider.init(_dates);
+				timenav.init(_dates, data.era);
+
+				// RESIZE EVENT LISTENERS
+				VMM.bindEvent(global, reSize, config.events.resize);
+
+
+
+			}
+
+
+		};
+
+		function updateSize() {
+			trace("UPDATE SIZE");
+			config.width = VMM.Lib.width($timeline);
+			config.height = VMM.Lib.height($timeline);
+
+			config.nav.width = config.width;
+			config.feature.width = config.width;
+
+			config.feature.height = config.height - config.nav.height - 3;
+
+			if (VMM.Browser.device == "mobile") {
+				/*
+				if (VMM.Browser.orientation == "portrait") {
+					config.feature.height	= 480;
+					config.height			= 480 + config.nav.height;
+				} else if(VMM.Browser.orientation == "landscape") {
+					config.feature.height	= 320;
+					config.height			= 320 + config.nav.height;
+				} else {
+					config.feature.height = config.height - config.nav.height - 3;
+				}
+				*/
+			}
+
+			if (config.width < 641) {
+				VMM.Lib.addClass($timeline, "vco-skinny");
+			} else {
+				VMM.Lib.removeClass($timeline, "vco-skinny");
+			}
+
+		};
+
+		// BUILD DATE OBJECTS
+		function buildDates() {
+
+			_dates = [];
+			VMM.fireEvent(global, config.events.messege, "Building Dates");
+			updateSize();
+
+			for(var i = 0; i < data.date.length; i++) {
+
+				if (data.date[i].startDate != null && data.date[i].startDate != "") {
+
+					var _date		= {},
+						do_start	= VMM.Date.parse(data.date[i].startDate, true),
+						do_end;
+
+					_date.startdate		= do_start.date;
+					_date.precisiondate	= do_start.precision;
+
+					if (!isNaN(_date.startdate)) {
+
+
+						// END DATE
+						if (data.date[i].endDate != null && data.date[i].endDate != "") {
+							_date.enddate = VMM.Date.parse(data.date[i].endDate);
+						} else {
+							_date.enddate = _date.startdate;
+						}
+
+						_date.needs_slug = false;
+
+						if (data.date[i].headline == "") {
+							if (data.date[i].slug != null && data.date[i].slug != "") {
+								_date.needs_slug = true;
+							}
+						}
+
+						_date.title				= data.date[i].headline;
+						_date.headline			= data.date[i].headline;
+						_date.type				= data.date[i].type;
+						_date.date				= VMM.Date.prettyDate(_date.startdate, false, _date.precisiondate);
+						_date.asset				= data.date[i].asset;
+						_date.fulldate			= _date.startdate.getTime();
+						_date.text				= data.date[i].text;
+						_date.content			= "";
+						_date.tag				= data.date[i].tag;
+						_date.slug				= data.date[i].slug;
+						_date.uniqueid			= VMM.Util.unique_ID(7);
+						_date.classname			= data.date[i].classname;
+
+
+						_dates.push(_date);
+					}
+
+				}
+
+			};
+
+			/* CUSTOM SORT
+			================================================== */
+			if (data.type != "storify") {
+				_dates.sort(function(a, b){
+					return a.fulldate - b.fulldate
+				});
+			}
+
+			/* CREATE START PAGE IF AVAILABLE
+			================================================== */
+			if (data.headline != null && data.headline != "" && data.text != null && data.text != "") {
+
+				var startpage_date,
+					do_start,
+					_date			= {},
+					td_num			= 0,
+					td;
+
+				if (typeof data.startDate != 'undefined') {
+					do_start		= VMM.Date.parse(data.startDate, true);
+					startpage_date	= do_start.date;
+				} else {
+					startpage_date = false;
+				}
+				trace("HAS STARTPAGE");
+				trace(startpage_date);
+
+				if (startpage_date && startpage_date < _dates[0].startdate) {
+					_date.startdate = new Date(startpage_date);
+				} else {
+					td = _dates[0].startdate;
+					_date.startdate = new Date(_dates[0].startdate);
+
+					if (td.getMonth() === 0 && td.getDate() == 1 && td.getHours() === 0 && td.getMinutes() === 0 ) {
+						// trace("YEAR ONLY");
+						_date.startdate.setFullYear(td.getFullYear() - 1);
+					} else if (td.getDate() <= 1 && td.getHours() === 0 && td.getMinutes() === 0) {
+						// trace("YEAR MONTH");
+						_date.startdate.setMonth(td.getMonth() - 1);
+					} else if (td.getHours() === 0 && td.getMinutes() === 0) {
+						// trace("YEAR MONTH DAY");
+						_date.startdate.setDate(td.getDate() - 1);
+					} else  if (td.getMinutes() === 0) {
+						// trace("YEAR MONTH DAY HOUR");
+						_date.startdate.setHours(td.getHours() - 1);
+					} else {
+						// trace("YEAR MONTH DAY HOUR MINUTE");
+						_date.startdate.setMinutes(td.getMinutes() - 1);
+					}
+				}
+
+				_date.uniqueid		= VMM.Util.unique_ID(7);
+				_date.enddate		= _date.startdate;
+				_date.precisiondate	= do_start.precision;
+				_date.title			= data.headline;
+				_date.headline		= data.headline;
+				_date.text			= data.text;
+				_date.type			= "start";
+				_date.date			= VMM.Date.prettyDate(data.startDate, false, _date.precisiondate);
+				_date.asset			= data.asset;
+				_date.slug			= false;
+				_date.needs_slug	= false;
+				_date.fulldate		= _date.startdate.getTime();
+
+				if (config.embed) {
+					VMM.fireEvent(global, config.events.headline, _date.headline);
+				}
+
+				_dates.unshift(_date);
+			}
+
+			/* CUSTOM SORT
+			================================================== */
+			if (data.type != "storify") {
+				_dates.sort(function(a, b){
+					return a.fulldate - b.fulldate
+				});
+			}
+
+			onDatesProcessed();
+		}
+
+	};
+
+	VMM.Timeline.Config = {};
+
+};
+
+/* **********************************************
+     Begin VMM.Timeline.TimeNav.js
+********************************************** */
+
+/* 	TimeNav
+	This class handles the bottom timeline navigation.
+	It requires the VMM.Util class and VMM.Date class
+================================================== */
+
+if(typeof VMM.Timeline != 'undefined' && typeof VMM.Timeline.TimeNav == 'undefined') {
+
+	VMM.Timeline.TimeNav = function(parent, content_width, content_height) {
+		trace("VMM.Timeline.TimeNav");
+
+		var $timenav, $content, $time, $timeintervalminor, $timeinterval, $timeintervalmajor, $timebackground,
+			$timeintervalbackground, $timenavline, $timenavindicator, $timeintervalminor_minor, $toolbar, $zoomin, $zoomout, $dragslide,
+			config					= VMM.Timeline.Config,
+			row_height,
+			events					= {},
+			timespan				= {},
+			layout					= parent,
+			data					= [],
+			era_markers				= [],
+			markers					= [],
+			interval_array			= [],
+			interval_major_array	= [],
+			tags					= [],
+			current_marker			= 0,
+			_active					= false,
+			eras,
+			content,
+			timeouts = {
+				interval_position:	""
+			},
+			timenav_pos = {
+				left:				"",
+				visible: {
+					left:			"",
+					right:			""
+				}
+			},
+			timelookup = {
+				day:			24,
+				month:			12,
+				year:			10,
+				hour:			60,
+				minute:			60,
+				second:			1000,
+				decade:			10,
+				century:		100,
+				millenium:		1000,
+				age:			1000000,
+				epoch:			10000000,
+				era:			100000000,
+				eon:			500000000,
+				week:			4.34812141,
+				days_in_month:	30.4368499,
+				days_in_week:	7,
+				weeks_in_month:	4.34812141,
+				weeks_in_year:	52.177457,
+				days_in_year:	365.242199,
+				hours_in_day:	24
+			},
+			dateFractionBrowser = {
+				day:			86400000,
+				week:			7,
+				month:			30.4166666667,
+				year:			12,
+				hour:			24,
+				minute:			1440,
+				second:			86400,
+				decade:			10,
+				century:		100,
+				millenium:		1000,
+				age:			1000000,
+				epoch:			10000000,
+				era:			100000000,
+				eon:			500000000
+			},
+			interval = {
+				type:			"year",
+				number:			10,
+				first:			1970,
+				last:			2011,
+				multiplier:		100,
+				classname:		"_idd",
+				interval_type:	"interval"
+			},
+			interval_major = {
+				type:			"year",
+				number:			10,
+				first:			1970,
+				last:			2011,
+				multiplier:		100,
+				classname:		"major",
+				interval_type:	"interval major"
+			},
+			interval_macro = {
+				type:			"year",
+				number:			10,
+				first:			1970,
+				last:			2011,
+				multiplier:		100,
+				classname:		"_dd_minor",
+				interval_type:	"interval minor"
+			},
+			interval_calc = {
+				day: {},
+				month: {},
+				year: {},
+				hour: {},
+				minute: {},
+				second: {},
+				decade: {},
+				century: {},
+				millenium: {},
+				week: {},
+				age: {},
+				epoch: {},
+				era: {},
+				eon: {}
+			};
+
+
+		/* ADD to Config
+		================================================== */
+		row_height			=	config.nav.marker.height/2;
+		config.nav.rows = {
+			full:				[1, row_height*2, row_height*4],
+			half:				[1, row_height, row_height*2, row_height*3, row_height*4, row_height*5],
+			current:			[]
+		}
+
+		if (content_width != null && content_width != "") {
+			config.nav.width	= 	content_width;
+		}
+		if (content_height != null && content_height != "") {
+			config.nav.height	= 	content_height;
+		}
+
+		/* INIT
+		================================================== */
+		this.init = function(d,e) {
+			trace('VMM.Timeline.TimeNav init');
+			// need to evaluate d
+			// some function to determine type of data and prepare it
+			if(typeof d != 'undefined') {
+				this.setData(d, e);
+			} else {
+				trace("WAITING ON DATA");
+			}
+		};
+
+		/* GETTERS AND SETTERS
+		================================================== */
+		this.setData = function(d,e) {
+			if(typeof d != 'undefined') {
+				data = {};
+				data = d;
+				eras = e;
+				build();
+			} else{
+				trace("NO DATA");
+			}
+		};
+
+		this.setSize = function(w, h) {
+			if (w != null) {config.width = w};
+			if (h != null) {config.height = h};
+			if (_active) {
+				reSize();
+			}
+
+
+		}
+
+		this.setMarker = function(n, ease, duration, fast) {
+			goToMarker(n, ease, duration);
+		}
+
+		this.getCurrentNumber = function() {
+			return current_marker;
+		}
+
+		/* ON EVENT
+		================================================== */
+
+		function onConfigSet() {
+			trace("onConfigSet");
+		};
+
+		function reSize(firstrun) {
+			config.nav.constraint.left = (config.width/2);
+			config.nav.constraint.right = config.nav.constraint.right_min - (config.width/2);
+			$dragslide.updateConstraint(config.nav.constraint);
+
+			VMM.Lib.css($timenavline, "left", Math.round(config.width/2)+2);
+			VMM.Lib.css($timenavindicator, "left", Math.round(config.width/2)-8);
+			goToMarker(config.current_slide, config.ease, config.duration, true, firstrun);
+		};
+
+		function upDate() {
+			VMM.fireEvent(layout, "UPDATE");
+		}
+
+		function onZoomIn() {
+
+			$dragslide.cancelSlide();
+			if (config.nav.multiplier.current > config.nav.multiplier.min) {
+				if (config.nav.multiplier.current <= 1) {
+					config.nav.multiplier.current = config.nav.multiplier.current - .25;
+				} else {
+					if (config.nav.multiplier.current > 5) {
+						if (config.nav.multiplier.current > 16) {
+							config.nav.multiplier.current = Math.round(config.nav.multiplier.current - 10);
+						} else {
+							config.nav.multiplier.current = Math.round(config.nav.multiplier.current - 4);
+						}
+					} else {
+						config.nav.multiplier.current = Math.round(config.nav.multiplier.current - 1);
+					}
+
+				}
+				if (config.nav.multiplier.current <= 0) {
+					config.nav.multiplier.current = config.nav.multiplier.min;
+				}
+				refreshTimeline();
+			}
+		}
+
+		function onZoomOut() {
+			$dragslide.cancelSlide();
+			if (config.nav.multiplier.current < config.nav.multiplier.max) {
+				if (config.nav.multiplier.current > 4) {
+					if (config.nav.multiplier.current > 16) {
+						config.nav.multiplier.current = Math.round(config.nav.multiplier.current + 10);
+					} else {
+						config.nav.multiplier.current = Math.round(config.nav.multiplier.current + 4);
+					}
+				} else {
+					config.nav.multiplier.current = Math.round(config.nav.multiplier.current + 1);
+				}
+
+				if (config.nav.multiplier.current >= config.nav.multiplier.max) {
+					config.nav.multiplier.current = config.nav.multiplier.max;
+				}
+				refreshTimeline();
+			}
+		}
+
+		function onBackHome(e) {
+			$dragslide.cancelSlide();
+			goToMarker(0);
+			upDate();
+		}
+
+		function onMouseScroll(e) {
+			var delta		= 0,
+				scroll_to	= 0;
+			if (!e) {
+				e = window.event;
+			}
+			if (e.originalEvent) {
+				e = e.originalEvent;
+			}
+
+			// Browsers unable to differntiate between up/down and left/right scrolling
+			/*
+			if (e.wheelDelta) {
+				delta = e.wheelDelta/6;
+			} else if (e.detail) {
+				delta = -e.detail*12;
+			}
+			*/
+
+			// Webkit and browsers able to differntiate between up/down and left/right scrolling
+			if (typeof e.wheelDeltaX != 'undefined' ) {
+				delta = e.wheelDeltaY/6;
+				if (Math.abs(e.wheelDeltaX) > Math.abs(e.wheelDeltaY)) {
+					delta = e.wheelDeltaX/6;
+				} else {
+					//delta = e.wheelDeltaY/6;
+					delta = 0;
+				}
+			}
+			if (delta) {
+				if (e.preventDefault) {
+					 e.preventDefault();
+				}
+				e.returnValue = false;
+			}
+			// Stop from scrolling too far
+			scroll_to = VMM.Lib.position($timenav).left + delta;
+
+			if (scroll_to > config.nav.constraint.left) {
+				scroll_to = config.width/2;
+			} else if (scroll_to < config.nav.constraint.right) {
+				scroll_to = config.nav.constraint.right;
+			}
+
+			//VMM.Lib.stop($timenav);
+			//VMM.Lib.animate($timenav, config.duration/2, "linear", {"left": scroll_to});
+			VMM.Lib.css($timenav, "left", scroll_to);
+		}
+
+		function refreshTimeline() {
+			trace("config.nav.multiplier " + config.nav.multiplier.current);
+			positionMarkers(true);
+			positionEras(true);
+			positionInterval($timeinterval, interval_array, true, true);
+			positionInterval($timeintervalmajor, interval_major_array, true);
+			config.nav.constraint.left = (config.width/2);
+			config.nav.constraint.right = config.nav.constraint.right_min - (config.width/2);
+			$dragslide.updateConstraint(config.nav.constraint);
+		};
+
+		/* MARKER EVENTS
+		================================================== */
+		function onMarkerClick(e) {
+			$dragslide.cancelSlide();
+			goToMarker(e.data.number);
+			upDate();
+		};
+
+		function onMarkerHover(e) {
+			VMM.Lib.toggleClass(e.data.elem, "zFront");
+		};
+
+		function goToMarker(n, ease, duration, fast, firstrun) {
+			trace("GO TO MARKER");
+			var _ease		= config.ease,
+				_duration	= config.duration,
+				is_last		= false,
+				is_first	= false;
+
+			current_marker = 	n;
+
+			timenav_pos.left			= (config.width/2) - markers[current_marker].pos_left
+			timenav_pos.visible.left	= Math.abs(timenav_pos.left) - 100;
+			timenav_pos.visible.right	= Math.abs(timenav_pos.left) + config.width + 100;
+
+			if (current_marker == 0) {
+				is_first = true;
+			}
+			if (current_marker +1 == markers.length) {
+				is_last = true
+			}
+			if (ease != null && ease != "") {_ease = ease};
+			if (duration != null && duration != "") {_duration = duration};
+
+			// set marker style
+			for(var i = 0; i < markers.length; i++) {
+				VMM.Lib.removeClass(markers[i].marker, "active");
+			}
+
+			if (config.start_page && markers[0].type == "start") {
+				VMM.Lib.visible(markers[0].marker, false);
+				VMM.Lib.addClass(markers[0].marker, "start");
+			}
+
+			VMM.Lib.addClass(markers[current_marker].marker, "active");
+
+			// ANIMATE MARKER
+			VMM.Lib.stop($timenav);
+			VMM.Lib.animate($timenav, _duration, _ease, {"left": timenav_pos.left});
+
+		}
+
+		/* TOUCH EVENTS
+		================================================== */
+		function onTouchUpdate(e, b) {
+			VMM.Lib.animate($timenav, b.time/2, config.ease, {"left": b.left});
+		};
+
+		/* CALCULATIONS
+		================================================== */
+		function averageMarkerPositionDistance() {
+			var last_pos	= 0,
+				pos			= 0,
+				pos_dif		= 0,
+				mp_diff		= [],
+				i			= 0;
+
+			for(i = 0; i < markers.length; i++) {
+				if (data[i].type == "start") {
+
+				} else {
+					var _pos = positionOnTimeline(interval, markers[i].relative_pos),
+					last_pos = pos;
+					pos = _pos.begin;
+					pos_dif = pos - last_pos;
+					mp_diff.push(pos_dif);
+				}
+			}
+			return VMM.Util.average(mp_diff).mean;
+		}
+
+		function averageDateDistance() {
+			var last_dd			= 0,
+				dd				= 0,
+				_dd				= "",
+				date_dif		= 0,
+				date_diffs		= [],
+				is_first_date	= true,
+				i				= 0;
+
+			for(i = 0; i < data.length; i++) {
+				if (data[i].type == "start") {
+					trace("DATA DATE IS START")
+				} else {
+					_dd			= data[i].startdate;
+					last_dd		= dd;
+					dd			= _dd;
+					date_dif	= dd - last_dd;
+					date_diffs.push(date_dif);
+				}
+			}
+
+			return VMM.Util.average(date_diffs);
+		}
+
+		function calculateMultiplier() {
+			var temp_multiplier	= config.nav.multiplier.current,
+				i				= 0;
+
+			for(i = 0; i < temp_multiplier; i++) {
+				if (averageMarkerPositionDistance() < 75) {
+					if (config.nav.multiplier.current > 1) {
+						config.nav.multiplier.current = (config.nav.multiplier.current - 1);
+					}
+				}
+			}
+
+		}
+
+		function calculateInterval() {
+			// NEED TO REWRITE ALL OF THIS
+			var _first								= getDateFractions(data[0].startdate),
+				_last								= getDateFractions(data[data.length - 1].enddate);
+
+			// EON
+			interval_calc.eon.type					=	"eon";
+			interval_calc.eon.first					=	_first.eons;
+			interval_calc.eon.base					=	Math.floor(_first.eons);
+			interval_calc.eon.last					=	_last.eons;
+			interval_calc.eon.number				=	timespan.eons;
+			interval_calc.eon.multiplier		 	=	timelookup.eons;
+			interval_calc.eon.minor					=	timelookup.eons;
+
+			// ERA
+			interval_calc.era.type					=	"era";
+			interval_calc.era.first					=	_first.eras;
+			interval_calc.era.base					=	Math.floor(_first.eras);
+			interval_calc.era.last					=	_last.eras;
+			interval_calc.era.number				=	timespan.eras;
+			interval_calc.era.multiplier		 	=	timelookup.eras;
+			interval_calc.era.minor					=	timelookup.eras;
+
+			// EPOCH
+			interval_calc.epoch.type				=	"epoch";
+			interval_calc.epoch.first				=	_first.epochs;
+			interval_calc.epoch.base				=	Math.floor(_first.epochs);
+			interval_calc.epoch.last				=	_last.epochs;
+			interval_calc.epoch.number				=	timespan.epochs;
+			interval_calc.epoch.multiplier		 	=	timelookup.epochs;
+			interval_calc.epoch.minor				=	timelookup.epochs;
+
+			// AGE
+			interval_calc.age.type					=	"age";
+			interval_calc.age.first					=	_first.ages;
+			interval_calc.age.base					=	Math.floor(_first.ages);
+			interval_calc.age.last					=	_last.ages;
+			interval_calc.age.number				=	timespan.ages;
+			interval_calc.age.multiplier		 	=	timelookup.ages;
+			interval_calc.age.minor					=	timelookup.ages;
+
+			// MILLENIUM
+			interval_calc.millenium.type 			=	"millenium";
+			interval_calc.millenium.first			=	_first.milleniums;
+			interval_calc.millenium.base			=	Math.floor(_first.milleniums);
+			interval_calc.millenium.last			=	_last.milleniums;
+			interval_calc.millenium.number			=	timespan.milleniums;
+			interval_calc.millenium.multiplier	 	=	timelookup.millenium;
+			interval_calc.millenium.minor			=	timelookup.millenium;
+
+			// CENTURY
+			interval_calc.century.type 				= "century";
+			interval_calc.century.first 			= _first.centuries;
+			interval_calc.century.base 				= Math.floor(_first.centuries);
+			interval_calc.century.last 				= _last.centuries;
+			interval_calc.century.number 			= timespan.centuries;
+			interval_calc.century.multiplier	 	= timelookup.century;
+			interval_calc.century.minor 			= timelookup.century;
+
+			// DECADE
+			interval_calc.decade.type 				= "decade";
+			interval_calc.decade.first 				= _first.decades;
+			interval_calc.decade.base 				= Math.floor(_first.decades);
+			interval_calc.decade.last 				= _last.decades;
+			interval_calc.decade.number 			= timespan.decades;
+			interval_calc.decade.multiplier 		= timelookup.decade;
+			interval_calc.decade.minor 				= timelookup.decade;
+
+			// YEAR
+			interval_calc.year.type					= "year";
+			interval_calc.year.first 				= _first.years;
+			interval_calc.year.base 				= Math.floor(_first.years);
+			interval_calc.year.last					= _last.years;
+			interval_calc.year.number 				= timespan.years;
+			interval_calc.year.multiplier 			= 1;
+			interval_calc.year.minor 				= timelookup.month;
+
+			// MONTH
+			interval_calc.month.type 				= "month";
+			interval_calc.month.first 				= _first.months;
+			interval_calc.month.base 				= Math.floor(_first.months);
+			interval_calc.month.last 				= _last.months;
+			interval_calc.month.number 				= timespan.months;
+			interval_calc.month.multiplier 			= 1;
+			interval_calc.month.minor 				= Math.round(timelookup.week);
+
+			// WEEK
+			// NOT DONE
+			interval_calc.week.type 				= "week";
+			interval_calc.week.first 				= _first.weeks;
+			interval_calc.week.base 				= Math.floor(_first.weeks);
+			interval_calc.week.last 				= _last.weeks;
+			interval_calc.week.number 				= timespan.weeks;
+			interval_calc.week.multiplier 			= 1;
+			interval_calc.week.minor 				= 7;
+
+			// DAY
+			interval_calc.day.type 					= "day";
+			interval_calc.day.first 				= _first.days;
+			interval_calc.day.base	 				= Math.floor(_first.days);
+			interval_calc.day.last 					= _last.days;
+			interval_calc.day.number 				= timespan.days;
+			interval_calc.day.multiplier 			= 1;
+			interval_calc.day.minor 				= 24;
+
+			// HOUR
+			interval_calc.hour.type 				= "hour";
+			interval_calc.hour.first 				= _first.hours;
+			interval_calc.hour.base 				= Math.floor(_first.hours);
+			interval_calc.hour.last 				= _last.hours;
+			interval_calc.hour.number 				= timespan.hours;
+			interval_calc.hour.multiplier 			= 1;
+			interval_calc.hour.minor 				= 60;
+
+			// MINUTE
+			interval_calc.minute.type 				= "minute";
+			interval_calc.minute.first 				= _first.minutes;
+			interval_calc.minute.base 				= Math.floor(_first.minutes);
+			interval_calc.minute.last 				= _last.minutes;
+			interval_calc.minute.number 			= timespan.minutes;
+			interval_calc.minute.multiplier 		= 1;
+			interval_calc.minute.minor 				= 60;
+
+			// SECOND
+			interval_calc.second.type 				= "decade";
+			interval_calc.second.first 				= _first.seconds;
+			interval_calc.second.base 				= Math.floor(_first.seconds);
+			interval_calc.second.last 				= _last.seconds;
+			interval_calc.second.number 			= timespan.seconds;
+			interval_calc.second.multiplier 		= 1;
+			interval_calc.second.minor 				= 10;
+		}
+
+		function getDateFractions(the_date, is_utc) {
+
+			var _time = {};
+			_time.days			=		the_date		/	dateFractionBrowser.day;
+			_time.weeks 		=		_time.days		/	dateFractionBrowser.week;
+			_time.months 		=		_time.days		/	dateFractionBrowser.month;
+			_time.years 		=		_time.months 	/	dateFractionBrowser.year;
+			_time.hours 		=		_time.days		*	dateFractionBrowser.hour;
+			_time.minutes 		=		_time.days		*	dateFractionBrowser.minute;
+			_time.seconds 		=		_time.days		*	dateFractionBrowser.second;
+			_time.decades 		=		_time.years		/	dateFractionBrowser.decade;
+			_time.centuries 	=		_time.years		/	dateFractionBrowser.century;
+			_time.milleniums 	=		_time.years		/	dateFractionBrowser.millenium;
+			_time.ages			=		_time.years		/	dateFractionBrowser.age;
+			_time.epochs		=		_time.years		/	dateFractionBrowser.epoch;
+			_time.eras			=		_time.years		/	dateFractionBrowser.era;
+			_time.eons			=		_time.years		/	dateFractionBrowser.eon;
+
+			/*
+			trace("AGES "		 + 		_time.ages);
+			trace("EPOCHS "		 + 		_time.epochs);
+			trace("MILLENIUMS "  + 		_time.milleniums);
+			trace("CENTURIES "	 + 		_time.centuries);
+			trace("DECADES "	 + 		_time.decades);
+			trace("YEARS "		 + 		_time.years);
+			trace("MONTHS "		 + 		_time.months);
+			trace("WEEKS "		 + 		_time.weeks);
+			trace("DAYS "		 + 		_time.days);
+			trace("HOURS "		 + 		_time.hours);
+			trace("MINUTES "	 + 		_time.minutes);
+			trace("SECONDS "	 + 		_time.seconds);
+			*/
+			return _time;
+		}
+
+		/*	POSITION
+			Positions elements on the timeline based on date
+			relative to the calculated interval
+		================================================== */
+		function positionRelative(_interval, first, last) {
+			var _first,
+				_last,
+				_type			= _interval.type,
+				timerelative = {
+					start:		"",
+					end:		"",
+					type:		_type
+				};
+
+			/* FIRST
+			================================================== */
+			_first					= getDateFractions(first);
+			timerelative.start		= first.months;
+
+			if (_type == "eon") {
+				timerelative.start	= _first.eons;
+			} else if (_type == "era") {
+				timerelative.start	= _first.eras;
+			} else if (_type == "epoch") {
+				timerelative.start	= _first.epochs;
+			} else if (_type == "age") {
+				timerelative.start	= _first.ages;
+			} else if (_type == "millenium") {
+				timerelative.start	= first.milleniums;
+			} else if (_type == "century") {
+				timerelative.start	= _first.centuries;
+			} else if (_type == "decade") {
+				timerelative.start	= _first.decades;
+			} else if (_type == "year") {
+				timerelative.start	= _first.years;
+			} else if (_type == "month") {
+				timerelative.start	= _first.months;
+			} else if (_type == "week") {
+				timerelative.start	= _first.weeks;
+			} else if (_type == "day") {
+				timerelative.start	= _first.days;
+			} else if (_type == "hour") {
+				timerelative.start	= _first.hours;
+			} else if (_type == "minute") {
+				timerelative.start	= _first.minutes;
+			}
+
+			/* LAST
+			================================================== */
+			if (type.of(last) == "date") {
+
+				_last					= getDateFractions(last);
+				timerelative.end		= last.months;
+
+				if (_type == "eon") {
+					timerelative.end	= _last.eons;
+				} else if (_type == "era") {
+					timerelative.end	= _last.eras;
+				} else if (_type == "epoch") {
+					timerelative.end	= _last.epochs;
+				} else if (_type == "age") {
+					timerelative.end	= _last.ages;
+				} else if (_type == "millenium") {
+					timerelative.end	= last.milleniums;
+				} else if (_type == "century") {
+					timerelative.end	= _last.centuries;
+				} else if (_type == "decade") {
+					timerelative.end	= _last.decades;
+				} else if (_type == "year") {
+					timerelative.end	= _last.years;
+				} else if (_type == "month") {
+					timerelative.end	= _last.months;
+				} else if (_type == "week") {
+					timerelative.end	= _last.weeks;
+				} else if (_type == "day") {
+					timerelative.end	= _last.days;
+				} else if (_type == "hour") {
+					timerelative.end	= _last.hours;
+				} else if (_type == "minute") {
+					timerelative.end	= _last.minutes;
+				}
+
+			} else {
+
+				timerelative.end		= timerelative.start;
+
+			}
+
+			return timerelative
+		}
+
+		function positionOnTimeline(the_interval, timerelative) {
+			return {
+				begin:	(timerelative.start	-	interval.base) * (config.nav.interval_width / config.nav.multiplier.current),
+				end:	(timerelative.end	-	interval.base) * (config.nav.interval_width / config.nav.multiplier.current)
+			};
+		}
+
+		function positionMarkers(is_animated) {
+
+			var row						= 2,
+				previous_pos			= 0,
+				pos_offset				= -2,
+				row_depth				= 0,
+				row_depth_sub			= 0,
+				line_last_height_pos	= 150,
+				line_height				= 6,
+				cur_mark				= 0,
+				in_view_margin			= config.width,
+				pos_cache_array			= [],
+				pos_cache_obj			= {id: i, pos: 0, row: 0, marker: 0},
+				pos_cache_max			= 6,
+				in_view = {
+					left:				timenav_pos.visible.left - in_view_margin,
+					right:				timenav_pos.visible.right + in_view_margin
+				},
+				i						= 0,
+				k						= 0;
+
+			config.nav.minor_width = config.width;
+
+			VMM.Lib.removeClass(".flag", "row1");
+			VMM.Lib.removeClass(".flag", "row2");
+			VMM.Lib.removeClass(".flag", "row3");
+
+			for(i = 0; i < markers.length; i++) {
+
+				var line,
+					marker				= markers[i],
+					pos					= positionOnTimeline(interval, markers[i].relative_pos),
+					row_pos				= 0,
+					is_in_view			= false,
+
+					pos_cache_close		= 0;
+
+
+				// COMPENSATE FOR DATES BEING POITIONED IN THE MIDDLE
+				pos.begin				= Math.round(pos.begin +  pos_offset);
+				pos.end					= Math.round(pos.end + pos_offset);
+				line					= Math.round(pos.end - pos.begin);
+				marker.pos_left			= pos.begin;
+
+				if (current_marker == i) {
+					timenav_pos.left			= (config.width/2) - pos;
+					timenav_pos.visible.left	= Math.abs(timenav_pos.left);
+					timenav_pos.visible.right	= Math.abs(timenav_pos.left) + config.width;
+					in_view.left				= timenav_pos.visible.left - in_view_margin;
+					in_view.right				= timenav_pos.visible.right + in_view_margin;
+				}
+
+				if (Math.abs(pos.begin) >= in_view.left && Math.abs(pos.begin) <= in_view.right ) {
+					is_in_view = true;
+				}
+
+				// APPLY POSITION TO MARKER
+				if (is_animated) {
+					VMM.Lib.stop(marker.marker);
+					VMM.Lib.animate(marker.marker, config.duration/2, config.ease, {"left": pos.begin});
+				} else {
+					VMM.Lib.stop(marker.marker);
+					VMM.Lib.css(marker.marker, "left", pos.begin);
+				}
+
+				if (i == current_marker) {
+					cur_mark = pos.begin;
+				}
+
+				// EVENT LENGTH LINE
+				if (line > 5) {
+					VMM.Lib.css(marker.lineevent, "height", line_height);
+					VMM.Lib.css(marker.lineevent, "top", line_last_height_pos);
+					if (is_animated) {
+						VMM.Lib.animate(marker.lineevent, config.duration/2, config.ease, {"width": line});
+					} else {
+						VMM.Lib.css(marker.lineevent, "width", line);
+					}
+				}
+
+				// CONTROL ROW POSITION
+				if (tags.length > 0) {
+					var need_half_row =		false,
+						half_row_number = 	0;
+
+					for (k = 0; k < tags.length; k++) {
+						if (k < config.nav.rows.current.length) {
+							if (marker.tag == tags[k]) {
+								row = k;
+								if (k == config.nav.rows.current.length - 1) {
+									trace("ON LAST ROW");
+									VMM.Lib.addClass(marker.flag, "flag-small-last");
+								}
+
+								// Experimental, to try and avoid too much stacking on tagged flags
+								if (pos.begin - previous_pos.begin < 5) {
+									if (pos_cache_obj.row == row) {
+										trace("TAGGED FLAG TOO CLOSE ON SAME ROW");
+										trace(pos_cache_obj.row);
+										trace(row);
+										VMM.Lib.addClass(marker.flag, "flag-small");
+										VMM.Lib.addClass(pos_cache_obj.marker.flag, "flag-small");
+
+										if (row < config.nav.rows.half.length - 1) {
+											//row ++;
+											half_row_number = (row *2) + 1;
+											need_half_row = true;
+										}
+									}
+								} else {
+									VMM.Lib.removeClass(marker.flag, "flag-small");
+								}
+								// END Experimental
+
+							}
+						}
+					}
+					if (need_half_row) {
+						row_pos = config.nav.rows.half[half_row_number];
+					} else {
+						row_pos = config.nav.rows.current[row];
+					}
+				} else {
+
+					if (pos.begin - previous_pos.begin < (config.nav.marker.width + config.spacing)) {
+						if (row < config.nav.rows.current.length - 1) {
+							row ++;
+
+						} else {
+							row = 0;
+							row_depth ++;
+						}
+					} else {
+						row_depth = 1;
+						row = 1;
+					}
+					row_pos = config.nav.rows.current[row];
+
+				}
+
+				// SET LAST MARKER POSITION
+				previous_pos = pos;
+
+				// POSITION CACHE
+				pos_cache_obj.pos = pos;
+				pos_cache_obj.row = row;
+				pos_cache_obj.marker = marker;
+
+				pos_cache_array.push(pos_cache_obj);
+				if (pos_cache_array.length > pos_cache_max) {
+					pos_cache_array.remove(0);
+				}
+
+				//if (is_animated && is_in_view) {
+				if (is_animated) {
+					VMM.Lib.stop(marker.flag);
+					VMM.Lib.animate(marker.flag, config.duration, config.ease, {"top": row_pos});
+				} else {
+					VMM.Lib.stop(marker.flag);
+					VMM.Lib.css(marker.flag, "top", row_pos);
+				}
+
+				// IS THE MARKER A REPRESENTATION OF A START SCREEN?
+				if (config.start_page && markers[i].type == "start") {
+					VMM.Lib.visible(marker.marker, false);
+
+				}
+
+				if (pos > config.nav.minor_width) {
+					config.nav.minor_width = pos;
+				}
+
+				if (pos < config.nav.minor_left) {
+					config.nav.minor_left = pos;
+				}
+
+			}
+
+			// ANIMATE THE TIMELINE TO ADJUST TO CHANGES
+			if (is_animated) {
+				VMM.Lib.stop($timenav);
+				VMM.Lib.animate($timenav, config.duration/2, config.ease, {"left": (config.width/2) - (cur_mark)});
+			} else {
+
+			}
+
+			//VMM.Lib.delay_animate(config.duration, $timenav, config.duration/2, config.ease, {"left": (config.width/2) - (cur_mark)});
+
+
+		}
+
+		function positionEras(is_animated) {
+			var i	= 0,
+				p	= 0;
+
+			for(i = 0; i < era_markers.length; i++) {
+				var era			= era_markers[i],
+					pos			= positionOnTimeline(interval, era.relative_pos),
+					row_pos		= 0,
+					row			= 0,
+					era_height	= config.nav.marker.height * config.nav.rows.full.length,
+					era_length	= pos.end - pos.begin;
+
+				// CONTROL ROW POSITION
+				if (era.tag != "") {
+					era_height = (config.nav.marker.height * config.nav.rows.full.length) / config.nav.rows.current.length;
+					for (p = 0; p < tags.length; p++) {
+						if (p < config.nav.rows.current.length) {
+							if (era.tag == tags[p]) {
+								row = p;
+							}
+						}
+					}
+					row_pos = config.nav.rows.current[row];
+
+				} else {
+					row_pos = -1;
+				}
+
+				// APPLY POSITION TO MARKER
+				if (is_animated) {
+					VMM.Lib.stop(era.content);
+					VMM.Lib.stop(era.text_content);
+					VMM.Lib.animate(era.content, config.duration/2, config.ease, {"top": row_pos, "left": pos.begin, "width": era_length, "height":era_height});
+					VMM.Lib.animate(era.text_content, config.duration/2, config.ease, {"left": pos.begin});
+				} else {
+					VMM.Lib.stop(era.content);
+					VMM.Lib.stop(era.text_content);
+					VMM.Lib.css(era.content, "left", pos.begin);
+					VMM.Lib.css(era.content, "width", era_length);
+					VMM.Lib.css(era.content, "height", era_height);
+					VMM.Lib.css(era.content, "top", row_pos);
+					VMM.Lib.css(era.text_content, "left", pos.begin);
+
+				}
+
+			}
+		}
+
+		function positionInterval(the_main_element, the_intervals, is_animated, is_minor) {
+
+			var last_position		= 0,
+				last_position_major	= 0,
+				//in_view_margin		= (config.nav.minor_width/config.nav.multiplier.current)/2,
+				in_view_margin		= config.width,
+				in_view = {
+					left:			timenav_pos.visible.left - in_view_margin,
+					right:			timenav_pos.visible.right + in_view_margin
+				}
+				not_too_many		= true,
+				i					= 0;
+
+			config.nav.minor_left = 0;
+
+			if (the_intervals.length > 100) {
+				not_too_many = false;
+				trace("TOO MANY " + the_intervals.length);
+			}
+
+
+			for(i = 0; i < the_intervals.length; i++) {
+				var _interval			= the_intervals[i].element,
+					_interval_date		= the_intervals[i].date,
+					_interval_visible	= the_intervals[i].visible,
+					_pos				= positionOnTimeline(interval, the_intervals[i].relative_pos),
+					pos					= _pos.begin,
+					_animation			= the_intervals[i].animation,
+					is_visible			= true,
+					is_in_view			= false,
+					pos_offset			= 50;
+
+
+				_animation.pos			= pos;
+				_animation.animate		= false;
+
+				if (Math.abs(pos) >= in_view.left && Math.abs(pos) <= in_view.right ) {
+					is_in_view = true;
+				}
+
+				if (true) {
+
+					// CONDENSE WHAT IS DISPLAYED
+					if (config.nav.multiplier.current > 16 && is_minor) {
+						is_visible = false;
+					} else {
+						if ((pos - last_position) < 65 ) {
+							if ((pos - last_position) < 35 ) {
+								if (i%4 == 0) {
+									if (pos == 0) {
+										is_visible = false;
+									}
+								} else {
+									is_visible = false;
+								}
+							} else {
+								if (!VMM.Util.isEven(i)) {
+									is_visible = false;
+								}
+							}
+						}
+					}
+
+					if (is_visible) {
+						if (the_intervals[i].is_detached) {
+							VMM.Lib.append(the_main_element, _interval);
+							the_intervals[i].is_detached = false;
+						}
+					} else {
+						the_intervals[i].is_detached = true;
+						VMM.Lib.detach(_interval);
+					}
+
+
+					if (_interval_visible) {
+						if (!is_visible) {
+							_animation.opacity	= "0";
+							if (is_animated && not_too_many) {
+								_animation.animate	= true;
+							}
+							the_intervals[i].interval_visible = false;
+						} else {
+							_animation.opacity	= "100";
+							if (is_animated && is_in_view) {
+								_animation.animate	= true;
+							}
+						}
+					} else {
+						_animation.opacity	= "100";
+						if (is_visible) {
+							if (is_animated && not_too_many) {
+								_animation.animate	= true;
+							} else {
+								if (is_animated && is_in_view) {
+									_animation.animate	= true;
+								}
+							}
+							the_intervals[i].interval_visible = true;
+						} else {
+							if (is_animated && not_too_many) {
+								_animation.animate	= true;
+							}
+						}
+					}
+
+					last_position = pos;
+
+					if (pos > config.nav.minor_width) {
+						config.nav.minor_width = pos;
+					}
+
+					if (pos < config.nav.minor_left) {
+						config.nav.minor_left = pos;
+					}
+
+				}
+
+				if (_animation.animate) {
+					VMM.Lib.animate(_interval, config.duration/2, config.ease, {opacity: _animation.opacity, left: _animation.pos});
+				} else {
+					VMM.Lib.css(_interval, "opacity", _animation.opacity);
+					VMM.Lib.css(_interval, "left", pos);
+				}
+			}
+
+			config.nav.constraint.right_min = -(config.nav.minor_width)+(config.width);
+			config.nav.constraint.right = config.nav.constraint.right_min + (config.width/2);
+
+			VMM.Lib.css($timeintervalminor_minor, "left", config.nav.minor_left - (config.width)/2);
+			VMM.Lib.width($timeintervalminor_minor, (config.nav.minor_width)+(config.width) + Math.abs(config.nav.minor_left) );
+
+		}
+
+		/* Interval Elements
+		================================================== */
+		function createIntervalElements(_interval, _array, _element_parent) {
+
+			var inc_time			= 0,
+				_first_run			= true,
+				_last_pos			= 0,
+				_largest_pos		= 0,
+				_timezone_offset,
+				_first_date,
+				_last_date,
+				int_number			= Math.ceil(_interval.number) + 2,
+				firefox = {
+					flag:			false,
+					offset:			0
+				},
+				i					= 0;
+
+			VMM.attachElement(_element_parent, "");
+
+			_interval.date = new Date(data[0].startdate.getFullYear(), 0, 1, 0,0,0);
+			_timezone_offset = _interval.date.getTimezoneOffset();
+
+			for(i = 0; i < int_number; i++) {
+				trace(_interval.type);
+				var _is_year			= false,
+					int_obj = {
+						element: 		VMM.appendAndGetElement(_element_parent, "<div>", _interval.classname),
+						date: 			new Date(data[0].startdate.getFullYear(), 0, 1, 0,0,0),
+						visible: 		false,
+						date_string:	"",
+						type: 			_interval.interval_type,
+						relative_pos:	0,
+						is_detached:	false,
+						animation: {
+							animate:	false,
+							pos:		"",
+							opacity:	"100"
+
+						}
+					};
+
+				if (_interval.type == "eon") {
+					if (_first_run) {
+						_first_date = Math.floor(data[0].startdate.getFullYear() / 500000000) * 500000000;
+					}
+					int_obj.date.setFullYear(_first_date + (inc_time * 500000000));
+					_is_year = true;
+				} else if (_interval.type == "era") {
+					if (_first_run) {
+						_first_date = Math.floor(data[0].startdate.getFullYear() / 100000000) * 100000000;
+					}
+					int_obj.date.setFullYear(_first_date + (inc_time * 100000000));
+					_is_year = true;
+				} else if (_interval.type == "epoch") {
+					if (_first_run) {
+						_first_date = Math.floor(data[0].startdate.getFullYear() / 10000000) * 10000000
+					}
+					int_obj.date.setFullYear(_first_date + (inc_time * 10000000));
+					_is_year = true;
+				} else if (_interval.type == "age") {
+					if (_first_run) {
+						_first_date = Math.floor(data[0].startdate.getFullYear() / 1000000) * 1000000
+					}
+					int_obj.date.setFullYear(_first_date + (inc_time * 1000000));
+					_is_year = true;
+				} else if (_interval.type == "millenium") {
+					if (_first_run) {
+						_first_date = Math.floor(data[0].startdate.getFullYear() / 1000) * 1000;
+					}
+					int_obj.date.setFullYear(_first_date + (inc_time * 1000));
+					_is_year = true;
+				} else if (_interval.type == "century") {
+					if (_first_run) {
+						_first_date = Math.floor(data[0].startdate.getFullYear() / 100) * 100
+					}
+					int_obj.date.setFullYear(_first_date + (inc_time * 100));
+					_is_year = true;
+				} else if (_interval.type == "decade") {
+					if (_first_run) {
+						_first_date = Math.floor(data[0].startdate.getFullYear() / 10) * 10;
+					}
+					int_obj.date.setFullYear(_first_date + (inc_time * 10));
+					_is_year = true;
+				} else if (_interval.type == "year") {
+					if (_first_run) {
+						_first_date = data[0].startdate.getFullYear();
+					}
+					int_obj.date.setFullYear(_first_date + inc_time);
+					_is_year = true;
+				} else if (_interval.type == "month") {
+					if (_first_run) {
+						_first_date = data[0].startdate.getMonth();
+					}
+					int_obj.date.setMonth(_first_date + inc_time);
+				} else if (_interval.type == "week") {
+					if (_first_run) {
+						_first_date = data[0].startdate.getMonth();
+					}
+					int_obj.date.setMonth(data[0].startdate.getMonth());
+					int_obj.date.setDate(_first_date + (inc_time * 7) );
+				} else if (_interval.type == "day") {
+					if (_first_run) {
+						_first_date = data[0].startdate.getDate();
+					}
+					int_obj.date.setMonth(data[0].startdate.getMonth());
+					int_obj.date.setDate(_first_date + inc_time);
+				} else if (_interval.type == "hour") {
+					if (_first_run) {
+						_first_date = data[0].startdate.getHours();
+					}
+					int_obj.date.setMonth(data[0].startdate.getMonth());
+					int_obj.date.setDate(data[0].startdate.getDate());
+					int_obj.date.setHours(_first_date + inc_time);
+				} else if (_interval.type == "minute") {
+					if (_first_run) {
+						_first_date = data[0].startdate.getMinutes();
+					}
+					int_obj.date.setMonth(data[0].startdate.getMonth());
+					int_obj.date.setDate(data[0].startdate.getDate());
+					int_obj.date.setHours(data[0].startdate.getHours());
+					int_obj.date.setMinutes(_first_date + inc_time);
+				} else if (_interval.type == "second") {
+					if (_first_run) {
+						_first_date = data[0].startdate.getSeconds();
+					}
+					int_obj.date.setMonth(data[0].startdate.getMonth());
+					int_obj.date.setDate(data[0].startdate.getDate());
+					int_obj.date.setHours(data[0].startdate.getHours());
+					int_obj.date.setMinutes(data[0].startdate.getMinutes());
+					int_obj.date.setSeconds(_first_date + inc_time);
+				}	else if (_interval.type == "millisecond") {
+					if (_first_run) {
+						_first_date = data[0].startdate.getMilliseconds();
+					}
+					int_obj.date.setMonth(data[0].startdate.getMonth());
+					int_obj.date.setDate(data[0].startdate.getDate());
+					int_obj.date.setHours(data[0].startdate.getHours());
+					int_obj.date.setMinutes(data[0].startdate.getMinutes());
+					int_obj.date.setSeconds(data[0].startdate.getSeconds());
+					int_obj.date.setMilliseconds(_first_date + inc_time);
+				}
+
+				// FIX WEIRD FIREFOX BUG FOR GMT TIME FORMATTING
+				if (VMM.Browser.browser == "Firefox") {
+					if (int_obj.date.getFullYear() == "1970" && int_obj.date.getTimezoneOffset() != _timezone_offset) {
+
+						trace("FIREFOX 1970 TIMEZONE OFFSET " + int_obj.date.getTimezoneOffset() + " SHOULD BE " + _timezone_offset);
+						trace(_interval.type + " " + _interval.date);
+
+						// try and fix firefox bug, if not the flag will catch it
+						firefox.offset = (int_obj.date.getTimezoneOffset()/60);
+						firefox.flag = true;
+						int_obj.date.setHours(int_obj.date.getHours() + firefox.offset );
+
+					} else if (firefox.flag) {
+						// catch the bug the second time around
+						firefox.flag = false;
+						int_obj.date.setHours(int_obj.date.getHours() + firefox.offset );
+						if (_is_year) {
+							firefox.flag = true;
+						}
+					}
+
+				}
+
+				if (_is_year) {
+					if ( int_obj.date.getFullYear() < 0 ) {
+						int_obj.date_string = 	Math.abs( int_obj.date.getFullYear() ).toString() + " B.C.";
+					} else {
+						int_obj.date_string = int_obj.date.getFullYear();
+					}
+				} else {
+					int_obj.date_string = VMM.Date.prettyDate(int_obj.date, true);
+				}
+
+				// Increment Time
+				inc_time = inc_time + 1;
+
+				// No longer first run
+				_first_run = false;
+
+				int_obj.relative_pos = positionRelative(interval, int_obj.date);
+				_last_pos = int_obj.relative_pos.begin;
+				if (int_obj.relative_pos.begin > _largest_pos) {
+					_largest_pos = int_obj.relative_pos.begin;
+				}
+
+				// Add the time string to the element and position it.
+				VMM.appendElement(int_obj.element, int_obj.date_string);
+				VMM.Lib.css(int_obj.element, "text-indent", -(VMM.Lib.width(int_obj.element)/2));
+				VMM.Lib.css(int_obj.element, "opacity", "0");
+
+				// add the interval element to the array
+				_array.push(int_obj);
+
+			}
+
+			VMM.Lib.width($timeintervalminor_minor, _largest_pos);
+
+			positionInterval(_element_parent, _array);
+
+
+
+		}
+
+		/* BUILD
+		================================================== */
+		function build() {
+			var i	= 0,
+				j	= 0;
+
+			VMM.attachElement(layout, "");
+
+			$timenav					= VMM.appendAndGetElement(layout, "<div>", "timenav");
+			$content					= VMM.appendAndGetElement($timenav, "<div>", "content");
+			$time						= VMM.appendAndGetElement($timenav, "<div>", "time");
+			$timeintervalminor			= VMM.appendAndGetElement($time, "<div>", "time-interval-minor");
+			$timeintervalminor_minor	= VMM.appendAndGetElement($timeintervalminor, "<div>", "minor");
+			$timeintervalmajor			= VMM.appendAndGetElement($time, "<div>", "time-interval-major");
+			$timeinterval				= VMM.appendAndGetElement($time, "<div>", "time-interval");
+			$timebackground				= VMM.appendAndGetElement(layout, "<div>", "timenav-background");
+			$timenavline				= VMM.appendAndGetElement($timebackground, "<div>", "timenav-line");
+			$timenavindicator			= VMM.appendAndGetElement($timebackground, "<div>", "timenav-indicator");
+			$timeintervalbackground		= VMM.appendAndGetElement($timebackground, "<div>", "timenav-interval-background", "<div class='top-highlight'></div>");
+			$toolbar					= VMM.appendAndGetElement(layout, "<div>", "vco-toolbar");
+
+
+			buildInterval();
+			buildMarkers();
+			buildEras();
+			calculateMultiplier();
+			positionMarkers(false);
+			positionEras();
+
+			positionInterval($timeinterval, interval_array, false, true);
+			positionInterval($timeintervalmajor, interval_major_array);
+
+
+			if (config.start_page) {
+				$backhome = VMM.appendAndGetElement($toolbar, "<div>", "back-home", "<div class='icon'></div>");
+				VMM.bindEvent(".back-home", onBackHome, "click");
+				VMM.Lib.attribute($backhome, "title", VMM.master_config.language.messages.return_to_title);
+				VMM.Lib.attribute($backhome, "rel", "timeline-tooltip");
+
+			}
+
+
+			// MAKE TIMELINE DRAGGABLE/TOUCHABLE
+			$dragslide = new VMM.DragSlider;
+			$dragslide.createPanel(layout, $timenav, config.nav.constraint, config.touch);
+
+
+
+			if (config.touch && config.start_page) {
+				VMM.Lib.addClass($toolbar, "touch");
+				VMM.Lib.css($toolbar, "top", 55);
+				VMM.Lib.css($toolbar, "left", 10);
+			} else {
+				if (config.start_page) {
+					VMM.Lib.css($toolbar, "top", 27);
+				}
+				$zoomin		= VMM.appendAndGetElement($toolbar, "<div>", "zoom-in", "<div class='icon'></div>");
+				$zoomout	= VMM.appendAndGetElement($toolbar, "<div>", "zoom-out", "<div class='icon'></div>");
+				// ZOOM EVENTS
+				VMM.bindEvent($zoomin, onZoomIn, "click");
+				VMM.bindEvent($zoomout, onZoomOut, "click");
+				// TOOLTIP
+				VMM.Lib.attribute($zoomin, "title", VMM.master_config.language.messages.expand_timeline);
+				VMM.Lib.attribute($zoomin, "rel", "timeline-tooltip");
+				VMM.Lib.attribute($zoomout, "title", VMM.master_config.language.messages.contract_timeline);
+				VMM.Lib.attribute($zoomout, "rel", "timeline-tooltip");
+				$toolbar.tooltip({selector: "div[rel=timeline-tooltip]", placement: "right"});
+
+
+				// MOUSE EVENTS
+				VMM.bindEvent(layout, onMouseScroll, 'DOMMouseScroll');
+				VMM.bindEvent(layout, onMouseScroll, 'mousewheel');
+			}
+
+
+
+			// USER CONFIGURABLE ADJUSTMENT TO DEFAULT ZOOM
+			if (config.nav.zoom.adjust != 0) {
+				if (config.nav.zoom.adjust < 0) {
+					for(i = 0; i < Math.abs(config.nav.zoom.adjust); i++) {
+						onZoomOut();
+					}
+				} else {
+					for(j = 0; j < config.nav.zoom.adjust; j++) {
+						onZoomIn();
+					}
+				}
+			}
+
+			//VMM.fireEvent(layout, "LOADED");
+			_active = true;
+
+			reSize(true);
+			VMM.fireEvent(layout, "LOADED");
+
+		};
+
+		function buildInterval() {
+			var i	= 0,
+				j	= 0;
+			// CALCULATE INTERVAL
+			timespan = getDateFractions((data[data.length - 1].enddate) - (data[0].startdate), true);
+			trace(timespan);
+			calculateInterval();
+
+			/* DETERMINE DEFAULT INTERVAL TYPE
+				millenium, ages, epoch, era and eon are not optimized yet. They may never be.
+			================================================== */
+			/*
+			if (timespan.eons				>		data.length / config.nav.density) {
+				interval					=		interval_calc.eon;
+				interval_major				=		interval_calc.eon;
+				interval_macro				=		interval_calc.era;
+			} else if (timespan.eras		>		data.length / config.nav.density) {
+				interval					=		interval_calc.era;
+				interval_major				=		interval_calc.eon;
+				interval_macro				=		interval_calc.epoch;
+			} else if (timespan.epochs		>		data.length / config.nav.density) {
+				interval					=		interval_calc.epoch;
+				interval_major				=		interval_calc.era;
+				interval_macro				=		interval_calc.age;
+			} else if (timespan.ages		>		data.length / config.nav.density) {
+				interval					=		interval_calc.ages;
+				interval_major				=		interval_calc.epoch;
+				interval_macro				=		interval_calc.millenium;
+			} else if (timespan.milleniums			>		data.length / config.nav.density) {
+				interval					=		interval_calc.millenium;
+				interval_major				=		interval_calc.age;
+				interval_macro				=		interval_calc.century;
+			} else
+			*/
+			if (timespan.centuries			>		data.length / config.nav.density) {
+				interval					=		interval_calc.century;
+				interval_major				=		interval_calc.millenium;
+				interval_macro				=		interval_calc.decade;
+			} else if (timespan.decades		>		data.length / config.nav.density) {
+				interval					=		interval_calc.decade;
+				interval_major				=		interval_calc.century;
+				interval_macro				=		interval_calc.year;
+			} else if (timespan.years		>		data.length / config.nav.density) {
+				interval					=		interval_calc.year;
+				interval_major				=		interval_calc.decade;
+				interval_macro				=		interval_calc.month;
+			} else if (timespan.months		>		data.length / config.nav.density) {
+				interval					=		interval_calc.month;
+				interval_major				=		interval_calc.year;
+				interval_macro				=		interval_calc.day;
+			} else if (timespan.days		>		data.length / config.nav.density) {
+				interval					=		interval_calc.day;
+				interval_major				=		interval_calc.month;
+				interval_macro				=		interval_calc.hour;
+			} else if (timespan.hours		>		data.length / config.nav.density) {
+				interval					=		interval_calc.hour;
+				interval_major				=		interval_calc.day;
+				interval_macro				=		interval_calc.minute;
+			} else if (timespan.minutes		>		data.length / config.nav.density) {
+				interval					=		interval_calc.minute;
+				interval_major				=		interval_calc.hour;
+				interval_macro				=		interval_calc.second;
+			} else if (timespan.seconds		>		data.length / config.nav.density) {
+				interval					=		interval_calc.second;
+				interval_major				=		interval_calc.minute;
+				interval_macro				=		interval_calc.second;
+			} else {
+				trace("NO IDEA WHAT THE TYPE SHOULD BE");
+				interval					=		interval_calc.day;
+				interval_major				=		interval_calc.month;
+				interval_macro				=		interval_calc.hour;
+			}
+
+			trace("INTERVAL TYPE: " + interval.type);
+			trace("INTERVAL MAJOR TYPE: " + interval_major.type);
+
+			// OVERRIDE INTERVAL USING CONFIG
+			if (config.nav.interval_override) {
+				trace("INTERVAL OVERRIDE");
+				if (config.nav.interval_override == "centuries") {
+					interval					=		interval_calc.century;
+					interval_major				=		interval_calc.millenium;
+					interval_macro				=		interval_calc.decade;
+				} else if (config.nav.interval_override == "decades") {
+					interval					=		interval_calc.decade;
+					interval_major				=		interval_calc.century;
+					interval_macro				=		interval_calc.year;
+				} else if (config.nav.interval_override == "years") {
+					interval					=		interval_calc.year;
+					interval_major				=		interval_calc.decade;
+					interval_macro				=		interval_calc.month;
+				} else if (config.nav.interval_override == "months") {
+					interval					=		interval_calc.month;
+					interval_major				=		interval_calc.year;
+					interval_macro				=		interval_calc.day;
+				} else if (config.nav.interval_override == "days") {
+					interval					=		interval_calc.day;
+					interval_major				=		interval_calc.month;
+					interval_macro				=		interval_calc.hour;
+				} else if (config.nav.interval_override == "hours") {
+					interval					=		interval_calc.hour;
+					interval_major				=		interval_calc.day;
+					interval_macro				=		interval_calc.minute;
+				} else if (config.nav.interval_override == "minutes") {
+					interval					=		interval_calc.minute;
+					interval_major				=		interval_calc.hour;
+					interval_macro				=		interval_calc.second;
+				} else if (config.nav.interval_override == "seconds") {
+					interval					=		interval_calc.second;
+					interval_major				=		interval_calc.minute;
+					interval_macro				=		interval_calc.second;
+				} else {
+					trace("NO IDEA WHAT THE TYPE SHOULD BE");
+					interval					=		interval_calc.day;
+					interval_major				=		interval_calc.month;
+					interval_macro				=		interval_calc.hour;
+				}
+			}
+
+			createIntervalElements(interval, interval_array, $timeinterval);
+			createIntervalElements(interval_major, interval_major_array, $timeintervalmajor);
+
+			// Cleanup duplicate interval elements between normal and major
+			for(i = 0; i < interval_array.length; i++) {
+				for(j = 0; j < interval_major_array.length; j++) {
+					if (interval_array[i].date_string == interval_major_array[j].date_string) {
+						VMM.attachElement(interval_array[i].element, "");
+					}
+				}
+			}
+		}
+
+		function buildMarkers() {
+
+			var row			= 2,
+				lpos		= 0,
+				row_depth	= 0,
+				i			= 0,
+				k			= 0,
+				l			= 0;
+
+
+			markers			= [];
+			era_markers		= [];
+
+			for(i = 0; i < data.length; i++) {
+
+				var _marker,
+					_marker_flag,
+					_marker_content,
+					_marker_dot,
+					_marker_line,
+					_marker_line_event,
+					_marker_obj,
+					_marker_title		= "",
+					has_title			= false;
+
+
+				_marker					= VMM.appendAndGetElement($content, "<div>", "marker");
+				_marker_flag			= VMM.appendAndGetElement(_marker, "<div>", "flag");
+				_marker_content			= VMM.appendAndGetElement(_marker_flag, "<div>", "flag-content");
+				_marker_dot				= VMM.appendAndGetElement(_marker, "<div>", "dot");
+				_marker_line			= VMM.appendAndGetElement(_marker, "<div>", "line");
+				_marker_line_event		= VMM.appendAndGetElement(_marker_line, "<div>", "event-line");
+				_marker_relative_pos	= positionRelative(interval, data[i].startdate, data[i].enddate);
+				_marker_thumb			= "";
+
+				// THUMBNAIL
+				//trace(data[i].asset);
+				//trace(data[i].asset.thumbnail);
+				if (data[i].asset != null && data[i].asset != "") {
+					if (data[i].asset.thumbnail != null && data[i].asset.thumbnail != "") {
+						trace("HAS THUMBNAIL");
+						VMM.appendElement(_marker_content, VMM.MediaElement.thumbnail(data[i].asset, 24, 24, data[i].uniqueid));
+					} else {
+						VMM.appendElement(_marker_content, VMM.MediaElement.thumbnail(data[i].asset, 24, 24, data[i].uniqueid));
+					}
+				} else {
+					VMM.appendElement(_marker_content, "<div style='margin-right:7px;height:50px;width:2px;float:left;'></div>");
+				}
+
+				// ADD DATE AND TITLE
+				if (data[i].title == "" || data[i].title == " " ) {
+					trace("TITLE NOTHING")
+					if (typeof data[i].slug != 'undefined' && data[i].slug != "") {
+						trace("SLUG")
+						_marker_title = VMM.Util.untagify(data[i].slug);
+						has_title = true;
+					} else {
+						var m = VMM.MediaType(data[i].asset.media);
+						if (m.type == "quote" || m.type == "unknown") {
+							_marker_title = VMM.Util.untagify(m.id);
+							has_title = true;
+						} else {
+							has_title = false;
+						}
+					}
+				} else if (data[i].title != "" || data[i].title != " ") {
+					trace(data[i].title)
+					_marker_title = VMM.Util.untagify(data[i].title);
+					has_title = true;
+				} else {
+					trace("TITLE SLUG NOT FOUND " + data[i].slug)
+				}
+
+				if (has_title) {
+					VMM.appendElement(_marker_content, "<h3>" + _marker_title + "</h3>");
+				} else {
+					VMM.appendElement(_marker_content, "<h3>" + _marker_title + "</h3>");
+					VMM.appendElement(_marker_content, "<h3 id='marker_content_" + data[i].uniqueid + "'>" + _marker_title + "</h3>");
+				}
+
+				// ADD ID
+				VMM.Lib.attr(_marker, "id", ( "marker_" + data[i].uniqueid).toString() );
+
+				// MARKER CLICK
+				VMM.bindEvent(_marker_flag, onMarkerClick, "", {number: i});
+				VMM.bindEvent(_marker_flag, onMarkerHover, "mouseenter mouseleave", {number: i, elem:_marker_flag});
+
+				_marker_obj = {
+					marker: 			_marker,
+					flag: 				_marker_flag,
+					lineevent: 			_marker_line_event,
+					type: 				"marker",
+					full:				true,
+					relative_pos:		_marker_relative_pos,
+					tag:				data[i].tag,
+					pos_left:			0
+				};
+
+
+				if (data[i].type == "start") {
+					trace("BUILD MARKER HAS START PAGE");
+					config.start_page = true;
+					_marker_obj.type = "start";
+				}
+
+				if (data[i].type == "storify") {
+					_marker_obj.type = "storify";
+				}
+
+
+				if (data[i].tag) {
+					tags.push(data[i].tag);
+				}
+
+				markers.push(_marker_obj);
+
+
+
+			}
+
+			// CREATE TAGS
+			tags = VMM.Util.deDupeArray(tags);
+			if (tags.length > 3) {
+				config.nav.rows.current = config.nav.rows.half;
+			} else {
+				config.nav.rows.current = config.nav.rows.full;
+			}
+			for(k = 0; k < tags.length; k++) {
+				if (k < config.nav.rows.current.length) {
+					var tag_element = VMM.appendAndGetElement($timebackground, "<div>", "timenav-tag");
+					VMM.Lib.addClass(tag_element, "timenav-tag-row-" + (k+1));
+					if (tags.length > 3) {
+						VMM.Lib.addClass(tag_element, "timenav-tag-size-half");
+					} else {
+						VMM.Lib.addClass(tag_element, "timenav-tag-size-full");
+					}
+					VMM.appendElement(tag_element, "<div><h3>" + tags[k] + "</h3></div>");
+				}
+
+			}
+
+			// RESIZE FLAGS IF NEEDED
+			if (tags.length > 3) {
+				for(l = 0; l < markers.length; l++) {
+					VMM.Lib.addClass(markers[l].flag, "flag-small");
+					markers[l].full = false;
+				}
+			}
+
+
+		}
+
+		function buildEras() {
+			var number_of_colors	= 6,
+				current_color		= 0,
+				j					= 0;
+			// CREATE ERAS
+			for(j = 0; j < eras.length; j++) {
+				var era = {
+						content: 			VMM.appendAndGetElement($content, "<div>", "era"),
+						text_content: 		VMM.appendAndGetElement($timeinterval, "<div>", "era"),
+						startdate: 			VMM.Date.parse(eras[j].startDate),
+						enddate: 			VMM.Date.parse(eras[j].endDate),
+						title: 				eras[j].headline,
+						uniqueid: 			VMM.Util.unique_ID(6),
+						tag:				"",
+						relative_pos:	 	""
+					},
+					st						= VMM.Date.prettyDate(era.startdate),
+					en						= VMM.Date.prettyDate(era.enddate),
+					era_text				= "<div>&nbsp;</div>";
+
+				if (typeof eras[j].tag != "undefined") {
+					era.tag = eras[j].tag;
+				}
+
+				era.relative_pos = positionRelative(interval, era.startdate, era.enddate);
+
+				VMM.Lib.attr(era.content, "id", era.uniqueid);
+				VMM.Lib.attr(era.text_content, "id", era.uniqueid + "_text");
+
+				// Background Color
+				VMM.Lib.addClass(era.content, "era"+(current_color+1));
+				VMM.Lib.addClass(era.text_content, "era"+(current_color+1));
+
+				if (current_color < number_of_colors) {
+					current_color++;
+				} else {
+					current_color = 0;
+				}
+
+				VMM.appendElement(era.content, era_text);
+				VMM.appendElement(era.text_content, VMM.Util.unlinkify(era.title));
+
+				era_markers.push(era);
+
+			}
+
+		}
+
+	};
+
+}
+
+
+/* **********************************************
+     Begin VMM.Timeline.DataObj.js
+********************************************** */
+
+/*	TIMELINE SOURCE DATA PROCESSOR
+================================================== */
+
+if (typeof VMM.Timeline !== 'undefined' && typeof VMM.Timeline.DataObj == 'undefined') {
+	VMM.Timeline.DataObj = {
+		data_obj: {},
+		model_array: [],
+		getData: function (raw_data) {
+			VMM.Timeline.DataObj.data_obj = {};
+			VMM.fireEvent(global, VMM.Timeline.Config.events.messege, VMM.Timeline.Config.language.messages.loading_timeline);
+			if (type.of(raw_data) == "object") {
+				trace("DATA SOURCE: JSON OBJECT");
+				VMM.Timeline.DataObj.parseJSON(raw_data);
+			} else if (type.of(raw_data) == "string") {
+				if (raw_data.match("%23")) {
+					trace("DATA SOURCE: TWITTER SEARCH");
+					VMM.Timeline.DataObj.model.tweets.getData("%23medill");
+				} else if (	raw_data.match("spreadsheet") ) {
+					trace("DATA SOURCE: GOOGLE SPREADSHEET");
+					VMM.Timeline.DataObj.model.googlespreadsheet.getData(raw_data);
+				} else if (raw_data.match("storify.com")) {
+					trace("DATA SOURCE: STORIFY");
+					VMM.Timeline.DataObj.model.storify.getData(raw_data);
+					//http://api.storify.com/v1/stories/number10gov/g8-and-nato-chicago-summit
+				} else if (raw_data.match("\.jsonp")) {
+					trace("DATA SOURCE: JSONP");
+					LoadLib.js(raw_data, VMM.Timeline.DataObj.onJSONPLoaded);
+				} else {
+					trace("DATA SOURCE: JSON");
+					var req = "";
+					if (raw_data.indexOf("?") > -1) {
+						req = raw_data + "&callback=onJSONP_Data";
+					} else {
+						req = raw_data + "?callback=onJSONP_Data";
+					}
+					VMM.getJSON(req, VMM.Timeline.DataObj.parseJSON);
+				}
+			} else if (type.of(raw_data) == "html") {
+				trace("DATA SOURCE: HTML");
+				VMM.Timeline.DataObj.parseHTML(raw_data);
+			} else {
+				trace("DATA SOURCE: UNKNOWN");
+			}
+
+		},
+
+		onJSONPLoaded: function() {
+			trace("JSONP IS LOADED");
+			VMM.fireEvent(global, VMM.Timeline.Config.events.data_ready, storyjs_jsonp_data);
+		},
+
+		parseHTML: function (d) {
+			trace("parseHTML");
+			trace("WARNING: THIS IS STILL ALPHA AND WILL NOT WORK WITH ID's other than #timeline");
+			var _data_obj = VMM.Timeline.DataObj.data_template_obj;
+
+			/*	Timeline start slide
+			================================================== */
+			if (VMM.Lib.find("#timeline section", "time")[0]) {
+				_data_obj.timeline.startDate = VMM.Lib.html(VMM.Lib.find("#timeline section", "time")[0]);
+				_data_obj.timeline.headline = VMM.Lib.html(VMM.Lib.find("#timeline section", "h2"));
+				_data_obj.timeline.text = VMM.Lib.html(VMM.Lib.find("#timeline section", "article"));
+
+				var found_main_media = false;
+
+				if (VMM.Lib.find("#timeline section", "figure img").length != 0) {
+					found_main_media = true;
+					_data_obj.timeline.asset.media = VMM.Lib.attr(VMM.Lib.find("#timeline section", "figure img"), "src");
+				} else if (VMM.Lib.find("#timeline section", "figure a").length != 0) {
+					found_main_media = true;
+					_data_obj.timeline.asset.media = VMM.Lib.attr(VMM.Lib.find("#timeline section", "figure a"), "href");
+				} else {
+					//trace("NOT FOUND");
+				}
+
+				if (found_main_media) {
+					if (VMM.Lib.find("#timeline section", "cite").length != 0) {
+						_data_obj.timeline.asset.credit = VMM.Lib.html(VMM.Lib.find("#timeline section", "cite"));
+					}
+					if (VMM.Lib.find(this, "figcaption").length != 0) {
+						_data_obj.timeline.asset.caption = VMM.Lib.html(VMM.Lib.find("#timeline section", "figcaption"));
+					}
+				}
+			}
+
+			/*	Timeline Date Slides
+			================================================== */
+			VMM.Lib.each("#timeline li", function(i, elem){
+
+				var valid_date = false;
+
+				var _date = {
+					"type":"default",
+					"startDate":"",
+		            "headline":"",
+		            "text":"",
+		            "asset":
+		            {
+		                "media":"",
+		                "credit":"",
+		                "caption":""
+		            },
+		            "tags":"Optional"
+				};
+
+				if (VMM.Lib.find(this, "time") != 0) {
+
+					valid_date = true;
+
+					_date.startDate = VMM.Lib.html(VMM.Lib.find(this, "time")[0]);
+
+					if (VMM.Lib.find(this, "time")[1]) {
+						_date.endDate = VMM.Lib.html(VMM.Lib.find(this, "time")[1]);
+					}
+
+					_date.headline = VMM.Lib.html(VMM.Lib.find(this, "h3"));
+
+					_date.text = VMM.Lib.html(VMM.Lib.find(this, "article"));
+
+					var found_media = false;
+					if (VMM.Lib.find(this, "figure img").length != 0) {
+						found_media = true;
+						_date.asset.media = VMM.Lib.attr(VMM.Lib.find(this, "figure img"), "src");
+					} else if (VMM.Lib.find(this, "figure a").length != 0) {
+						found_media = true;
+						_date.asset.media = VMM.Lib.attr(VMM.Lib.find(this, "figure a"), "href");
+					} else {
+						//trace("NOT FOUND");
+					}
+
+					if (found_media) {
+						if (VMM.Lib.find(this, "cite").length != 0) {
+							_date.asset.credit = VMM.Lib.html(VMM.Lib.find(this, "cite"));
+						}
+						if (VMM.Lib.find(this, "figcaption").length != 0) {
+							_date.asset.caption = VMM.Lib.html(VMM.Lib.find(this, "figcaption"));
+						}
+					}
+
+					trace(_date);
+					_data_obj.timeline.date.push(_date);
+
+				}
+
+			});
+
+			VMM.fireEvent(global, VMM.Timeline.Config.events.data_ready, _data_obj);
+
+		},
+
+		parseJSON: function(d) {
+			trace("parseJSON");
+			if (d.timeline.type == "default") {
+				trace("DATA SOURCE: JSON STANDARD TIMELINE");
+				VMM.fireEvent(global, VMM.Timeline.Config.events.data_ready, d);
+			} else if (d.timeline.type == "twitter") {
+				trace("DATA SOURCE: JSON TWEETS");
+				VMM.Timeline.DataObj.model_Tweets.buildData(d);
+
+			} else {
+				trace("DATA SOURCE: UNKNOWN JSON");
+				trace(type.of(d.timeline));
+			};
+		},
+
+		/*	MODEL OBJECTS
+			New Types of Data can be formatted for the timeline here
+		================================================== */
+
+		model: {
+
+			googlespreadsheet: {
+
+				getData: function(raw) {
+					var getjsondata, key, worksheet, url, timeout, tries = 0;
+
+					key	= VMM.Util.getUrlVars(raw)["key"];
+					worksheet = VMM.Util.getUrlVars(raw)["worksheet"];
+					if (typeof worksheet == "undefined") worksheet = "od6";
+
+					url	= "https://spreadsheets.google.com/feeds/list/" + key + "/" + worksheet + "/public/values?alt=json";
+
+					timeout = setTimeout(function() {
+						trace("Google Docs timeout " + url);
+						trace(url);
+						if (tries < 3) {
+							VMM.fireEvent(global, VMM.Timeline.Config.events.messege, "Still waiting on Google Docs, trying again " + tries);
+							tries ++;
+							getjsondata.abort()
+							requestJsonData();
+						} else {
+							VMM.fireEvent(global, VMM.Timeline.Config.events.messege, "Google Docs is not responding");
+						}
+					}, 16000);
+
+					function requestJsonData() {
+						getjsondata = VMM.getJSON(url, function(d) {
+							clearTimeout(timeout);
+							VMM.Timeline.DataObj.model.googlespreadsheet.buildData(d);
+						})
+							.error(function(jqXHR, textStatus, errorThrown) {
+								trace("Google Docs ERROR");
+								trace("Google Docs ERROR: " + textStatus + " " + jqXHR.responseText);
+							})
+							.success(function(d) {
+								clearTimeout(timeout);
+							});
+					}
+
+					requestJsonData();
+				},
+
+				buildData: function(d) {
+					var data_obj	= VMM.Timeline.DataObj.data_template_obj,
+						is_valid	= false;
+
+					VMM.fireEvent(global, VMM.Timeline.Config.events.messege, "Parsing Google Doc Data");
+
+					function getGVar(v) {
+						if (typeof v != 'undefined') {
+							return v.$t;
+						} else {
+							return "";
+						}
+					}
+					if (typeof d.feed.entry != 'undefined') {
+						is_valid = true;
+
+						for(var i = 0; i < d.feed.entry.length; i++) {
+							var dd		= d.feed.entry[i],
+								dd_type	= "";
+
+							if (typeof dd.gsx$type != 'undefined') {
+								dd_type = dd.gsx$type.$t;
+							} else if (typeof dd.gsx$titleslide != 'undefined') {
+								dd_type = dd.gsx$titleslide.$t;
+							}
+
+							if (dd_type.match("start") || dd_type.match("title") ) {
+								data_obj.timeline.startDate		= getGVar(dd.gsx$startdate);
+								data_obj.timeline.headline		= getGVar(dd.gsx$headline);
+								data_obj.timeline.asset.media	= getGVar(dd.gsx$media);
+								data_obj.timeline.asset.caption	= getGVar(dd.gsx$mediacaption);
+								data_obj.timeline.asset.credit	= getGVar(dd.gsx$mediacredit);
+								data_obj.timeline.text			= getGVar(dd.gsx$text);
+								data_obj.timeline.type			= "google spreadsheet";
+							} else if (dd_type.match("era")) {
+								var era = {
+									startDate:		getGVar(dd.gsx$startdate),
+									endDate:		getGVar(dd.gsx$enddate),
+									headline:		getGVar(dd.gsx$headline),
+									text:			getGVar(dd.gsx$text),
+									tag:			getGVar(dd.gsx$tag)
+								}
+								data_obj.timeline.era.push(era);
+							} else {
+								var date = {
+										type:			"google spreadsheet",
+										startDate:		getGVar(dd.gsx$startdate),
+										endDate:		getGVar(dd.gsx$enddate),
+										headline:		getGVar(dd.gsx$headline),
+										text:			getGVar(dd.gsx$text),
+										tag:			getGVar(dd.gsx$tag),
+										asset: {
+											media:		getGVar(dd.gsx$media),
+											credit:		getGVar(dd.gsx$mediacredit),
+											caption:	getGVar(dd.gsx$mediacaption),
+											thumbnail:	getGVar(dd.gsx$mediathumbnail)
+										}
+								};
+
+								data_obj.timeline.date.push(date);
+							}
+						};
+
+					} else {
+
+					}
+
+
+					if (is_valid) {
+						VMM.fireEvent(global, VMM.Timeline.Config.events.messege, "Finished Parsing Data");
+						VMM.fireEvent(global, VMM.Timeline.Config.events.data_ready, data_obj);
+					} else {
+						VMM.fireEvent(global, VMM.Timeline.Config.events.messege, VMM.Language.messages.loading + " Google Doc Data (cells)");
+						trace("There may be too many entries. Still trying to load data. Now trying to load cells to avoid Googles limitation on cells");
+						VMM.Timeline.DataObj.model.googlespreadsheet.getDataCells(d.feed.link[0].href);
+					}
+				},
+
+				getDataCells: function(raw) {
+					var getjsondata, key, url, timeout, tries = 0;
+
+					key	= VMM.Util.getUrlVars(raw)["key"];
+					url	= "https://spreadsheets.google.com/feeds/cells/" + key + "/od6/public/values?alt=json";
+
+					timeout = setTimeout(function() {
+						trace("Google Docs timeout " + url);
+						trace(url);
+						if (tries < 3) {
+							VMM.fireEvent(global, VMM.Timeline.Config.events.messege, "Still waiting on Google Docs, trying again " + tries);
+							tries ++;
+							getjsondata.abort()
+							requestJsonData();
+						} else {
+							VMM.fireEvent(global, VMM.Timeline.Config.events.messege, "Google Docs is not responding");
+						}
+					}, 16000);
+
+					function requestJsonData() {
+						getjsondata = VMM.getJSON(url, function(d) {
+							clearTimeout(timeout);
+							VMM.Timeline.DataObj.model.googlespreadsheet.buildDataCells(d);
+						})
+							.error(function(jqXHR, textStatus, errorThrown) {
+								trace("Google Docs ERROR");
+								trace("Google Docs ERROR: " + textStatus + " " + jqXHR.responseText);
+							})
+							.success(function(d) {
+								clearTimeout(timeout);
+							});
+					}
+
+					requestJsonData();
+				},
+
+				buildDataCells: function(d) {
+					var data_obj	= VMM.Timeline.DataObj.data_template_obj,
+						is_valid	= false,
+						cellnames	= ["timeline"],
+						list 		= [],
+						max_row		= 0,
+						i			= 0,
+						k			= 0;
+
+					VMM.fireEvent(global, VMM.Timeline.Config.events.messege, VMM.Language.messages.loading_timeline + " Parsing Google Doc Data (cells)");
+
+					function getGVar(v) {
+						if (typeof v != 'undefined') {
+							return v.$t;
+						} else {
+							return "";
+						}
+					}
+
+					if (typeof d.feed.entry != 'undefined') {
+						is_valid = true;
+
+						// DETERMINE NUMBER OF ROWS
+						for(i = 0; i < d.feed.entry.length; i++) {
+							var dd				= d.feed.entry[i];
+
+							if (parseInt(dd.gs$cell.row) > max_row) {
+								max_row = parseInt(dd.gs$cell.row);
+							}
+						}
+
+						// CREATE OBJECT FOR EACH ROW
+						for(var i = 0; i < max_row + 1; i++) {
+							var date = {
+								type:			"",
+								startDate:		"",
+								endDate:		"",
+								headline:		"",
+								text:			"",
+								tag:			"",
+								asset: {
+									media:		"",
+									credit:		"",
+									caption:	"",
+									thumbnail:	""
+								}
+							};
+							list.push(date);
+						}
+
+						// PREP GOOGLE DOC CELL DATA TO EVALUATE
+						for(i = 0; i < d.feed.entry.length; i++) {
+							var dd				= d.feed.entry[i],
+								dd_type			= "",
+								column_name		= "",
+								cell = {
+									content: 	getGVar(dd.gs$cell),
+									col: 		dd.gs$cell.col,
+									row: 		dd.gs$cell.row,
+									name: 		""
+								};
+
+							//trace(cell);
+
+							if (cell.row == 1) {
+								if (cell.content == "Start Date") {
+									column_name = "startDate";
+								} else if (cell.content == "End Date") {
+									column_name = "endDate";
+								} else if (cell.content == "Headline") {
+									column_name = "headline";
+								} else if (cell.content == "Text") {
+									column_name = "text";
+								} else if (cell.content == "Media") {
+									column_name = "media";
+								} else if (cell.content == "Media Credit") {
+									column_name = "credit";
+								} else if (cell.content == "Media Caption") {
+									column_name = "caption";
+								} else if (cell.content == "Media Thumbnail") {
+									column_name = "thumbnail";
+								} else if (cell.content == "Type") {
+									column_name = "type";
+								} else if (cell.content == "Tag") {
+									column_name = "tag";
+								}
+
+								cellnames.push(column_name);
+
+							} else {
+								cell.name = cellnames[cell.col];
+								list[cell.row][cell.name] = cell.content;
+							}
+
+						};
+
+
+						for(i = 0; i < list.length; i++) {
+							var date	= list[i];
+
+							if (date.type.match("start") || date.type.match("title") ) {
+								data_obj.timeline.startDate		= date.startDate;
+								data_obj.timeline.headline		= date.headline;
+								data_obj.timeline.asset.media	= date.media;
+								data_obj.timeline.asset.caption	= date.caption;
+								data_obj.timeline.asset.credit	= date.credit;
+								data_obj.timeline.text			= date.text;
+								data_obj.timeline.type			= "google spreadsheet";
+							} else if (date.type.match("era")) {
+								var era = {
+									startDate:		date.startDate,
+									endDate:		date.endDate,
+									headline:		date.headline,
+									text:			date.text,
+									tag:			date.tag
+								}
+								data_obj.timeline.era.push(era);
+							} else {
+								var date = {
+										type:			"google spreadsheet",
+										startDate:		date.startDate,
+										endDate:		date.endDate,
+										headline:		date.headline,
+										text:			date.text,
+										tag:			date.tag,
+										asset: {
+											media:		date.media,
+											credit:		date.credit,
+											caption:	date.caption,
+											thumbnail:	date.thumbnail
+										}
+								};
+
+								data_obj.timeline.date.push(date);
+							}
+
+						}
+
+						//trace(cellnames);
+						//trace(max_row);
+						//trace(list);
+
+					}
+
+					if (is_valid) {
+						VMM.fireEvent(global, VMM.Timeline.Config.events.messege, "Finished Parsing Data");
+						VMM.fireEvent(global, VMM.Timeline.Config.events.data_ready, data_obj);
+					} else {
+						VMM.fireEvent(global, VMM.Timeline.Config.events.messege, "Unable to load Google Doc data source");
+					}
+				}
+
+			},
+
+			storify: {
+
+				getData: function(raw) {
+					var key, url, storify_timeout;
+					//http://storify.com/number10gov/g8-and-nato-chicago-summit
+					//http://api.storify.com/v1/stories/number10gov/g8-and-nato-chicago-summit
+
+					VMM.fireEvent(global, VMM.Timeline.Config.events.messege, "Loading Storify...");
+
+					key	= raw.split("storify.com\/")[1];
+					url	= "http://api.storify.com/v1/stories/" + key + "?per_page=300&callback=?";
+
+					storify_timeout = setTimeout(function() {
+						trace("STORIFY timeout");
+						VMM.fireEvent(global, VMM.Timeline.Config.events.messege, "Storify is not responding");
+					}, 6000);
+
+					VMM.getJSON(url, VMM.Timeline.DataObj.model.storify.buildData)
+						.error(function(jqXHR, textStatus, errorThrown) {
+							trace("STORIFY error");
+							trace("STORIFY ERROR: " + textStatus + " " + jqXHR.responseText);
+						})
+						.success(function(d) {
+							clearTimeout(storify_timeout);
+						});
+
+				},
+
+				buildData: function(d) {
+					VMM.fireEvent(global, VMM.Timeline.Config.events.messege, "Parsing Data");
+					var _data_obj = VMM.Timeline.DataObj.data_template_obj;
+
+					_data_obj.timeline.startDate	= 	new Date(d.content.date.created);;
+					_data_obj.timeline.headline		= 	d.content.title;
+
+					trace(d);
+					//d.permalink
+					var tt			=	"";
+					var t_name		=	d.content.author.username;
+					var t_nickname	=	"";
+					if (typeof d.content.author.name != 'undefined') {
+						t_name		=	d.content.author.name;
+						t_nickname	=	d.content.author.username + "&nbsp;";
+					}
+					if (typeof d.content.description != 'undefined' && d.content.description != null) {
+						tt			+=	d.content.description;
+					}
+
+					tt				+=	"<div class='storify'>"
+					//tt				 += " <a href='" + d.content.permalink + "' target='_blank' alt='link to original story' title='link to original story'>" + "<span class='created-at'></span>" + " </a>";
+
+					tt				+=	"<div class='vcard author'><a class='screen-name url' href='" + d.content.author.permalink + "' target='_blank'>";
+
+					tt				+=	"<span class='avatar'><img src='" + d.content.author.avatar + "' style='max-width: 32px; max-height: 32px;'></span>"
+					tt				+=	"<span class='fn'>" + t_name + "</span>";
+					tt				+=	"<span class='nickname'>" + t_nickname + "<span class='thumbnail-inline'></span></span>";
+					tt				+=	"</a>";
+					//tt				+=	"<span class='nickname'>" + d.content.author.stats.stories + " Stories</span>";
+					//tt				+=	"<span class='nickname'>" + d.content.author.stats.subscribers + " Subscribers</span>";
+					tt				+=	"</div>"
+					tt				+=	"</div>";
+
+					_data_obj.timeline.text = tt;
+					_data_obj.timeline.asset.media = d.content.thumbnail;
+
+					//_data_obj.timeline.asset.media = 		dd.gsx$media.$t;
+					//_data_obj.timeline.asset.caption = 		dd.gsx$mediacaption.$t;
+					//_data_obj.timeline.asset.credit = 		dd.gsx$mediacredit.$t;
+					_data_obj.timeline.type = 				"storify";
+
+					for(var i = 0; i < d.content.elements.length; i++) {
+						var dd = d.content.elements[i];
+						var is_text = false;
+						var d_date = new Date(dd.posted_at);
+						//trace(tempdat);
+						trace(dd.type);
+						//trace(dd);
+						var _date = {
+							"type": 		"storify",
+							"startDate": 	dd.posted_at,
+							"endDate": 		dd.posted_at,
+				            "headline": 	" ",
+							"slug": 		"",
+				            "text": 		"",
+				            "asset": {
+								"media": 	"",
+								"credit": 	"",
+								"caption": 	""
+							}
+						};
+
+						/*	MEDIA
+						================================================== */
+						if (dd.type == "image") {
+
+							if (typeof dd.source.name != 'undefined') {
+								if (dd.source.name == "flickr") {
+									_date.asset.media		=	"http://flickr.com/photos/" + dd.meta.pathalias + "/" + dd.meta.id + "/";
+									_date.asset.credit		=	"<a href='" + _date.asset.media + "'>" + dd.attribution.name + "</a>";
+									_date.asset.credit		+=	" on <a href='" + dd.source.href + "'>" + dd.source.name + "</a>";
+								} else if (dd.source.name	==	"instagram") {
+									_date.asset.media		=	dd.permalink;
+									_date.asset.credit		=	"<a href='" + dd.permalink + "'>" + dd.attribution.name + "</a>";
+									_date.asset.credit		+=	" on <a href='" + dd.source.href + "'>" + dd.source.name + "</a>";
+								} else {
+									_date.asset.credit		=	"<a href='" + dd.permalink + "'>" + dd.attribution.name + "</a>";
+
+									if (typeof dd.source.href != 'undefined') {
+										_date.asset.credit	+=	" on <a href='" + dd.source.href + "'>" + dd.source.name + "</a>";
+									}
+
+									_date.asset.media		=	dd.data.image.src;
+								}
+							} else {
+								_date.asset.credit			=	"<a href='" + dd.permalink + "'>" + dd.attribution.name + "</a>";
+								_date.asset.media			=	dd.data.image.src;
+							}
+
+							_date.slug	 					=	dd.attribution.name;
+							if (typeof dd.data.image.caption != 'undefined') {
+								if (dd.data.image.caption != 'undefined') {
+									_date.asset.caption				=	dd.data.image.caption;
+									_date.slug	 					=	dd.data.image.caption;
+								}
+							}
+
+						} else if (dd.type == "quote") {
+							if (dd.permalink.match("twitter")) {
+								_date.asset.media	=	dd.permalink;
+								_date.slug = VMM.Util.untagify(dd.data.quote.text);
+							} else if (dd.permalink.match("storify")) {
+								is_text = true;
+								_date.asset.media	=	"<blockquote>" + dd.data.quote.text.replace(/<\s*\/?\s*b\s*.*?>/g,"") + "</blockquote>";
+							}
+						} else if (dd.type == "link") {
+							_date.headline		=	dd.data.link.title;
+							_date.text			=	dd.data.link.description;
+							if (dd.data.link.thumbnail != 'undefined' && dd.data.link.thumbnail != '') {
+								_date.asset.media	=	dd.data.link.thumbnail;
+							} else {
+								_date.asset.media	=	dd.permalink;
+							}
+							//_date.asset.media	=	dd.permalink;
+							_date.asset.caption	=	"<a href='" + dd.permalink + "' target='_blank'>" + dd.data.link.title + "</a>"
+							_date.slug			=	dd.data.link.title;
+
+						} else if (dd.type == "text") {
+							if (dd.permalink.match("storify")) {
+								is_text = true;
+								var d_name		=	d.content.author.username;
+								var d_nickname	=	"";
+								if (typeof dd.attribution.name != 'undefined') {
+									t_name		=	dd.attribution.name;
+									t_nickname	=	dd.attribution.username + "&nbsp;";
+								}
+
+								var asset_text	=	"<div class='storify'>"
+								asset_text		+=	"<blockquote><p>" + dd.data.text.replace(/<\s*\/?\s*b\s*.*?>/g,"") + "</p></blockquote>";
+								//asset_text		+=	" <a href='" + dd.attribution.href + "' target='_blank' alt='link to author' title='link to author'>" + "<span class='created-at'></span>" + " </a>";
+
+								asset_text		+=	"<div class='vcard author'><a class='screen-name url' href='" + dd.attribution.href + "' target='_blank'>";
+								asset_text		+=	"<span class='avatar'><img src='" + dd.attribution.thumbnail + "' style='max-width: 32px; max-height: 32px;'></span>"
+								asset_text		+=	"<span class='fn'>" + t_name + "</span>";
+								asset_text		+=	"<span class='nickname'>" + t_nickname + "<span class='thumbnail-inline'></span></span>";
+								asset_text		+=	"</a></div></div>";
+								_date.text		=	asset_text;
+
+								// Try and put it before the element where it is expected on storify
+								if ( (i+1) >= d.content.elements.length ) {
+									_date.startDate = d.content.elements[i-1].posted_at;
+
+								} else {
+									if (d.content.elements[i+1].type == "text" && d.content.elements[i+1].permalink.match("storify")) {
+										if ( (i+2) >= d.content.elements.length ) {
+											_date.startDate = d.content.elements[i-1].posted_at;
+										} else {
+											if (d.content.elements[i+2].type == "text" && d.content.elements[i+2].permalink.match("storify")) {
+												if ( (i+3) >= d.content.elements.length ) {
+													_date.startDate = d.content.elements[i-1].posted_at;
+												} else {
+													if (d.content.elements[i+3].type == "text" && d.content.elements[i+3].permalink.match("storify")) {
+														_date.startDate = d.content.elements[i-1].posted_at;
+													} else {
+														trace("LEVEL 3");
+														_date.startDate = d.content.elements[i+3].posted_at;
+													}
+												}
+											} else {
+												trace("LEVEL 2");
+												_date.startDate = d.content.elements[i+2].posted_at;
+											}
+										}
+									} else {
+										trace("LEVEL 1");
+										_date.startDate = d.content.elements[i+1].posted_at;
+									}
+
+								}
+								_date.endDate = _date.startDate
+							}
+
+
+						} else if (dd.type == "video") {
+							_date.headline		=	dd.data.video.title;
+							_date.asset.caption	=	dd.data.video.description;
+							_date.asset.caption	=	dd.source.username;
+							_date.asset.media	=	dd.data.video.src;
+						} else {
+							trace("NO MATCH ");
+							trace(dd);
+						}
+
+						if (is_text) {
+							_date.slug = VMM.Util.untagify(dd.data.text);
+						}
+
+						_data_obj.timeline.date.push(_date);
+
+
+					};
+
+					VMM.fireEvent(global, VMM.Timeline.Config.events.data_ready, _data_obj);
+				}
+
+			},
+
+			tweets: {
+
+				type: "twitter",
+
+				buildData: function(raw_data) {
+					VMM.bindEvent(global, VMM.Timeline.DataObj.model.tweets.onTwitterDataReady, "TWEETSLOADED");
+					VMM.ExternalAPI.twitter.getTweets(raw_data.timeline.tweets);
+				},
+
+				getData: function(raw_data) {
+					VMM.bindEvent(global, VMM.Timeline.DataObj.model.tweets.onTwitterDataReady, "TWEETSLOADED");
+					VMM.ExternalAPI.twitter.getTweetSearch(raw_data);
+				},
+
+				onTwitterDataReady: function(e, d) {
+					var _data_obj = VMM.Timeline.DataObj.data_template_obj;
+
+					for(var i = 0; i < d.tweetdata.length; i++) {
+
+						var _date = {
+							"type":"tweets",
+							"startDate":"",
+				            "headline":"",
+				            "text":"",
+				            "asset":
+				            {
+				                "media":"",
+				                "credit":"",
+				                "caption":""
+				            },
+				            "tags":"Optional"
+						};
+						// pass in the 'created_at' string returned from twitter //
+						// stamp arrives formatted as Tue Apr 07 22:52:51 +0000 2009 //
+
+						//var twit_date = VMM.ExternalAPI.twitter.parseTwitterDate(d.tweetdata[i].raw.created_at);
+						//trace(twit_date);
+
+						_date.startDate = d.tweetdata[i].raw.created_at;
+
+						if (type.of(d.tweetdata[i].raw.from_user_name)) {
+							_date.headline = d.tweetdata[i].raw.from_user_name + " (<a href='https://twitter.com/" + d.tweetdata[i].raw.from_user + "'>" + "@" + d.tweetdata[i].raw.from_user + "</a>)" ;
+						} else {
+							_date.headline = d.tweetdata[i].raw.user.name + " (<a href='https://twitter.com/" + d.tweetdata[i].raw.user.screen_name + "'>" + "@" + d.tweetdata[i].raw.user.screen_name + "</a>)" ;
+						}
+
+						_date.asset.media = d.tweetdata[i].content;
+						_data_obj.timeline.date.push(_date);
+
+					};
+
+					VMM.fireEvent(global, VMM.Timeline.Config.events.data_ready, _data_obj);
+				}
+
+			}
+		},
+
+
+		/*	TEMPLATE OBJECTS
+		================================================== */
+		data_template_obj: {  "timeline": { "headline":"", "description":"", "asset": { "media":"", "credit":"", "caption":"" }, "date": [], "era":[] } },
+		date_obj: {"startDate":"2012,2,2,11,30", "headline":"", "text":"", "asset": {"media":"http://youtu.be/vjVfu8-Wp6s", "credit":"", "caption":"" }, "tags":"Optional"}
+
+	};
+
+}
+;
+
+
+/* CREATE StoryJS Embed
+================================================== */
+
+function createStoryJS(c, src) {
+	/* VARS
+	================================================== */
+	var storyjs_embedjs, t, te, x,
+		isCDN = false,
+		storyjs_e_config = {
+			debug: false,
+			type: 'timeline',
+			id: 'storyjs',
+			embed_id: 'timeline-embed',
+			embed: true,
+			width: '100%',
+			height: '100%',
+			source:	'https://docs.google.com/spreadsheet/pub?key=0Agl_Dv6iEbDadFYzRjJPUGktY0NkWXFUWkVIZDNGRHc&output=html',
+			api_keys: {
+				google:	"",
+				flickr:	"",
+				twitter: ""
+			},
+			gmap_key: "",
+            ajax_timeout: 3000
+		};
+
+	/* Build Timeline
+	================================================== */
+	function createEmbedDiv() {
+		var embed_classname	= "storyjs-embed";
+
+		t = document.createElement('div');
+
+		if (storyjs_e_config.embed_id != "") {
+			te = document.getElementById(storyjs_e_config.embed_id);
+		} else {
+			te = document.getElementById("timeline-embed");
+		}
+
+		te.appendChild(t);
+		t.setAttribute("id", storyjs_e_config.id);
+
+		if (storyjs_e_config.width.toString().match("%") ) {
+			te.style.width = storyjs_e_config.width.split("%")[0] + "%";
+		} else {
+			storyjs_e_config.width = storyjs_e_config.width - 2;
+			te.style.width = (storyjs_e_config.width) + 'px';
+		}
+
+		if (storyjs_e_config.height.toString().match("%")) {
+			te.style.height = storyjs_e_config.height;
+			embed_classname	+= " full-embed";
+			te.style.height = storyjs_e_config.height.split("%")[0] + "%";
+
+		} else if (storyjs_e_config.width.toString().match("%")) {
+			embed_classname	+= " full-embed";
+			storyjs_e_config.height = storyjs_e_config.height - 16;
+			te.style.height = (storyjs_e_config.height) + 'px';
+		} else {
+			embed_classname	+= " sized-embed";
+			storyjs_e_config.height = storyjs_e_config.height - 16;
+			te.style.height = (storyjs_e_config.height) + 'px';
+		}
+
+		te.setAttribute("class", embed_classname);
+		te.setAttribute("className", embed_classname);
+		t.style.position = 'relative';
+	}
+
+	function buildEmbed() {
+		VMM.debug = storyjs_e_config.debug;
+		storyjs_embedjs = new VMM.Timeline(storyjs_e_config.id);
+		storyjs_embedjs.init(storyjs_e_config);
+		if (isCDN) {
+			VMM.bindEvent(global, onHeadline, "HEADLINE");
+		}
+	}
+
+	/* BUILD CONFIG
+	================================================== */
+	if (typeof c == 'object') {
+		for (x in c) {
+			if (Object.prototype.hasOwnProperty.call(c, x)) {
+				storyjs_e_config[x] = c[x];
+			}
+		}
+	}
+
+	if (typeof src != 'undefined') {
+		storyjs_e_config.source = src;
+	}
+
+	/* CDN VERSION?
+	================================================== */
+	if (typeof url_config == 'object') {
+		isCDN = true;
+
+		/* IS THE SOURCE GOOGLE SPREADSHEET WITH JUST THE KEY?
+		================================================== */
+		if (storyjs_e_config.source.match("docs.google.com") || storyjs_e_config.source.match("json") || storyjs_e_config.source.match("storify") ) {
+
+		} else {
+			storyjs_e_config.source = "https://docs.google.com/spreadsheet/pub?key=" + storyjs_e_config.source + "&output=html";
+		}
+
+	}
+
+	createEmbedDiv();
+	buildEmbed();
+}
+;
 (function() {
   var CSRFToken, Click, ComponentUrl, Link, browserCompatibleDocumentParser, browserIsntBuggy, browserSupportsCustomEvents, browserSupportsPushState, browserSupportsTurbolinks, bypassOnLoadPopstate, cacheCurrentPage, cacheSize, changePage, constrainPageCacheTo, createDocument, currentState, enableTransitionCache, executeScriptTags, extractTitleAndBody, fetch, fetchHistory, fetchReplacement, historyStateIsDefined, initializeTurbolinks, installDocumentReadyPageEventTriggers, installHistoryChangeHandler, installJqueryAjaxSuccessPageUpdateTrigger, loadedAssets, pageCache, pageChangePrevented, pagesCached, popCookie, processResponse, recallScrollPosition, referer, reflectNewUrl, reflectRedirectedUrl, rememberCurrentState, rememberCurrentUrl, rememberReferer, removeNoscriptTags, requestMethodIsSafe, resetScrollPosition, transitionCacheEnabled, transitionCacheFor, triggerEvent, visit, xhr, _ref,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
@@ -29464,6 +44539,97 @@ if($('.scroller-container').length > 0){
 
 
 }).call(this);
+if($('#map').length > 0){
+  !function t(e,i,n){function o(a,r){if(!i[a]){if(!e[a]){var l="function"==typeof require&&require;if(!r&&l)return l(a,!0);if(s)return s(a,!0);throw new Error("Cannot find module '"+a+"'")}var h=i[a]={exports:{}};e[a][0].call(h.exports,function(t){var i=e[a][1][t];return o(i?i:t)},h,h.exports,t,e,i,n)}return i[a].exports}for(var s="function"==typeof require&&require,a=0;a<n.length;a++)o(n[a]);return o}({1:[function(t,e){function i(t,e,i){function n(t){return t>=200&&300>t||304===t}function o(){void 0===r.status||n(r.status)?e.call(r,null,r):e.call(r,r,null)}var s=!1;if("undefined"==typeof window.XMLHttpRequest)return e(Error("Browser not supported"));if("undefined"==typeof i){var a=t.match(/^\s*https?:\/\/[^\/]*/);i=a&&a[0]!==location.protocol+"//"+location.domain+(location.port?":"+location.port:"")}var r=new window.XMLHttpRequest;if(i&&!("withCredentials"in r)){r=new window.XDomainRequest;var l=e;e=function(){if(s)l.apply(this,arguments);else{var t=this,e=arguments;setTimeout(function(){l.apply(t,e)},0)}}}return"onload"in r?r.onload=o:r.onreadystatechange=function(){4===r.readyState&&o()},r.onerror=function(t){e.call(this,t||!0,null),e=function(){}},r.onprogress=function(){},r.ontimeout=function(t){e.call(this,t,null),e=function(){}},r.onabort=function(t){e.call(this,t,null),e=function(){}},r.open("GET",t,!0),r.send(null),s=!0,r}"undefined"!=typeof e&&(e.exports=i)},{}],2:[function(t,e){!function(t,i,n){var o=t.L,s={};s.version="0.7.2","object"==typeof e&&"object"==typeof e.exports?e.exports=s:"function"==typeof define&&define.amd&&define(s),s.noConflict=function(){return t.L=o,this},t.L=s,s.Util={extend:function(t){var e,i,n,o,s=Array.prototype.slice.call(arguments,1);for(i=0,n=s.length;n>i;i++){o=s[i]||{};for(e in o)o.hasOwnProperty(e)&&(t[e]=o[e])}return t},bind:function(t,e){var i=arguments.length>2?Array.prototype.slice.call(arguments,2):null;return function(){return t.apply(e,i||arguments)}},stamp:function(){var t=0,e="_leaflet_id";return function(i){return i[e]=i[e]||++t,i[e]}}(),invokeEach:function(t,e,i){var n,o;if("object"==typeof t){o=Array.prototype.slice.call(arguments,3);for(n in t)e.apply(i,[n,t[n]].concat(o));return!0}return!1},limitExecByInterval:function(t,e,i){var n,o;return function s(){var a=arguments;return n?(o=!0,void 0):(n=!0,setTimeout(function(){n=!1,o&&(s.apply(i,a),o=!1)},e),t.apply(i,a),void 0)}},falseFn:function(){return!1},formatNum:function(t,e){var i=Math.pow(10,e||5);return Math.round(t*i)/i},trim:function(t){return t.trim?t.trim():t.replace(/^\s+|\s+$/g,"")},splitWords:function(t){return s.Util.trim(t).split(/\s+/)},setOptions:function(t,e){return t.options=s.extend({},t.options,e),t.options},getParamString:function(t,e,i){var n=[];for(var o in t)n.push(encodeURIComponent(i?o.toUpperCase():o)+"="+encodeURIComponent(t[o]));return(e&&-1!==e.indexOf("?")?"&":"?")+n.join("&")},template:function(t,e){return t.replace(/\{ *([\w_]+) *\}/g,function(t,i){var o=e[i];if(o===n)throw new Error("No value provided for variable "+t);return"function"==typeof o&&(o=o(e)),o})},isArray:Array.isArray||function(t){return"[object Array]"===Object.prototype.toString.call(t)},emptyImageUrl:"data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="},function(){function e(e){var i,n,o=["webkit","moz","o","ms"];for(i=0;i<o.length&&!n;i++)n=t[o[i]+e];return n}function i(e){var i=+new Date,o=Math.max(0,16-(i-n));return n=i+o,t.setTimeout(e,o)}var n=0,o=t.requestAnimationFrame||e("RequestAnimationFrame")||i,a=t.cancelAnimationFrame||e("CancelAnimationFrame")||e("CancelRequestAnimationFrame")||function(e){t.clearTimeout(e)};s.Util.requestAnimFrame=function(e,n,a,r){return e=s.bind(e,n),a&&o===i?(e(),void 0):o.call(t,e,r)},s.Util.cancelAnimFrame=function(e){e&&a.call(t,e)}}(),s.extend=s.Util.extend,s.bind=s.Util.bind,s.stamp=s.Util.stamp,s.setOptions=s.Util.setOptions,s.Class=function(){},s.Class.extend=function(t){var e=function(){this.initialize&&this.initialize.apply(this,arguments),this._initHooks&&this.callInitHooks()},i=function(){};i.prototype=this.prototype;var n=new i;n.constructor=e,e.prototype=n;for(var o in this)this.hasOwnProperty(o)&&"prototype"!==o&&(e[o]=this[o]);t.statics&&(s.extend(e,t.statics),delete t.statics),t.includes&&(s.Util.extend.apply(null,[n].concat(t.includes)),delete t.includes),t.options&&n.options&&(t.options=s.extend({},n.options,t.options)),s.extend(n,t),n._initHooks=[];var a=this;return e.__super__=a.prototype,n.callInitHooks=function(){if(!this._initHooksCalled){a.prototype.callInitHooks&&a.prototype.callInitHooks.call(this),this._initHooksCalled=!0;for(var t=0,e=n._initHooks.length;e>t;t++)n._initHooks[t].call(this)}},e},s.Class.include=function(t){s.extend(this.prototype,t)},s.Class.mergeOptions=function(t){s.extend(this.prototype.options,t)},s.Class.addInitHook=function(t){var e=Array.prototype.slice.call(arguments,1),i="function"==typeof t?t:function(){this[t].apply(this,e)};this.prototype._initHooks=this.prototype._initHooks||[],this.prototype._initHooks.push(i)};var a="_leaflet_events";s.Mixin={},s.Mixin.Events={addEventListener:function(t,e,i){if(s.Util.invokeEach(t,this.addEventListener,this,e,i))return this;var n,o,r,l,h,u,c,p=this[a]=this[a]||{},d=i&&i!==this&&s.stamp(i);for(t=s.Util.splitWords(t),n=0,o=t.length;o>n;n++)r={action:e,context:i||this},l=t[n],d?(h=l+"_idx",u=h+"_len",c=p[h]=p[h]||{},c[d]||(c[d]=[],p[u]=(p[u]||0)+1),c[d].push(r)):(p[l]=p[l]||[],p[l].push(r));return this},hasEventListeners:function(t){var e=this[a];return!!e&&(t in e&&e[t].length>0||t+"_idx"in e&&e[t+"_idx_len"]>0)},removeEventListener:function(t,e,i){if(!this[a])return this;if(!t)return this.clearAllEventListeners();if(s.Util.invokeEach(t,this.removeEventListener,this,e,i))return this;var n,o,r,l,h,u,c,p,d,m=this[a],f=i&&i!==this&&s.stamp(i);for(t=s.Util.splitWords(t),n=0,o=t.length;o>n;n++)if(r=t[n],u=r+"_idx",c=u+"_len",p=m[u],e){if(l=f&&p?p[f]:m[r]){for(h=l.length-1;h>=0;h--)l[h].action!==e||i&&l[h].context!==i||(d=l.splice(h,1),d[0].action=s.Util.falseFn);i&&p&&0===l.length&&(delete p[f],m[c]--)}}else delete m[r],delete m[u],delete m[c];return this},clearAllEventListeners:function(){return delete this[a],this},fireEvent:function(t,e){if(!this.hasEventListeners(t))return this;var i,n,o,r,l,h=s.Util.extend({},e,{type:t,target:this}),u=this[a];if(u[t])for(i=u[t].slice(),n=0,o=i.length;o>n;n++)i[n].action.call(i[n].context,h);r=u[t+"_idx"];for(l in r)if(i=r[l].slice())for(n=0,o=i.length;o>n;n++)i[n].action.call(i[n].context,h);return this},addOneTimeEventListener:function(t,e,i){if(s.Util.invokeEach(t,this.addOneTimeEventListener,this,e,i))return this;var n=s.bind(function(){this.removeEventListener(t,e,i).removeEventListener(t,n,i)},this);return this.addEventListener(t,e,i).addEventListener(t,n,i)}},s.Mixin.Events.on=s.Mixin.Events.addEventListener,s.Mixin.Events.off=s.Mixin.Events.removeEventListener,s.Mixin.Events.once=s.Mixin.Events.addOneTimeEventListener,s.Mixin.Events.fire=s.Mixin.Events.fireEvent,function(){var e="ActiveXObject"in t,o=e&&!i.addEventListener,a=navigator.userAgent.toLowerCase(),r=-1!==a.indexOf("webkit"),l=-1!==a.indexOf("chrome"),h=-1!==a.indexOf("phantom"),u=-1!==a.indexOf("android"),c=-1!==a.search("android [23]"),p=-1!==a.indexOf("gecko"),d=typeof orientation!=n+"",m=t.navigator&&t.navigator.msPointerEnabled&&t.navigator.msMaxTouchPoints&&!t.PointerEvent,f=t.PointerEvent&&t.navigator.pointerEnabled&&t.navigator.maxTouchPoints||m,_="devicePixelRatio"in t&&t.devicePixelRatio>1||"matchMedia"in t&&t.matchMedia("(min-resolution:144dpi)")&&t.matchMedia("(min-resolution:144dpi)").matches,g=i.documentElement,v=e&&"transition"in g.style,y="WebKitCSSMatrix"in t&&"m11"in new t.WebKitCSSMatrix&&!c,L="MozPerspective"in g.style,b="OTransition"in g.style,T=!t.L_DISABLE_3D&&(v||y||L||b)&&!h,P=!t.L_NO_TOUCH&&!h&&function(){var t="ontouchstart";if(f||t in g)return!0;var e=i.createElement("div"),n=!1;return e.setAttribute?(e.setAttribute(t,"return;"),"function"==typeof e[t]&&(n=!0),e.removeAttribute(t),e=null,n):!1}();s.Browser={ie:e,ielt9:o,webkit:r,gecko:p&&!r&&!t.opera&&!e,android:u,android23:c,chrome:l,ie3d:v,webkit3d:y,gecko3d:L,opera3d:b,any3d:T,mobile:d,mobileWebkit:d&&r,mobileWebkit3d:d&&y,mobileOpera:d&&t.opera,touch:P,msPointer:m,pointer:f,retina:_}}(),s.Point=function(t,e,i){this.x=i?Math.round(t):t,this.y=i?Math.round(e):e},s.Point.prototype={clone:function(){return new s.Point(this.x,this.y)},add:function(t){return this.clone()._add(s.point(t))},_add:function(t){return this.x+=t.x,this.y+=t.y,this},subtract:function(t){return this.clone()._subtract(s.point(t))},_subtract:function(t){return this.x-=t.x,this.y-=t.y,this},divideBy:function(t){return this.clone()._divideBy(t)},_divideBy:function(t){return this.x/=t,this.y/=t,this},multiplyBy:function(t){return this.clone()._multiplyBy(t)},_multiplyBy:function(t){return this.x*=t,this.y*=t,this},round:function(){return this.clone()._round()},_round:function(){return this.x=Math.round(this.x),this.y=Math.round(this.y),this},floor:function(){return this.clone()._floor()},_floor:function(){return this.x=Math.floor(this.x),this.y=Math.floor(this.y),this},distanceTo:function(t){t=s.point(t);var e=t.x-this.x,i=t.y-this.y;return Math.sqrt(e*e+i*i)},equals:function(t){return t=s.point(t),t.x===this.x&&t.y===this.y},contains:function(t){return t=s.point(t),Math.abs(t.x)<=Math.abs(this.x)&&Math.abs(t.y)<=Math.abs(this.y)},toString:function(){return"Point("+s.Util.formatNum(this.x)+", "+s.Util.formatNum(this.y)+")"}},s.point=function(t,e,i){return t instanceof s.Point?t:s.Util.isArray(t)?new s.Point(t[0],t[1]):t===n||null===t?t:new s.Point(t,e,i)},s.Bounds=function(t,e){if(t)for(var i=e?[t,e]:t,n=0,o=i.length;o>n;n++)this.extend(i[n])},s.Bounds.prototype={extend:function(t){return t=s.point(t),this.min||this.max?(this.min.x=Math.min(t.x,this.min.x),this.max.x=Math.max(t.x,this.max.x),this.min.y=Math.min(t.y,this.min.y),this.max.y=Math.max(t.y,this.max.y)):(this.min=t.clone(),this.max=t.clone()),this},getCenter:function(t){return new s.Point((this.min.x+this.max.x)/2,(this.min.y+this.max.y)/2,t)},getBottomLeft:function(){return new s.Point(this.min.x,this.max.y)},getTopRight:function(){return new s.Point(this.max.x,this.min.y)},getSize:function(){return this.max.subtract(this.min)},contains:function(t){var e,i;return t="number"==typeof t[0]||t instanceof s.Point?s.point(t):s.bounds(t),t instanceof s.Bounds?(e=t.min,i=t.max):e=i=t,e.x>=this.min.x&&i.x<=this.max.x&&e.y>=this.min.y&&i.y<=this.max.y},intersects:function(t){t=s.bounds(t);var e=this.min,i=this.max,n=t.min,o=t.max,a=o.x>=e.x&&n.x<=i.x,r=o.y>=e.y&&n.y<=i.y;return a&&r},isValid:function(){return!(!this.min||!this.max)}},s.bounds=function(t,e){return!t||t instanceof s.Bounds?t:new s.Bounds(t,e)},s.Transformation=function(t,e,i,n){this._a=t,this._b=e,this._c=i,this._d=n},s.Transformation.prototype={transform:function(t,e){return this._transform(t.clone(),e)},_transform:function(t,e){return e=e||1,t.x=e*(this._a*t.x+this._b),t.y=e*(this._c*t.y+this._d),t},untransform:function(t,e){return e=e||1,new s.Point((t.x/e-this._b)/this._a,(t.y/e-this._d)/this._c)}},s.DomUtil={get:function(t){return"string"==typeof t?i.getElementById(t):t},getStyle:function(t,e){var n=t.style[e];if(!n&&t.currentStyle&&(n=t.currentStyle[e]),(!n||"auto"===n)&&i.defaultView){var o=i.defaultView.getComputedStyle(t,null);n=o?o[e]:null}return"auto"===n?null:n},getViewportOffset:function(t){var e,n=0,o=0,a=t,r=i.body,l=i.documentElement;do{if(n+=a.offsetTop||0,o+=a.offsetLeft||0,n+=parseInt(s.DomUtil.getStyle(a,"borderTopWidth"),10)||0,o+=parseInt(s.DomUtil.getStyle(a,"borderLeftWidth"),10)||0,e=s.DomUtil.getStyle(a,"position"),a.offsetParent===r&&"absolute"===e)break;if("fixed"===e){n+=r.scrollTop||l.scrollTop||0,o+=r.scrollLeft||l.scrollLeft||0;break}if("relative"===e&&!a.offsetLeft){var h=s.DomUtil.getStyle(a,"width"),u=s.DomUtil.getStyle(a,"max-width"),c=a.getBoundingClientRect();("none"!==h||"none"!==u)&&(o+=c.left+a.clientLeft),n+=c.top+(r.scrollTop||l.scrollTop||0);break}a=a.offsetParent}while(a);a=t;do{if(a===r)break;n-=a.scrollTop||0,o-=a.scrollLeft||0,a=a.parentNode}while(a);return new s.Point(o,n)},documentIsLtr:function(){return s.DomUtil._docIsLtrCached||(s.DomUtil._docIsLtrCached=!0,s.DomUtil._docIsLtr="ltr"===s.DomUtil.getStyle(i.body,"direction")),s.DomUtil._docIsLtr},create:function(t,e,n){var o=i.createElement(t);return o.className=e,n&&n.appendChild(o),o},hasClass:function(t,e){if(t.classList!==n)return t.classList.contains(e);var i=s.DomUtil._getClass(t);return i.length>0&&new RegExp("(^|\\s)"+e+"(\\s|$)").test(i)},addClass:function(t,e){if(t.classList!==n)for(var i=s.Util.splitWords(e),o=0,a=i.length;a>o;o++)t.classList.add(i[o]);else if(!s.DomUtil.hasClass(t,e)){var r=s.DomUtil._getClass(t);s.DomUtil._setClass(t,(r?r+" ":"")+e)}},removeClass:function(t,e){t.classList!==n?t.classList.remove(e):s.DomUtil._setClass(t,s.Util.trim((" "+s.DomUtil._getClass(t)+" ").replace(" "+e+" "," ")))},_setClass:function(t,e){t.className.baseVal===n?t.className=e:t.className.baseVal=e},_getClass:function(t){return t.className.baseVal===n?t.className:t.className.baseVal},setOpacity:function(t,e){if("opacity"in t.style)t.style.opacity=e;else if("filter"in t.style){var i=!1,n="DXImageTransform.Microsoft.Alpha";try{i=t.filters.item(n)}catch(o){if(1===e)return}e=Math.round(100*e),i?(i.Enabled=100!==e,i.Opacity=e):t.style.filter+=" progid:"+n+"(opacity="+e+")"}},testProp:function(t){for(var e=i.documentElement.style,n=0;n<t.length;n++)if(t[n]in e)return t[n];return!1},getTranslateString:function(t){var e=s.Browser.webkit3d,i="translate"+(e?"3d":"")+"(",n=(e?",0":"")+")";return i+t.x+"px,"+t.y+"px"+n},getScaleString:function(t,e){var i=s.DomUtil.getTranslateString(e.add(e.multiplyBy(-1*t))),n=" scale("+t+") ";return i+n},setPosition:function(t,e,i){t._leaflet_pos=e,!i&&s.Browser.any3d?t.style[s.DomUtil.TRANSFORM]=s.DomUtil.getTranslateString(e):(t.style.left=e.x+"px",t.style.top=e.y+"px")},getPosition:function(t){return t._leaflet_pos}},s.DomUtil.TRANSFORM=s.DomUtil.testProp(["transform","WebkitTransform","OTransform","MozTransform","msTransform"]),s.DomUtil.TRANSITION=s.DomUtil.testProp(["webkitTransition","transition","OTransition","MozTransition","msTransition"]),s.DomUtil.TRANSITION_END="webkitTransition"===s.DomUtil.TRANSITION||"OTransition"===s.DomUtil.TRANSITION?s.DomUtil.TRANSITION+"End":"transitionend",function(){if("onselectstart"in i)s.extend(s.DomUtil,{disableTextSelection:function(){s.DomEvent.on(t,"selectstart",s.DomEvent.preventDefault)},enableTextSelection:function(){s.DomEvent.off(t,"selectstart",s.DomEvent.preventDefault)}});else{var e=s.DomUtil.testProp(["userSelect","WebkitUserSelect","OUserSelect","MozUserSelect","msUserSelect"]);s.extend(s.DomUtil,{disableTextSelection:function(){if(e){var t=i.documentElement.style;this._userSelect=t[e],t[e]="none"}},enableTextSelection:function(){e&&(i.documentElement.style[e]=this._userSelect,delete this._userSelect)}})}s.extend(s.DomUtil,{disableImageDrag:function(){s.DomEvent.on(t,"dragstart",s.DomEvent.preventDefault)},enableImageDrag:function(){s.DomEvent.off(t,"dragstart",s.DomEvent.preventDefault)}})}(),s.LatLng=function(t,e,i){if(t=parseFloat(t),e=parseFloat(e),isNaN(t)||isNaN(e))throw new Error("Invalid LatLng object: ("+t+", "+e+")");this.lat=t,this.lng=e,i!==n&&(this.alt=parseFloat(i))},s.extend(s.LatLng,{DEG_TO_RAD:Math.PI/180,RAD_TO_DEG:180/Math.PI,MAX_MARGIN:1e-9}),s.LatLng.prototype={equals:function(t){if(!t)return!1;t=s.latLng(t);var e=Math.max(Math.abs(this.lat-t.lat),Math.abs(this.lng-t.lng));return e<=s.LatLng.MAX_MARGIN},toString:function(t){return"LatLng("+s.Util.formatNum(this.lat,t)+", "+s.Util.formatNum(this.lng,t)+")"},distanceTo:function(t){t=s.latLng(t);var e=6378137,i=s.LatLng.DEG_TO_RAD,n=(t.lat-this.lat)*i,o=(t.lng-this.lng)*i,a=this.lat*i,r=t.lat*i,l=Math.sin(n/2),h=Math.sin(o/2),u=l*l+h*h*Math.cos(a)*Math.cos(r);return 2*e*Math.atan2(Math.sqrt(u),Math.sqrt(1-u))},wrap:function(t,e){var i=this.lng;return t=t||-180,e=e||180,i=(i+e)%(e-t)+(t>i||i===e?e:t),new s.LatLng(this.lat,i)}},s.latLng=function(t,e){return t instanceof s.LatLng?t:s.Util.isArray(t)?"number"==typeof t[0]||"string"==typeof t[0]?new s.LatLng(t[0],t[1],t[2]):null:t===n||null===t?t:"object"==typeof t&&"lat"in t?new s.LatLng(t.lat,"lng"in t?t.lng:t.lon):e===n?null:new s.LatLng(t,e)},s.LatLngBounds=function(t,e){if(t)for(var i=e?[t,e]:t,n=0,o=i.length;o>n;n++)this.extend(i[n])},s.LatLngBounds.prototype={extend:function(t){if(!t)return this;var e=s.latLng(t);return t=null!==e?e:s.latLngBounds(t),t instanceof s.LatLng?this._southWest||this._northEast?(this._southWest.lat=Math.min(t.lat,this._southWest.lat),this._southWest.lng=Math.min(t.lng,this._southWest.lng),this._northEast.lat=Math.max(t.lat,this._northEast.lat),this._northEast.lng=Math.max(t.lng,this._northEast.lng)):(this._southWest=new s.LatLng(t.lat,t.lng),this._northEast=new s.LatLng(t.lat,t.lng)):t instanceof s.LatLngBounds&&(this.extend(t._southWest),this.extend(t._northEast)),this},pad:function(t){var e=this._southWest,i=this._northEast,n=Math.abs(e.lat-i.lat)*t,o=Math.abs(e.lng-i.lng)*t;return new s.LatLngBounds(new s.LatLng(e.lat-n,e.lng-o),new s.LatLng(i.lat+n,i.lng+o))},getCenter:function(){return new s.LatLng((this._southWest.lat+this._northEast.lat)/2,(this._southWest.lng+this._northEast.lng)/2)},getSouthWest:function(){return this._southWest},getNorthEast:function(){return this._northEast},getNorthWest:function(){return new s.LatLng(this.getNorth(),this.getWest())},getSouthEast:function(){return new s.LatLng(this.getSouth(),this.getEast())},getWest:function(){return this._southWest.lng},getSouth:function(){return this._southWest.lat},getEast:function(){return this._northEast.lng},getNorth:function(){return this._northEast.lat},contains:function(t){t="number"==typeof t[0]||t instanceof s.LatLng?s.latLng(t):s.latLngBounds(t);var e,i,n=this._southWest,o=this._northEast;return t instanceof s.LatLngBounds?(e=t.getSouthWest(),i=t.getNorthEast()):e=i=t,e.lat>=n.lat&&i.lat<=o.lat&&e.lng>=n.lng&&i.lng<=o.lng},intersects:function(t){t=s.latLngBounds(t);var e=this._southWest,i=this._northEast,n=t.getSouthWest(),o=t.getNorthEast(),a=o.lat>=e.lat&&n.lat<=i.lat,r=o.lng>=e.lng&&n.lng<=i.lng;return a&&r},toBBoxString:function(){return[this.getWest(),this.getSouth(),this.getEast(),this.getNorth()].join(",")},equals:function(t){return t?(t=s.latLngBounds(t),this._southWest.equals(t.getSouthWest())&&this._northEast.equals(t.getNorthEast())):!1},isValid:function(){return!(!this._southWest||!this._northEast)}},s.latLngBounds=function(t,e){return!t||t instanceof s.LatLngBounds?t:new s.LatLngBounds(t,e)},s.Projection={},s.Projection.SphericalMercator={MAX_LATITUDE:85.0511287798,project:function(t){var e=s.LatLng.DEG_TO_RAD,i=this.MAX_LATITUDE,n=Math.max(Math.min(i,t.lat),-i),o=t.lng*e,a=n*e;return a=Math.log(Math.tan(Math.PI/4+a/2)),new s.Point(o,a)},unproject:function(t){var e=s.LatLng.RAD_TO_DEG,i=t.x*e,n=(2*Math.atan(Math.exp(t.y))-Math.PI/2)*e;return new s.LatLng(n,i)}},s.Projection.LonLat={project:function(t){return new s.Point(t.lng,t.lat)},unproject:function(t){return new s.LatLng(t.y,t.x)}},s.CRS={latLngToPoint:function(t,e){var i=this.projection.project(t),n=this.scale(e);return this.transformation._transform(i,n)},pointToLatLng:function(t,e){var i=this.scale(e),n=this.transformation.untransform(t,i);return this.projection.unproject(n)},project:function(t){return this.projection.project(t)},scale:function(t){return 256*Math.pow(2,t)},getSize:function(t){var e=this.scale(t);return s.point(e,e)}},s.CRS.Simple=s.extend({},s.CRS,{projection:s.Projection.LonLat,transformation:new s.Transformation(1,0,-1,0),scale:function(t){return Math.pow(2,t)}}),s.CRS.EPSG3857=s.extend({},s.CRS,{code:"EPSG:3857",projection:s.Projection.SphericalMercator,transformation:new s.Transformation(.5/Math.PI,.5,-.5/Math.PI,.5),project:function(t){var e=this.projection.project(t),i=6378137;return e.multiplyBy(i)}}),s.CRS.EPSG900913=s.extend({},s.CRS.EPSG3857,{code:"EPSG:900913"}),s.CRS.EPSG4326=s.extend({},s.CRS,{code:"EPSG:4326",projection:s.Projection.LonLat,transformation:new s.Transformation(1/360,.5,-1/360,.5)}),s.Map=s.Class.extend({includes:s.Mixin.Events,options:{crs:s.CRS.EPSG3857,fadeAnimation:s.DomUtil.TRANSITION&&!s.Browser.android23,trackResize:!0,markerZoomAnimation:s.DomUtil.TRANSITION&&s.Browser.any3d},initialize:function(t,e){e=s.setOptions(this,e),this._initContainer(t),this._initLayout(),this._onResize=s.bind(this._onResize,this),this._initEvents(),e.maxBounds&&this.setMaxBounds(e.maxBounds),e.center&&e.zoom!==n&&this.setView(s.latLng(e.center),e.zoom,{reset:!0}),this._handlers=[],this._layers={},this._zoomBoundLayers={},this._tileLayersNum=0,this.callInitHooks(),this._addLayers(e.layers)},setView:function(t,e){return e=e===n?this.getZoom():e,this._resetView(s.latLng(t),this._limitZoom(e)),this},setZoom:function(t,e){return this._loaded?this.setView(this.getCenter(),t,{zoom:e}):(this._zoom=this._limitZoom(t),this)},zoomIn:function(t,e){return this.setZoom(this._zoom+(t||1),e)},zoomOut:function(t,e){return this.setZoom(this._zoom-(t||1),e)},setZoomAround:function(t,e,i){var n=this.getZoomScale(e),o=this.getSize().divideBy(2),a=t instanceof s.Point?t:this.latLngToContainerPoint(t),r=a.subtract(o).multiplyBy(1-1/n),l=this.containerPointToLatLng(o.add(r));return this.setView(l,e,{zoom:i})},fitBounds:function(t,e){e=e||{},t=t.getBounds?t.getBounds():s.latLngBounds(t);var i=s.point(e.paddingTopLeft||e.padding||[0,0]),n=s.point(e.paddingBottomRight||e.padding||[0,0]),o=this.getBoundsZoom(t,!1,i.add(n)),a=n.subtract(i).divideBy(2),r=this.project(t.getSouthWest(),o),l=this.project(t.getNorthEast(),o),h=this.unproject(r.add(l).divideBy(2).add(a),o);return o=e&&e.maxZoom?Math.min(e.maxZoom,o):o,this.setView(h,o,e)},fitWorld:function(t){return this.fitBounds([[-90,-180],[90,180]],t)},panTo:function(t,e){return this.setView(t,this._zoom,{pan:e})},panBy:function(t){return this.fire("movestart"),this._rawPanBy(s.point(t)),this.fire("move"),this.fire("moveend")},setMaxBounds:function(t){return t=s.latLngBounds(t),this.options.maxBounds=t,t?(this._loaded&&this._panInsideMaxBounds(),this.on("moveend",this._panInsideMaxBounds,this)):this.off("moveend",this._panInsideMaxBounds,this)},panInsideBounds:function(t,e){var i=this.getCenter(),n=this._limitCenter(i,this._zoom,t);return i.equals(n)?this:this.panTo(n,e)},addLayer:function(t){var e=s.stamp(t);return this._layers[e]?this:(this._layers[e]=t,!t.options||isNaN(t.options.maxZoom)&&isNaN(t.options.minZoom)||(this._zoomBoundLayers[e]=t,this._updateZoomLevels()),this.options.zoomAnimation&&s.TileLayer&&t instanceof s.TileLayer&&(this._tileLayersNum++,this._tileLayersToLoad++,t.on("load",this._onTileLayerLoad,this)),this._loaded&&this._layerAdd(t),this)},removeLayer:function(t){var e=s.stamp(t);return this._layers[e]?(this._loaded&&t.onRemove(this),delete this._layers[e],this._loaded&&this.fire("layerremove",{layer:t}),this._zoomBoundLayers[e]&&(delete this._zoomBoundLayers[e],this._updateZoomLevels()),this.options.zoomAnimation&&s.TileLayer&&t instanceof s.TileLayer&&(this._tileLayersNum--,this._tileLayersToLoad--,t.off("load",this._onTileLayerLoad,this)),this):this},hasLayer:function(t){return t?s.stamp(t)in this._layers:!1},eachLayer:function(t,e){for(var i in this._layers)t.call(e,this._layers[i]);return this},invalidateSize:function(t){if(!this._loaded)return this;t=s.extend({animate:!1,pan:!0},t===!0?{animate:!0}:t);var e=this.getSize();this._sizeChanged=!0,this._initialCenter=null;var i=this.getSize(),n=e.divideBy(2).round(),o=i.divideBy(2).round(),a=n.subtract(o);return a.x||a.y?(t.animate&&t.pan?this.panBy(a):(t.pan&&this._rawPanBy(a),this.fire("move"),t.debounceMoveend?(clearTimeout(this._sizeTimer),this._sizeTimer=setTimeout(s.bind(this.fire,this,"moveend"),200)):this.fire("moveend")),this.fire("resize",{oldSize:e,newSize:i})):this},addHandler:function(t,e){if(!e)return this;var i=this[t]=new e(this);return this._handlers.push(i),this.options[t]&&i.enable(),this},remove:function(){this._loaded&&this.fire("unload"),this._initEvents("off");try{delete this._container._leaflet}catch(t){this._container._leaflet=n}return this._clearPanes(),this._clearControlPos&&this._clearControlPos(),this._clearHandlers(),this},getCenter:function(){return this._checkIfLoaded(),this._initialCenter&&!this._moved()?this._initialCenter:this.layerPointToLatLng(this._getCenterLayerPoint())},getZoom:function(){return this._zoom},getBounds:function(){var t=this.getPixelBounds(),e=this.unproject(t.getBottomLeft()),i=this.unproject(t.getTopRight());return new s.LatLngBounds(e,i)},getMinZoom:function(){return this.options.minZoom===n?this._layersMinZoom===n?0:this._layersMinZoom:this.options.minZoom},getMaxZoom:function(){return this.options.maxZoom===n?this._layersMaxZoom===n?1/0:this._layersMaxZoom:this.options.maxZoom},getBoundsZoom:function(t,e,i){t=s.latLngBounds(t);var n,o=this.getMinZoom()-(e?1:0),a=this.getMaxZoom(),r=this.getSize(),l=t.getNorthWest(),h=t.getSouthEast(),u=!0;i=s.point(i||[0,0]);do o++,n=this.project(h,o).subtract(this.project(l,o)).add(i),u=e?n.x<r.x||n.y<r.y:r.contains(n);while(u&&a>=o);return u&&e?null:e?o:o-1},getSize:function(){return(!this._size||this._sizeChanged)&&(this._size=new s.Point(this._container.clientWidth,this._container.clientHeight),this._sizeChanged=!1),this._size.clone()},getPixelBounds:function(){var t=this._getTopLeftPoint();return new s.Bounds(t,t.add(this.getSize()))},getPixelOrigin:function(){return this._checkIfLoaded(),this._initialTopLeftPoint},getPanes:function(){return this._panes},getContainer:function(){return this._container},getZoomScale:function(t){var e=this.options.crs;return e.scale(t)/e.scale(this._zoom)},getScaleZoom:function(t){return this._zoom+Math.log(t)/Math.LN2},project:function(t,e){return e=e===n?this._zoom:e,this.options.crs.latLngToPoint(s.latLng(t),e)},unproject:function(t,e){return e=e===n?this._zoom:e,this.options.crs.pointToLatLng(s.point(t),e)},layerPointToLatLng:function(t){var e=s.point(t).add(this.getPixelOrigin());return this.unproject(e)},latLngToLayerPoint:function(t){var e=this.project(s.latLng(t))._round();return e._subtract(this.getPixelOrigin())},containerPointToLayerPoint:function(t){return s.point(t).subtract(this._getMapPanePos())},layerPointToContainerPoint:function(t){return s.point(t).add(this._getMapPanePos())},containerPointToLatLng:function(t){var e=this.containerPointToLayerPoint(s.point(t));return this.layerPointToLatLng(e)},latLngToContainerPoint:function(t){return this.layerPointToContainerPoint(this.latLngToLayerPoint(s.latLng(t)))},mouseEventToContainerPoint:function(t){return s.DomEvent.getMousePosition(t,this._container)},mouseEventToLayerPoint:function(t){return this.containerPointToLayerPoint(this.mouseEventToContainerPoint(t))},mouseEventToLatLng:function(t){return this.layerPointToLatLng(this.mouseEventToLayerPoint(t))},_initContainer:function(t){var e=this._container=s.DomUtil.get(t);if(!e)throw new Error("Map container not found.");if(e._leaflet)throw new Error("Map container is already initialized.");e._leaflet=!0},_initLayout:function(){var t=this._container;s.DomUtil.addClass(t,"leaflet-container"+(s.Browser.touch?" leaflet-touch":"")+(s.Browser.retina?" leaflet-retina":"")+(s.Browser.ielt9?" leaflet-oldie":"")+(this.options.fadeAnimation?" leaflet-fade-anim":""));var e=s.DomUtil.getStyle(t,"position");"absolute"!==e&&"relative"!==e&&"fixed"!==e&&(t.style.position="relative"),this._initPanes(),this._initControlPos&&this._initControlPos()},_initPanes:function(){var t=this._panes={};this._mapPane=t.mapPane=this._createPane("leaflet-map-pane",this._container),this._tilePane=t.tilePane=this._createPane("leaflet-tile-pane",this._mapPane),t.objectsPane=this._createPane("leaflet-objects-pane",this._mapPane),t.shadowPane=this._createPane("leaflet-shadow-pane"),t.overlayPane=this._createPane("leaflet-overlay-pane"),t.markerPane=this._createPane("leaflet-marker-pane"),t.popupPane=this._createPane("leaflet-popup-pane");var e=" leaflet-zoom-hide";this.options.markerZoomAnimation||(s.DomUtil.addClass(t.markerPane,e),s.DomUtil.addClass(t.shadowPane,e),s.DomUtil.addClass(t.popupPane,e))},_createPane:function(t,e){return s.DomUtil.create("div",t,e||this._panes.objectsPane)},_clearPanes:function(){this._container.removeChild(this._mapPane)},_addLayers:function(t){t=t?s.Util.isArray(t)?t:[t]:[];for(var e=0,i=t.length;i>e;e++)this.addLayer(t[e])},_resetView:function(t,e,i,n){var o=this._zoom!==e;n||(this.fire("movestart"),o&&this.fire("zoomstart")),this._zoom=e,this._initialCenter=t,this._initialTopLeftPoint=this._getNewTopLeftPoint(t),i?this._initialTopLeftPoint._add(this._getMapPanePos()):s.DomUtil.setPosition(this._mapPane,new s.Point(0,0)),this._tileLayersToLoad=this._tileLayersNum;var a=!this._loaded;this._loaded=!0,this.fire("viewreset",{hard:!i}),a&&(this.fire("load"),this.eachLayer(this._layerAdd,this)),this.fire("move"),(o||n)&&this.fire("zoomend"),this.fire("moveend",{hard:!i})},_rawPanBy:function(t){s.DomUtil.setPosition(this._mapPane,this._getMapPanePos().subtract(t))},_getZoomSpan:function(){return this.getMaxZoom()-this.getMinZoom()},_updateZoomLevels:function(){var t,e=1/0,i=-1/0,o=this._getZoomSpan();for(t in this._zoomBoundLayers){var s=this._zoomBoundLayers[t];isNaN(s.options.minZoom)||(e=Math.min(e,s.options.minZoom)),isNaN(s.options.maxZoom)||(i=Math.max(i,s.options.maxZoom))}t===n?this._layersMaxZoom=this._layersMinZoom=n:(this._layersMaxZoom=i,this._layersMinZoom=e),o!==this._getZoomSpan()&&this.fire("zoomlevelschange")},_panInsideMaxBounds:function(){this.panInsideBounds(this.options.maxBounds)},_checkIfLoaded:function(){if(!this._loaded)throw new Error("Set map center and zoom first.")},_initEvents:function(e){if(s.DomEvent){e=e||"on",s.DomEvent[e](this._container,"click",this._onMouseClick,this);var i,n,o=["dblclick","mousedown","mouseup","mouseenter","mouseleave","mousemove","contextmenu"];for(i=0,n=o.length;n>i;i++)s.DomEvent[e](this._container,o[i],this._fireMouseEvent,this);this.options.trackResize&&s.DomEvent[e](t,"resize",this._onResize,this)}},_onResize:function(){s.Util.cancelAnimFrame(this._resizeRequest),this._resizeRequest=s.Util.requestAnimFrame(function(){this.invalidateSize({debounceMoveend:!0})},this,!1,this._container)},_onMouseClick:function(t){!this._loaded||!t._simulated&&(this.dragging&&this.dragging.moved()||this.boxZoom&&this.boxZoom.moved())||s.DomEvent._skipped(t)||(this.fire("preclick"),this._fireMouseEvent(t))},_fireMouseEvent:function(t){if(this._loaded&&!s.DomEvent._skipped(t)){var e=t.type;if(e="mouseenter"===e?"mouseover":"mouseleave"===e?"mouseout":e,this.hasEventListeners(e)){"contextmenu"===e&&s.DomEvent.preventDefault(t);var i=this.mouseEventToContainerPoint(t),n=this.containerPointToLayerPoint(i),o=this.layerPointToLatLng(n);this.fire(e,{latlng:o,layerPoint:n,containerPoint:i,originalEvent:t})}}},_onTileLayerLoad:function(){this._tileLayersToLoad--,this._tileLayersNum&&!this._tileLayersToLoad&&this.fire("tilelayersload")},_clearHandlers:function(){for(var t=0,e=this._handlers.length;e>t;t++)this._handlers[t].disable()},whenReady:function(t,e){return this._loaded?t.call(e||this,this):this.on("load",t,e),this},_layerAdd:function(t){t.onAdd(this),this.fire("layeradd",{layer:t})},_getMapPanePos:function(){return s.DomUtil.getPosition(this._mapPane)},_moved:function(){var t=this._getMapPanePos();return t&&!t.equals([0,0])},_getTopLeftPoint:function(){return this.getPixelOrigin().subtract(this._getMapPanePos())},_getNewTopLeftPoint:function(t,e){var i=this.getSize()._divideBy(2);return this.project(t,e)._subtract(i)._round()},_latLngToNewLayerPoint:function(t,e,i){var n=this._getNewTopLeftPoint(i,e).add(this._getMapPanePos());return this.project(t,e)._subtract(n)},_getCenterLayerPoint:function(){return this.containerPointToLayerPoint(this.getSize()._divideBy(2))},_getCenterOffset:function(t){return this.latLngToLayerPoint(t).subtract(this._getCenterLayerPoint())
+  },_limitCenter:function(t,e,i){if(!i)return t;var n=this.project(t,e),o=this.getSize().divideBy(2),a=new s.Bounds(n.subtract(o),n.add(o)),r=this._getBoundsOffset(a,i,e);return this.unproject(n.add(r),e)},_limitOffset:function(t,e){if(!e)return t;var i=this.getPixelBounds(),n=new s.Bounds(i.min.add(t),i.max.add(t));return t.add(this._getBoundsOffset(n,e))},_getBoundsOffset:function(t,e,i){var n=this.project(e.getNorthWest(),i).subtract(t.min),o=this.project(e.getSouthEast(),i).subtract(t.max),a=this._rebound(n.x,-o.x),r=this._rebound(n.y,-o.y);return new s.Point(a,r)},_rebound:function(t,e){return t+e>0?Math.round(t-e)/2:Math.max(0,Math.ceil(t))-Math.max(0,Math.floor(e))},_limitZoom:function(t){var e=this.getMinZoom(),i=this.getMaxZoom();return Math.max(e,Math.min(i,t))}}),s.map=function(t,e){return new s.Map(t,e)},s.Projection.Mercator={MAX_LATITUDE:85.0840591556,R_MINOR:6356752.314245179,R_MAJOR:6378137,project:function(t){var e=s.LatLng.DEG_TO_RAD,i=this.MAX_LATITUDE,n=Math.max(Math.min(i,t.lat),-i),o=this.R_MAJOR,a=this.R_MINOR,r=t.lng*e*o,l=n*e,h=a/o,u=Math.sqrt(1-h*h),c=u*Math.sin(l);c=Math.pow((1-c)/(1+c),.5*u);var p=Math.tan(.5*(.5*Math.PI-l))/c;return l=-o*Math.log(p),new s.Point(r,l)},unproject:function(t){for(var e,i=s.LatLng.RAD_TO_DEG,n=this.R_MAJOR,o=this.R_MINOR,a=t.x*i/n,r=o/n,l=Math.sqrt(1-r*r),h=Math.exp(-t.y/n),u=Math.PI/2-2*Math.atan(h),c=15,p=1e-7,d=c,m=.1;Math.abs(m)>p&&--d>0;)e=l*Math.sin(u),m=Math.PI/2-2*Math.atan(h*Math.pow((1-e)/(1+e),.5*l))-u,u+=m;return new s.LatLng(u*i,a)}},s.CRS.EPSG3395=s.extend({},s.CRS,{code:"EPSG:3395",projection:s.Projection.Mercator,transformation:function(){var t=s.Projection.Mercator,e=t.R_MAJOR,i=.5/(Math.PI*e);return new s.Transformation(i,.5,-i,.5)}()}),s.TileLayer=s.Class.extend({includes:s.Mixin.Events,options:{minZoom:0,maxZoom:18,tileSize:256,subdomains:"abc",errorTileUrl:"",attribution:"",zoomOffset:0,opacity:1,unloadInvisibleTiles:s.Browser.mobile,updateWhenIdle:s.Browser.mobile},initialize:function(t,e){e=s.setOptions(this,e),e.detectRetina&&s.Browser.retina&&e.maxZoom>0&&(e.tileSize=Math.floor(e.tileSize/2),e.zoomOffset++,e.minZoom>0&&e.minZoom--,this.options.maxZoom--),e.bounds&&(e.bounds=s.latLngBounds(e.bounds)),this._url=t;var i=this.options.subdomains;"string"==typeof i&&(this.options.subdomains=i.split(""))},onAdd:function(t){this._map=t,this._animated=t._zoomAnimated,this._initContainer(),t.on({viewreset:this._reset,moveend:this._update},this),this._animated&&t.on({zoomanim:this._animateZoom,zoomend:this._endZoomAnim},this),this.options.updateWhenIdle||(this._limitedUpdate=s.Util.limitExecByInterval(this._update,150,this),t.on("move",this._limitedUpdate,this)),this._reset(),this._update()},addTo:function(t){return t.addLayer(this),this},onRemove:function(t){this._container.parentNode.removeChild(this._container),t.off({viewreset:this._reset,moveend:this._update},this),this._animated&&t.off({zoomanim:this._animateZoom,zoomend:this._endZoomAnim},this),this.options.updateWhenIdle||t.off("move",this._limitedUpdate,this),this._container=null,this._map=null},bringToFront:function(){var t=this._map._panes.tilePane;return this._container&&(t.appendChild(this._container),this._setAutoZIndex(t,Math.max)),this},bringToBack:function(){var t=this._map._panes.tilePane;return this._container&&(t.insertBefore(this._container,t.firstChild),this._setAutoZIndex(t,Math.min)),this},getAttribution:function(){return this.options.attribution},getContainer:function(){return this._container},setOpacity:function(t){return this.options.opacity=t,this._map&&this._updateOpacity(),this},setZIndex:function(t){return this.options.zIndex=t,this._updateZIndex(),this},setUrl:function(t,e){return this._url=t,e||this.redraw(),this},redraw:function(){return this._map&&(this._reset({hard:!0}),this._update()),this},_updateZIndex:function(){this._container&&this.options.zIndex!==n&&(this._container.style.zIndex=this.options.zIndex)},_setAutoZIndex:function(t,e){var i,n,o,s=t.children,a=-e(1/0,-1/0);for(n=0,o=s.length;o>n;n++)s[n]!==this._container&&(i=parseInt(s[n].style.zIndex,10),isNaN(i)||(a=e(a,i)));this.options.zIndex=this._container.style.zIndex=(isFinite(a)?a:0)+e(1,-1)},_updateOpacity:function(){var t,e=this._tiles;if(s.Browser.ielt9)for(t in e)s.DomUtil.setOpacity(e[t],this.options.opacity);else s.DomUtil.setOpacity(this._container,this.options.opacity)},_initContainer:function(){var t=this._map._panes.tilePane;if(!this._container){if(this._container=s.DomUtil.create("div","leaflet-layer"),this._updateZIndex(),this._animated){var e="leaflet-tile-container";this._bgBuffer=s.DomUtil.create("div",e,this._container),this._tileContainer=s.DomUtil.create("div",e,this._container)}else this._tileContainer=this._container;t.appendChild(this._container),this.options.opacity<1&&this._updateOpacity()}},_reset:function(t){for(var e in this._tiles)this.fire("tileunload",{tile:this._tiles[e]});this._tiles={},this._tilesToLoad=0,this.options.reuseTiles&&(this._unusedTiles=[]),this._tileContainer.innerHTML="",this._animated&&t&&t.hard&&this._clearBgBuffer(),this._initContainer()},_getTileSize:function(){var t=this._map,e=t.getZoom()+this.options.zoomOffset,i=this.options.maxNativeZoom,n=this.options.tileSize;return i&&e>i&&(n=Math.round(t.getZoomScale(e)/t.getZoomScale(i)*n)),n},_update:function(){if(this._map){var t=this._map,e=t.getPixelBounds(),i=t.getZoom(),n=this._getTileSize();if(!(i>this.options.maxZoom||i<this.options.minZoom)){var o=s.bounds(e.min.divideBy(n)._floor(),e.max.divideBy(n)._floor());this._addTilesFromCenterOut(o),(this.options.unloadInvisibleTiles||this.options.reuseTiles)&&this._removeOtherTiles(o)}}},_addTilesFromCenterOut:function(t){var e,n,o,a=[],r=t.getCenter();for(e=t.min.y;e<=t.max.y;e++)for(n=t.min.x;n<=t.max.x;n++)o=new s.Point(n,e),this._tileShouldBeLoaded(o)&&a.push(o);var l=a.length;if(0!==l){a.sort(function(t,e){return t.distanceTo(r)-e.distanceTo(r)});var h=i.createDocumentFragment();for(this._tilesToLoad||this.fire("loading"),this._tilesToLoad+=l,n=0;l>n;n++)this._addTile(a[n],h);this._tileContainer.appendChild(h)}},_tileShouldBeLoaded:function(t){if(t.x+":"+t.y in this._tiles)return!1;var e=this.options;if(!e.continuousWorld){var i=this._getWrapTileNum();if(e.noWrap&&(t.x<0||t.x>=i.x)||t.y<0||t.y>=i.y)return!1}if(e.bounds){var n=e.tileSize,o=t.multiplyBy(n),s=o.add([n,n]),a=this._map.unproject(o),r=this._map.unproject(s);if(e.continuousWorld||e.noWrap||(a=a.wrap(),r=r.wrap()),!e.bounds.intersects([a,r]))return!1}return!0},_removeOtherTiles:function(t){var e,i,n,o;for(o in this._tiles)e=o.split(":"),i=parseInt(e[0],10),n=parseInt(e[1],10),(i<t.min.x||i>t.max.x||n<t.min.y||n>t.max.y)&&this._removeTile(o)},_removeTile:function(t){var e=this._tiles[t];this.fire("tileunload",{tile:e,url:e.src}),this.options.reuseTiles?(s.DomUtil.removeClass(e,"leaflet-tile-loaded"),this._unusedTiles.push(e)):e.parentNode===this._tileContainer&&this._tileContainer.removeChild(e),s.Browser.android||(e.onload=null,e.src=s.Util.emptyImageUrl),delete this._tiles[t]},_addTile:function(t,e){var i=this._getTilePos(t),n=this._getTile();s.DomUtil.setPosition(n,i,s.Browser.chrome),this._tiles[t.x+":"+t.y]=n,this._loadTile(n,t),n.parentNode!==this._tileContainer&&e.appendChild(n)},_getZoomForUrl:function(){var t=this.options,e=this._map.getZoom();return t.zoomReverse&&(e=t.maxZoom-e),e+=t.zoomOffset,t.maxNativeZoom?Math.min(e,t.maxNativeZoom):e},_getTilePos:function(t){var e=this._map.getPixelOrigin(),i=this._getTileSize();return t.multiplyBy(i).subtract(e)},getTileUrl:function(t){return s.Util.template(this._url,s.extend({s:this._getSubdomain(t),z:t.z,x:t.x,y:t.y},this.options))},_getWrapTileNum:function(){var t=this._map.options.crs,e=t.getSize(this._map.getZoom());return e.divideBy(this._getTileSize())._floor()},_adjustTilePoint:function(t){var e=this._getWrapTileNum();this.options.continuousWorld||this.options.noWrap||(t.x=(t.x%e.x+e.x)%e.x),this.options.tms&&(t.y=e.y-t.y-1),t.z=this._getZoomForUrl()},_getSubdomain:function(t){var e=Math.abs(t.x+t.y)%this.options.subdomains.length;return this.options.subdomains[e]},_getTile:function(){if(this.options.reuseTiles&&this._unusedTiles.length>0){var t=this._unusedTiles.pop();return this._resetTile(t),t}return this._createTile()},_resetTile:function(){},_createTile:function(){var t=s.DomUtil.create("img","leaflet-tile");return t.style.width=t.style.height=this._getTileSize()+"px",t.galleryimg="no",t.onselectstart=t.onmousemove=s.Util.falseFn,s.Browser.ielt9&&this.options.opacity!==n&&s.DomUtil.setOpacity(t,this.options.opacity),s.Browser.mobileWebkit3d&&(t.style.WebkitBackfaceVisibility="hidden"),t},_loadTile:function(t,e){t._layer=this,t.onload=this._tileOnLoad,t.onerror=this._tileOnError,this._adjustTilePoint(e),t.src=this.getTileUrl(e),this.fire("tileloadstart",{tile:t,url:t.src})},_tileLoaded:function(){this._tilesToLoad--,this._animated&&s.DomUtil.addClass(this._tileContainer,"leaflet-zoom-animated"),this._tilesToLoad||(this.fire("load"),this._animated&&(clearTimeout(this._clearBgBufferTimer),this._clearBgBufferTimer=setTimeout(s.bind(this._clearBgBuffer,this),500)))},_tileOnLoad:function(){var t=this._layer;this.src!==s.Util.emptyImageUrl&&(s.DomUtil.addClass(this,"leaflet-tile-loaded"),t.fire("tileload",{tile:this,url:this.src})),t._tileLoaded()},_tileOnError:function(){var t=this._layer;t.fire("tileerror",{tile:this,url:this.src});var e=t.options.errorTileUrl;e&&(this.src=e),t._tileLoaded()}}),s.tileLayer=function(t,e){return new s.TileLayer(t,e)},s.TileLayer.WMS=s.TileLayer.extend({defaultWmsParams:{service:"WMS",request:"GetMap",version:"1.1.1",layers:"",styles:"",format:"image/jpeg",transparent:!1},initialize:function(t,e){this._url=t;var i=s.extend({},this.defaultWmsParams),n=e.tileSize||this.options.tileSize;i.width=i.height=e.detectRetina&&s.Browser.retina?2*n:n;for(var o in e)this.options.hasOwnProperty(o)||"crs"===o||(i[o]=e[o]);this.wmsParams=i,s.setOptions(this,e)},onAdd:function(t){this._crs=this.options.crs||t.options.crs,this._wmsVersion=parseFloat(this.wmsParams.version);var e=this._wmsVersion>=1.3?"crs":"srs";this.wmsParams[e]=this._crs.code,s.TileLayer.prototype.onAdd.call(this,t)},getTileUrl:function(t){var e=this._map,i=this.options.tileSize,n=t.multiplyBy(i),o=n.add([i,i]),a=this._crs.project(e.unproject(n,t.z)),r=this._crs.project(e.unproject(o,t.z)),l=this._wmsVersion>=1.3&&this._crs===s.CRS.EPSG4326?[r.y,a.x,a.y,r.x].join(","):[a.x,r.y,r.x,a.y].join(","),h=s.Util.template(this._url,{s:this._getSubdomain(t)});return h+s.Util.getParamString(this.wmsParams,h,!0)+"&BBOX="+l},setParams:function(t,e){return s.extend(this.wmsParams,t),e||this.redraw(),this}}),s.tileLayer.wms=function(t,e){return new s.TileLayer.WMS(t,e)},s.TileLayer.Canvas=s.TileLayer.extend({options:{async:!1},initialize:function(t){s.setOptions(this,t)},redraw:function(){this._map&&(this._reset({hard:!0}),this._update());for(var t in this._tiles)this._redrawTile(this._tiles[t]);return this},_redrawTile:function(t){this.drawTile(t,t._tilePoint,this._map._zoom)},_createTile:function(){var t=s.DomUtil.create("canvas","leaflet-tile");return t.width=t.height=this.options.tileSize,t.onselectstart=t.onmousemove=s.Util.falseFn,t},_loadTile:function(t,e){t._layer=this,t._tilePoint=e,this._redrawTile(t),this.options.async||this.tileDrawn(t)},drawTile:function(){},tileDrawn:function(t){this._tileOnLoad.call(t)}}),s.tileLayer.canvas=function(t){return new s.TileLayer.Canvas(t)},s.ImageOverlay=s.Class.extend({includes:s.Mixin.Events,options:{opacity:1},initialize:function(t,e,i){this._url=t,this._bounds=s.latLngBounds(e),s.setOptions(this,i)},onAdd:function(t){this._map=t,this._image||this._initImage(),t._panes.overlayPane.appendChild(this._image),t.on("viewreset",this._reset,this),t.options.zoomAnimation&&s.Browser.any3d&&t.on("zoomanim",this._animateZoom,this),this._reset()},onRemove:function(t){t.getPanes().overlayPane.removeChild(this._image),t.off("viewreset",this._reset,this),t.options.zoomAnimation&&t.off("zoomanim",this._animateZoom,this)},addTo:function(t){return t.addLayer(this),this},setOpacity:function(t){return this.options.opacity=t,this._updateOpacity(),this},bringToFront:function(){return this._image&&this._map._panes.overlayPane.appendChild(this._image),this},bringToBack:function(){var t=this._map._panes.overlayPane;return this._image&&t.insertBefore(this._image,t.firstChild),this},setUrl:function(t){this._url=t,this._image.src=this._url},getAttribution:function(){return this.options.attribution},_initImage:function(){this._image=s.DomUtil.create("img","leaflet-image-layer"),this._map.options.zoomAnimation&&s.Browser.any3d?s.DomUtil.addClass(this._image,"leaflet-zoom-animated"):s.DomUtil.addClass(this._image,"leaflet-zoom-hide"),this._updateOpacity(),s.extend(this._image,{galleryimg:"no",onselectstart:s.Util.falseFn,onmousemove:s.Util.falseFn,onload:s.bind(this._onImageLoad,this),src:this._url})},_animateZoom:function(t){var e=this._map,i=this._image,n=e.getZoomScale(t.zoom),o=this._bounds.getNorthWest(),a=this._bounds.getSouthEast(),r=e._latLngToNewLayerPoint(o,t.zoom,t.center),l=e._latLngToNewLayerPoint(a,t.zoom,t.center)._subtract(r),h=r._add(l._multiplyBy(.5*(1-1/n)));i.style[s.DomUtil.TRANSFORM]=s.DomUtil.getTranslateString(h)+" scale("+n+") "},_reset:function(){var t=this._image,e=this._map.latLngToLayerPoint(this._bounds.getNorthWest()),i=this._map.latLngToLayerPoint(this._bounds.getSouthEast())._subtract(e);s.DomUtil.setPosition(t,e),t.style.width=i.x+"px",t.style.height=i.y+"px"},_onImageLoad:function(){this.fire("load")},_updateOpacity:function(){s.DomUtil.setOpacity(this._image,this.options.opacity)}}),s.imageOverlay=function(t,e,i){return new s.ImageOverlay(t,e,i)},s.Icon=s.Class.extend({options:{className:""},initialize:function(t){s.setOptions(this,t)},createIcon:function(t){return this._createIcon("icon",t)},createShadow:function(t){return this._createIcon("shadow",t)},_createIcon:function(t,e){var i=this._getIconUrl(t);if(!i){if("icon"===t)throw new Error("iconUrl not set in Icon options (see the docs).");return null}var n;return n=e&&"IMG"===e.tagName?this._createImg(i,e):this._createImg(i),this._setIconStyles(n,t),n},_setIconStyles:function(t,e){var i,n=this.options,o=s.point(n[e+"Size"]);i="shadow"===e?s.point(n.shadowAnchor||n.iconAnchor):s.point(n.iconAnchor),!i&&o&&(i=o.divideBy(2,!0)),t.className="leaflet-marker-"+e+" "+n.className,i&&(t.style.marginLeft=-i.x+"px",t.style.marginTop=-i.y+"px"),o&&(t.style.width=o.x+"px",t.style.height=o.y+"px")},_createImg:function(t,e){return e=e||i.createElement("img"),e.src=t,e},_getIconUrl:function(t){return s.Browser.retina&&this.options[t+"RetinaUrl"]?this.options[t+"RetinaUrl"]:this.options[t+"Url"]}}),s.icon=function(t){return new s.Icon(t)},s.Icon.Default=s.Icon.extend({options:{iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34],shadowSize:[41,41]},_getIconUrl:function(t){var e=t+"Url";if(this.options[e])return this.options[e];s.Browser.retina&&"icon"===t&&(t+="-2x");var i=s.Icon.Default.imagePath;if(!i)throw new Error("Couldn't autodetect L.Icon.Default.imagePath, set it manually.");return i+"/marker-"+t+".png"}}),s.Icon.Default.imagePath=function(){var t,e,n,o,s,a=i.getElementsByTagName("script"),r=/[\/^]leaflet[\-\._]?([\w\-\._]*)\.js\??/;for(t=0,e=a.length;e>t;t++)if(n=a[t].src,o=n.match(r))return s=n.split(r)[0],(s?s+"/":"")+"images"}(),s.Marker=s.Class.extend({includes:s.Mixin.Events,options:{icon:new s.Icon.Default,title:"",alt:"",clickable:!0,draggable:!1,keyboard:!0,zIndexOffset:0,opacity:1,riseOnHover:!1,riseOffset:250},initialize:function(t,e){s.setOptions(this,e),this._latlng=s.latLng(t)},onAdd:function(t){this._map=t,t.on("viewreset",this.update,this),this._initIcon(),this.update(),this.fire("add"),t.options.zoomAnimation&&t.options.markerZoomAnimation&&t.on("zoomanim",this._animateZoom,this)},addTo:function(t){return t.addLayer(this),this},onRemove:function(t){this.dragging&&this.dragging.disable(),this._removeIcon(),this._removeShadow(),this.fire("remove"),t.off({viewreset:this.update,zoomanim:this._animateZoom},this),this._map=null},getLatLng:function(){return this._latlng},setLatLng:function(t){return this._latlng=s.latLng(t),this.update(),this.fire("move",{latlng:this._latlng})},setZIndexOffset:function(t){return this.options.zIndexOffset=t,this.update(),this},setIcon:function(t){return this.options.icon=t,this._map&&(this._initIcon(),this.update()),this._popup&&this.bindPopup(this._popup),this},update:function(){if(this._icon){var t=this._map.latLngToLayerPoint(this._latlng).round();this._setPos(t)}return this},_initIcon:function(){var t=this.options,e=this._map,i=e.options.zoomAnimation&&e.options.markerZoomAnimation,n=i?"leaflet-zoom-animated":"leaflet-zoom-hide",o=t.icon.createIcon(this._icon),a=!1;o!==this._icon&&(this._icon&&this._removeIcon(),a=!0,t.title&&(o.title=t.title),t.alt&&(o.alt=t.alt)),s.DomUtil.addClass(o,n),t.keyboard&&(o.tabIndex="0"),this._icon=o,this._initInteraction(),t.riseOnHover&&s.DomEvent.on(o,"mouseover",this._bringToFront,this).on(o,"mouseout",this._resetZIndex,this);var r=t.icon.createShadow(this._shadow),l=!1;r!==this._shadow&&(this._removeShadow(),l=!0),r&&s.DomUtil.addClass(r,n),this._shadow=r,t.opacity<1&&this._updateOpacity();var h=this._map._panes;a&&h.markerPane.appendChild(this._icon),r&&l&&h.shadowPane.appendChild(this._shadow)},_removeIcon:function(){this.options.riseOnHover&&s.DomEvent.off(this._icon,"mouseover",this._bringToFront).off(this._icon,"mouseout",this._resetZIndex),this._map._panes.markerPane.removeChild(this._icon),this._icon=null},_removeShadow:function(){this._shadow&&this._map._panes.shadowPane.removeChild(this._shadow),this._shadow=null},_setPos:function(t){s.DomUtil.setPosition(this._icon,t),this._shadow&&s.DomUtil.setPosition(this._shadow,t),this._zIndex=t.y+this.options.zIndexOffset,this._resetZIndex()},_updateZIndex:function(t){this._icon.style.zIndex=this._zIndex+t},_animateZoom:function(t){var e=this._map._latLngToNewLayerPoint(this._latlng,t.zoom,t.center).round();this._setPos(e)},_initInteraction:function(){if(this.options.clickable){var t=this._icon,e=["dblclick","mousedown","mouseover","mouseout","contextmenu"];s.DomUtil.addClass(t,"leaflet-clickable"),s.DomEvent.on(t,"click",this._onMouseClick,this),s.DomEvent.on(t,"keypress",this._onKeyPress,this);for(var i=0;i<e.length;i++)s.DomEvent.on(t,e[i],this._fireMouseEvent,this);s.Handler.MarkerDrag&&(this.dragging=new s.Handler.MarkerDrag(this),this.options.draggable&&this.dragging.enable())}},_onMouseClick:function(t){var e=this.dragging&&this.dragging.moved();(this.hasEventListeners(t.type)||e)&&s.DomEvent.stopPropagation(t),e||(this.dragging&&this.dragging._enabled||!this._map.dragging||!this._map.dragging.moved())&&this.fire(t.type,{originalEvent:t,latlng:this._latlng})},_onKeyPress:function(t){13===t.keyCode&&this.fire("click",{originalEvent:t,latlng:this._latlng})},_fireMouseEvent:function(t){this.fire(t.type,{originalEvent:t,latlng:this._latlng}),"contextmenu"===t.type&&this.hasEventListeners(t.type)&&s.DomEvent.preventDefault(t),"mousedown"!==t.type?s.DomEvent.stopPropagation(t):s.DomEvent.preventDefault(t)},setOpacity:function(t){return this.options.opacity=t,this._map&&this._updateOpacity(),this},_updateOpacity:function(){s.DomUtil.setOpacity(this._icon,this.options.opacity),this._shadow&&s.DomUtil.setOpacity(this._shadow,this.options.opacity)},_bringToFront:function(){this._updateZIndex(this.options.riseOffset)},_resetZIndex:function(){this._updateZIndex(0)}}),s.marker=function(t,e){return new s.Marker(t,e)},s.DivIcon=s.Icon.extend({options:{iconSize:[12,12],className:"leaflet-div-icon",html:!1},createIcon:function(t){var e=t&&"DIV"===t.tagName?t:i.createElement("div"),n=this.options;return e.innerHTML=n.html!==!1?n.html:"",n.bgPos&&(e.style.backgroundPosition=-n.bgPos.x+"px "+-n.bgPos.y+"px"),this._setIconStyles(e,"icon"),e},createShadow:function(){return null}}),s.divIcon=function(t){return new s.DivIcon(t)},s.Map.mergeOptions({closePopupOnClick:!0}),s.Popup=s.Class.extend({includes:s.Mixin.Events,options:{minWidth:50,maxWidth:300,autoPan:!0,closeButton:!0,offset:[0,7],autoPanPadding:[5,5],keepInView:!1,className:"",zoomAnimation:!0},initialize:function(t,e){s.setOptions(this,t),this._source=e,this._animated=s.Browser.any3d&&this.options.zoomAnimation,this._isOpen=!1},onAdd:function(t){this._map=t,this._container||this._initLayout();var e=t.options.fadeAnimation;e&&s.DomUtil.setOpacity(this._container,0),t._panes.popupPane.appendChild(this._container),t.on(this._getEvents(),this),this.update(),e&&s.DomUtil.setOpacity(this._container,1),this.fire("open"),t.fire("popupopen",{popup:this}),this._source&&this._source.fire("popupopen",{popup:this})},addTo:function(t){return t.addLayer(this),this},openOn:function(t){return t.openPopup(this),this},onRemove:function(t){t._panes.popupPane.removeChild(this._container),s.Util.falseFn(this._container.offsetWidth),t.off(this._getEvents(),this),t.options.fadeAnimation&&s.DomUtil.setOpacity(this._container,0),this._map=null,this.fire("close"),t.fire("popupclose",{popup:this}),this._source&&this._source.fire("popupclose",{popup:this})},getLatLng:function(){return this._latlng},setLatLng:function(t){return this._latlng=s.latLng(t),this._map&&(this._updatePosition(),this._adjustPan()),this},getContent:function(){return this._content},setContent:function(t){return this._content=t,this.update(),this},update:function(){this._map&&(this._container.style.visibility="hidden",this._updateContent(),this._updateLayout(),this._updatePosition(),this._container.style.visibility="",this._adjustPan())},_getEvents:function(){var t={viewreset:this._updatePosition};return this._animated&&(t.zoomanim=this._zoomAnimation),("closeOnClick"in this.options?this.options.closeOnClick:this._map.options.closePopupOnClick)&&(t.preclick=this._close),this.options.keepInView&&(t.moveend=this._adjustPan),t},_close:function(){this._map&&this._map.closePopup(this)},_initLayout:function(){var t,e="leaflet-popup",i=e+" "+this.options.className+" leaflet-zoom-"+(this._animated?"animated":"hide"),n=this._container=s.DomUtil.create("div",i);this.options.closeButton&&(t=this._closeButton=s.DomUtil.create("a",e+"-close-button",n),t.href="#close",t.innerHTML="&#215;",s.DomEvent.disableClickPropagation(t),s.DomEvent.on(t,"click",this._onCloseButtonClick,this));var o=this._wrapper=s.DomUtil.create("div",e+"-content-wrapper",n);s.DomEvent.disableClickPropagation(o),this._contentNode=s.DomUtil.create("div",e+"-content",o),s.DomEvent.disableScrollPropagation(this._contentNode),s.DomEvent.on(o,"contextmenu",s.DomEvent.stopPropagation),this._tipContainer=s.DomUtil.create("div",e+"-tip-container",n),this._tip=s.DomUtil.create("div",e+"-tip",this._tipContainer)},_updateContent:function(){if(this._content){if("string"==typeof this._content)this._contentNode.innerHTML=this._content;else{for(;this._contentNode.hasChildNodes();)this._contentNode.removeChild(this._contentNode.firstChild);this._contentNode.appendChild(this._content)}this.fire("contentupdate")}},_updateLayout:function(){var t=this._contentNode,e=t.style;e.width="",e.whiteSpace="nowrap";var i=t.offsetWidth;i=Math.min(i,this.options.maxWidth),i=Math.max(i,this.options.minWidth),e.width=i+1+"px",e.whiteSpace="",e.height="";var n=t.offsetHeight,o=this.options.maxHeight,a="leaflet-popup-scrolled";o&&n>o?(e.height=o+"px",s.DomUtil.addClass(t,a)):s.DomUtil.removeClass(t,a),this._containerWidth=this._container.offsetWidth},_updatePosition:function(){if(this._map){var t=this._map.latLngToLayerPoint(this._latlng),e=this._animated,i=s.point(this.options.offset);e&&s.DomUtil.setPosition(this._container,t),this._containerBottom=-i.y-(e?0:t.y),this._containerLeft=-Math.round(this._containerWidth/2)+i.x+(e?0:t.x),this._container.style.bottom=this._containerBottom+"px",this._container.style.left=this._containerLeft+"px"}},_zoomAnimation:function(t){var e=this._map._latLngToNewLayerPoint(this._latlng,t.zoom,t.center);s.DomUtil.setPosition(this._container,e)},_adjustPan:function(){if(this.options.autoPan){var t=this._map,e=this._container.offsetHeight,i=this._containerWidth,n=new s.Point(this._containerLeft,-e-this._containerBottom);this._animated&&n._add(s.DomUtil.getPosition(this._container));var o=t.layerPointToContainerPoint(n),a=s.point(this.options.autoPanPadding),r=s.point(this.options.autoPanPaddingTopLeft||a),l=s.point(this.options.autoPanPaddingBottomRight||a),h=t.getSize(),u=0,c=0;o.x+i+l.x>h.x&&(u=o.x+i-h.x+l.x),o.x-u-r.x<0&&(u=o.x-r.x),o.y+e+l.y>h.y&&(c=o.y+e-h.y+l.y),o.y-c-r.y<0&&(c=o.y-r.y),(u||c)&&t.fire("autopanstart").panBy([u,c])}},_onCloseButtonClick:function(t){this._close(),s.DomEvent.stop(t)}}),s.popup=function(t,e){return new s.Popup(t,e)},s.Map.include({openPopup:function(t,e,i){if(this.closePopup(),!(t instanceof s.Popup)){var n=t;t=new s.Popup(i).setLatLng(e).setContent(n)}return t._isOpen=!0,this._popup=t,this.addLayer(t)},closePopup:function(t){return t&&t!==this._popup||(t=this._popup,this._popup=null),t&&(this.removeLayer(t),t._isOpen=!1),this}}),s.Marker.include({openPopup:function(){return this._popup&&this._map&&!this._map.hasLayer(this._popup)&&(this._popup.setLatLng(this._latlng),this._map.openPopup(this._popup)),this},closePopup:function(){return this._popup&&this._popup._close(),this},togglePopup:function(){return this._popup&&(this._popup._isOpen?this.closePopup():this.openPopup()),this},bindPopup:function(t,e){var i=s.point(this.options.icon.options.popupAnchor||[0,0]);return i=i.add(s.Popup.prototype.options.offset),e&&e.offset&&(i=i.add(e.offset)),e=s.extend({offset:i},e),this._popupHandlersAdded||(this.on("click",this.togglePopup,this).on("remove",this.closePopup,this).on("move",this._movePopup,this),this._popupHandlersAdded=!0),t instanceof s.Popup?(s.setOptions(t,e),this._popup=t):this._popup=new s.Popup(e,this).setContent(t),this},setPopupContent:function(t){return this._popup&&this._popup.setContent(t),this},unbindPopup:function(){return this._popup&&(this._popup=null,this.off("click",this.togglePopup,this).off("remove",this.closePopup,this).off("move",this._movePopup,this),this._popupHandlersAdded=!1),this},getPopup:function(){return this._popup},_movePopup:function(t){this._popup.setLatLng(t.latlng)}}),s.LayerGroup=s.Class.extend({initialize:function(t){this._layers={};var e,i;if(t)for(e=0,i=t.length;i>e;e++)this.addLayer(t[e])},addLayer:function(t){var e=this.getLayerId(t);return this._layers[e]=t,this._map&&this._map.addLayer(t),this},removeLayer:function(t){var e=t in this._layers?t:this.getLayerId(t);return this._map&&this._layers[e]&&this._map.removeLayer(this._layers[e]),delete this._layers[e],this},hasLayer:function(t){return t?t in this._layers||this.getLayerId(t)in this._layers:!1},clearLayers:function(){return this.eachLayer(this.removeLayer,this),this},invoke:function(t){var e,i,n=Array.prototype.slice.call(arguments,1);for(e in this._layers)i=this._layers[e],i[t]&&i[t].apply(i,n);return this},onAdd:function(t){this._map=t,this.eachLayer(t.addLayer,t)},onRemove:function(t){this.eachLayer(t.removeLayer,t),this._map=null},addTo:function(t){return t.addLayer(this),this},eachLayer:function(t,e){for(var i in this._layers)t.call(e,this._layers[i]);return this},getLayer:function(t){return this._layers[t]},getLayers:function(){var t=[];for(var e in this._layers)t.push(this._layers[e]);return t},setZIndex:function(t){return this.invoke("setZIndex",t)},getLayerId:function(t){return s.stamp(t)}}),s.layerGroup=function(t){return new s.LayerGroup(t)},s.FeatureGroup=s.LayerGroup.extend({includes:s.Mixin.Events,statics:{EVENTS:"click dblclick mouseover mouseout mousemove contextmenu popupopen popupclose"},addLayer:function(t){return this.hasLayer(t)?this:("on"in t&&t.on(s.FeatureGroup.EVENTS,this._propagateEvent,this),s.LayerGroup.prototype.addLayer.call(this,t),this._popupContent&&t.bindPopup&&t.bindPopup(this._popupContent,this._popupOptions),this.fire("layeradd",{layer:t}))},removeLayer:function(t){return this.hasLayer(t)?(t in this._layers&&(t=this._layers[t]),t.off(s.FeatureGroup.EVENTS,this._propagateEvent,this),s.LayerGroup.prototype.removeLayer.call(this,t),this._popupContent&&this.invoke("unbindPopup"),this.fire("layerremove",{layer:t})):this},bindPopup:function(t,e){return this._popupContent=t,this._popupOptions=e,this.invoke("bindPopup",t,e)},openPopup:function(t){for(var e in this._layers){this._layers[e].openPopup(t);break}return this},setStyle:function(t){return this.invoke("setStyle",t)},bringToFront:function(){return this.invoke("bringToFront")},bringToBack:function(){return this.invoke("bringToBack")},getBounds:function(){var t=new s.LatLngBounds;return this.eachLayer(function(e){t.extend(e instanceof s.Marker?e.getLatLng():e.getBounds())}),t},_propagateEvent:function(t){t=s.extend({layer:t.target,target:this},t),this.fire(t.type,t)}}),s.featureGroup=function(t){return new s.FeatureGroup(t)},s.Path=s.Class.extend({includes:[s.Mixin.Events],statics:{CLIP_PADDING:function(){var e=s.Browser.mobile?1280:2e3,i=(e/Math.max(t.outerWidth,t.outerHeight)-1)/2;return Math.max(0,Math.min(.5,i))}()},options:{stroke:!0,color:"#0033ff",dashArray:null,lineCap:null,lineJoin:null,weight:5,opacity:.5,fill:!1,fillColor:null,fillOpacity:.2,clickable:!0},initialize:function(t){s.setOptions(this,t)},onAdd:function(t){this._map=t,this._container||(this._initElements(),this._initEvents()),this.projectLatlngs(),this._updatePath(),this._container&&this._map._pathRoot.appendChild(this._container),this.fire("add"),t.on({viewreset:this.projectLatlngs,moveend:this._updatePath},this)},addTo:function(t){return t.addLayer(this),this},onRemove:function(t){t._pathRoot.removeChild(this._container),this.fire("remove"),this._map=null,s.Browser.vml&&(this._container=null,this._stroke=null,this._fill=null),t.off({viewreset:this.projectLatlngs,moveend:this._updatePath},this)},projectLatlngs:function(){},setStyle:function(t){return s.setOptions(this,t),this._container&&this._updateStyle(),this},redraw:function(){return this._map&&(this.projectLatlngs(),this._updatePath()),this}}),s.Map.include({_updatePathViewport:function(){var t=s.Path.CLIP_PADDING,e=this.getSize(),i=s.DomUtil.getPosition(this._mapPane),n=i.multiplyBy(-1)._subtract(e.multiplyBy(t)._round()),o=n.add(e.multiplyBy(1+2*t)._round());this._pathViewport=new s.Bounds(n,o)}}),s.Path.SVG_NS="http://www.w3.org/2000/svg",s.Browser.svg=!(!i.createElementNS||!i.createElementNS(s.Path.SVG_NS,"svg").createSVGRect),s.Path=s.Path.extend({statics:{SVG:s.Browser.svg},bringToFront:function(){var t=this._map._pathRoot,e=this._container;return e&&t.lastChild!==e&&t.appendChild(e),this},bringToBack:function(){var t=this._map._pathRoot,e=this._container,i=t.firstChild;return e&&i!==e&&t.insertBefore(e,i),this},getPathString:function(){},_createElement:function(t){return i.createElementNS(s.Path.SVG_NS,t)},_initElements:function(){this._map._initPathRoot(),this._initPath(),this._initStyle()},_initPath:function(){this._container=this._createElement("g"),this._path=this._createElement("path"),this.options.className&&s.DomUtil.addClass(this._path,this.options.className),this._container.appendChild(this._path)},_initStyle:function(){this.options.stroke&&(this._path.setAttribute("stroke-linejoin","round"),this._path.setAttribute("stroke-linecap","round")),this.options.fill&&this._path.setAttribute("fill-rule","evenodd"),this.options.pointerEvents&&this._path.setAttribute("pointer-events",this.options.pointerEvents),this.options.clickable||this.options.pointerEvents||this._path.setAttribute("pointer-events","none"),this._updateStyle()},_updateStyle:function(){this.options.stroke?(this._path.setAttribute("stroke",this.options.color),this._path.setAttribute("stroke-opacity",this.options.opacity),this._path.setAttribute("stroke-width",this.options.weight),this.options.dashArray?this._path.setAttribute("stroke-dasharray",this.options.dashArray):this._path.removeAttribute("stroke-dasharray"),this.options.lineCap&&this._path.setAttribute("stroke-linecap",this.options.lineCap),this.options.lineJoin&&this._path.setAttribute("stroke-linejoin",this.options.lineJoin)):this._path.setAttribute("stroke","none"),this.options.fill?(this._path.setAttribute("fill",this.options.fillColor||this.options.color),this._path.setAttribute("fill-opacity",this.options.fillOpacity)):this._path.setAttribute("fill","none")
+  },_updatePath:function(){var t=this.getPathString();t||(t="M0 0"),this._path.setAttribute("d",t)},_initEvents:function(){if(this.options.clickable){(s.Browser.svg||!s.Browser.vml)&&s.DomUtil.addClass(this._path,"leaflet-clickable"),s.DomEvent.on(this._container,"click",this._onMouseClick,this);for(var t=["dblclick","mousedown","mouseover","mouseout","mousemove","contextmenu"],e=0;e<t.length;e++)s.DomEvent.on(this._container,t[e],this._fireMouseEvent,this)}},_onMouseClick:function(t){this._map.dragging&&this._map.dragging.moved()||this._fireMouseEvent(t)},_fireMouseEvent:function(t){if(this.hasEventListeners(t.type)){var e=this._map,i=e.mouseEventToContainerPoint(t),n=e.containerPointToLayerPoint(i),o=e.layerPointToLatLng(n);this.fire(t.type,{latlng:o,layerPoint:n,containerPoint:i,originalEvent:t}),"contextmenu"===t.type&&s.DomEvent.preventDefault(t),"mousemove"!==t.type&&s.DomEvent.stopPropagation(t)}}}),s.Map.include({_initPathRoot:function(){this._pathRoot||(this._pathRoot=s.Path.prototype._createElement("svg"),this._panes.overlayPane.appendChild(this._pathRoot),this.options.zoomAnimation&&s.Browser.any3d?(s.DomUtil.addClass(this._pathRoot,"leaflet-zoom-animated"),this.on({zoomanim:this._animatePathZoom,zoomend:this._endPathZoom})):s.DomUtil.addClass(this._pathRoot,"leaflet-zoom-hide"),this.on("moveend",this._updateSvgViewport),this._updateSvgViewport())},_animatePathZoom:function(t){var e=this.getZoomScale(t.zoom),i=this._getCenterOffset(t.center)._multiplyBy(-e)._add(this._pathViewport.min);this._pathRoot.style[s.DomUtil.TRANSFORM]=s.DomUtil.getTranslateString(i)+" scale("+e+") ",this._pathZooming=!0},_endPathZoom:function(){this._pathZooming=!1},_updateSvgViewport:function(){if(!this._pathZooming){this._updatePathViewport();var t=this._pathViewport,e=t.min,i=t.max,n=i.x-e.x,o=i.y-e.y,a=this._pathRoot,r=this._panes.overlayPane;s.Browser.mobileWebkit&&r.removeChild(a),s.DomUtil.setPosition(a,e),a.setAttribute("width",n),a.setAttribute("height",o),a.setAttribute("viewBox",[e.x,e.y,n,o].join(" ")),s.Browser.mobileWebkit&&r.appendChild(a)}}}),s.Path.include({bindPopup:function(t,e){return t instanceof s.Popup?this._popup=t:((!this._popup||e)&&(this._popup=new s.Popup(e,this)),this._popup.setContent(t)),this._popupHandlersAdded||(this.on("click",this._openPopup,this).on("remove",this.closePopup,this),this._popupHandlersAdded=!0),this},unbindPopup:function(){return this._popup&&(this._popup=null,this.off("click",this._openPopup).off("remove",this.closePopup),this._popupHandlersAdded=!1),this},openPopup:function(t){return this._popup&&(t=t||this._latlng||this._latlngs[Math.floor(this._latlngs.length/2)],this._openPopup({latlng:t})),this},closePopup:function(){return this._popup&&this._popup._close(),this},_openPopup:function(t){this._popup.setLatLng(t.latlng),this._map.openPopup(this._popup)}}),s.Browser.vml=!s.Browser.svg&&function(){try{var t=i.createElement("div");t.innerHTML='<v:shape adj="1"/>';var e=t.firstChild;return e.style.behavior="url(#default#VML)",e&&"object"==typeof e.adj}catch(n){return!1}}(),s.Path=s.Browser.svg||!s.Browser.vml?s.Path:s.Path.extend({statics:{VML:!0,CLIP_PADDING:.02},_createElement:function(){try{return i.namespaces.add("lvml","urn:schemas-microsoft-com:vml"),function(t){return i.createElement("<lvml:"+t+' class="lvml">')}}catch(t){return function(t){return i.createElement("<"+t+' xmlns="urn:schemas-microsoft.com:vml" class="lvml">')}}}(),_initPath:function(){var t=this._container=this._createElement("shape");s.DomUtil.addClass(t,"leaflet-vml-shape"+(this.options.className?" "+this.options.className:"")),this.options.clickable&&s.DomUtil.addClass(t,"leaflet-clickable"),t.coordsize="1 1",this._path=this._createElement("path"),t.appendChild(this._path),this._map._pathRoot.appendChild(t)},_initStyle:function(){this._updateStyle()},_updateStyle:function(){var t=this._stroke,e=this._fill,i=this.options,n=this._container;n.stroked=i.stroke,n.filled=i.fill,i.stroke?(t||(t=this._stroke=this._createElement("stroke"),t.endcap="round",n.appendChild(t)),t.weight=i.weight+"px",t.color=i.color,t.opacity=i.opacity,t.dashStyle=i.dashArray?s.Util.isArray(i.dashArray)?i.dashArray.join(" "):i.dashArray.replace(/( *, *)/g," "):"",i.lineCap&&(t.endcap=i.lineCap.replace("butt","flat")),i.lineJoin&&(t.joinstyle=i.lineJoin)):t&&(n.removeChild(t),this._stroke=null),i.fill?(e||(e=this._fill=this._createElement("fill"),n.appendChild(e)),e.color=i.fillColor||i.color,e.opacity=i.fillOpacity):e&&(n.removeChild(e),this._fill=null)},_updatePath:function(){var t=this._container.style;t.display="none",this._path.v=this.getPathString()+" ",t.display=""}}),s.Map.include(s.Browser.svg||!s.Browser.vml?{}:{_initPathRoot:function(){if(!this._pathRoot){var t=this._pathRoot=i.createElement("div");t.className="leaflet-vml-container",this._panes.overlayPane.appendChild(t),this.on("moveend",this._updatePathViewport),this._updatePathViewport()}}}),s.Browser.canvas=function(){return!!i.createElement("canvas").getContext}(),s.Path=s.Path.SVG&&!t.L_PREFER_CANVAS||!s.Browser.canvas?s.Path:s.Path.extend({statics:{CANVAS:!0,SVG:!1},redraw:function(){return this._map&&(this.projectLatlngs(),this._requestUpdate()),this},setStyle:function(t){return s.setOptions(this,t),this._map&&(this._updateStyle(),this._requestUpdate()),this},onRemove:function(t){t.off("viewreset",this.projectLatlngs,this).off("moveend",this._updatePath,this),this.options.clickable&&(this._map.off("click",this._onClick,this),this._map.off("mousemove",this._onMouseMove,this)),this._requestUpdate(),this.fire("remove"),this._map=null},_requestUpdate:function(){this._map&&!s.Path._updateRequest&&(s.Path._updateRequest=s.Util.requestAnimFrame(this._fireMapMoveEnd,this._map))},_fireMapMoveEnd:function(){s.Path._updateRequest=null,this.fire("moveend")},_initElements:function(){this._map._initPathRoot(),this._ctx=this._map._canvasCtx},_updateStyle:function(){var t=this.options;t.stroke&&(this._ctx.lineWidth=t.weight,this._ctx.strokeStyle=t.color),t.fill&&(this._ctx.fillStyle=t.fillColor||t.color)},_drawPath:function(){var t,e,i,n,o,a;for(this._ctx.beginPath(),t=0,i=this._parts.length;i>t;t++){for(e=0,n=this._parts[t].length;n>e;e++)o=this._parts[t][e],a=(0===e?"move":"line")+"To",this._ctx[a](o.x,o.y);this instanceof s.Polygon&&this._ctx.closePath()}},_checkIfEmpty:function(){return!this._parts.length},_updatePath:function(){if(!this._checkIfEmpty()){var t=this._ctx,e=this.options;this._drawPath(),t.save(),this._updateStyle(),e.fill&&(t.globalAlpha=e.fillOpacity,t.fill()),e.stroke&&(t.globalAlpha=e.opacity,t.stroke()),t.restore()}},_initEvents:function(){this.options.clickable&&(this._map.on("mousemove",this._onMouseMove,this),this._map.on("click",this._onClick,this))},_onClick:function(t){this._containsPoint(t.layerPoint)&&this.fire("click",t)},_onMouseMove:function(t){this._map&&!this._map._animatingZoom&&(this._containsPoint(t.layerPoint)?(this._ctx.canvas.style.cursor="pointer",this._mouseInside=!0,this.fire("mouseover",t)):this._mouseInside&&(this._ctx.canvas.style.cursor="",this._mouseInside=!1,this.fire("mouseout",t)))}}),s.Map.include(s.Path.SVG&&!t.L_PREFER_CANVAS||!s.Browser.canvas?{}:{_initPathRoot:function(){var t,e=this._pathRoot;e||(e=this._pathRoot=i.createElement("canvas"),e.style.position="absolute",t=this._canvasCtx=e.getContext("2d"),t.lineCap="round",t.lineJoin="round",this._panes.overlayPane.appendChild(e),this.options.zoomAnimation&&(this._pathRoot.className="leaflet-zoom-animated",this.on("zoomanim",this._animatePathZoom),this.on("zoomend",this._endPathZoom)),this.on("moveend",this._updateCanvasViewport),this._updateCanvasViewport())},_updateCanvasViewport:function(){if(!this._pathZooming){this._updatePathViewport();var t=this._pathViewport,e=t.min,i=t.max.subtract(e),n=this._pathRoot;s.DomUtil.setPosition(n,e),n.width=i.x,n.height=i.y,n.getContext("2d").translate(-e.x,-e.y)}}}),s.LineUtil={simplify:function(t,e){if(!e||!t.length)return t.slice();var i=e*e;return t=this._reducePoints(t,i),t=this._simplifyDP(t,i)},pointToSegmentDistance:function(t,e,i){return Math.sqrt(this._sqClosestPointOnSegment(t,e,i,!0))},closestPointOnSegment:function(t,e,i){return this._sqClosestPointOnSegment(t,e,i)},_simplifyDP:function(t,e){var i=t.length,o=typeof Uint8Array!=n+""?Uint8Array:Array,s=new o(i);s[0]=s[i-1]=1,this._simplifyDPStep(t,s,e,0,i-1);var a,r=[];for(a=0;i>a;a++)s[a]&&r.push(t[a]);return r},_simplifyDPStep:function(t,e,i,n,o){var s,a,r,l=0;for(a=n+1;o-1>=a;a++)r=this._sqClosestPointOnSegment(t[a],t[n],t[o],!0),r>l&&(s=a,l=r);l>i&&(e[s]=1,this._simplifyDPStep(t,e,i,n,s),this._simplifyDPStep(t,e,i,s,o))},_reducePoints:function(t,e){for(var i=[t[0]],n=1,o=0,s=t.length;s>n;n++)this._sqDist(t[n],t[o])>e&&(i.push(t[n]),o=n);return s-1>o&&i.push(t[s-1]),i},clipSegment:function(t,e,i,n){var o,s,a,r=n?this._lastCode:this._getBitCode(t,i),l=this._getBitCode(e,i);for(this._lastCode=l;;){if(!(r|l))return[t,e];if(r&l)return!1;o=r||l,s=this._getEdgeIntersection(t,e,o,i),a=this._getBitCode(s,i),o===r?(t=s,r=a):(e=s,l=a)}},_getEdgeIntersection:function(t,e,i,n){var o=e.x-t.x,a=e.y-t.y,r=n.min,l=n.max;return 8&i?new s.Point(t.x+o*(l.y-t.y)/a,l.y):4&i?new s.Point(t.x+o*(r.y-t.y)/a,r.y):2&i?new s.Point(l.x,t.y+a*(l.x-t.x)/o):1&i?new s.Point(r.x,t.y+a*(r.x-t.x)/o):void 0},_getBitCode:function(t,e){var i=0;return t.x<e.min.x?i|=1:t.x>e.max.x&&(i|=2),t.y<e.min.y?i|=4:t.y>e.max.y&&(i|=8),i},_sqDist:function(t,e){var i=e.x-t.x,n=e.y-t.y;return i*i+n*n},_sqClosestPointOnSegment:function(t,e,i,n){var o,a=e.x,r=e.y,l=i.x-a,h=i.y-r,u=l*l+h*h;return u>0&&(o=((t.x-a)*l+(t.y-r)*h)/u,o>1?(a=i.x,r=i.y):o>0&&(a+=l*o,r+=h*o)),l=t.x-a,h=t.y-r,n?l*l+h*h:new s.Point(a,r)}},s.Polyline=s.Path.extend({initialize:function(t,e){s.Path.prototype.initialize.call(this,e),this._latlngs=this._convertLatLngs(t)},options:{smoothFactor:1,noClip:!1},projectLatlngs:function(){this._originalPoints=[];for(var t=0,e=this._latlngs.length;e>t;t++)this._originalPoints[t]=this._map.latLngToLayerPoint(this._latlngs[t])},getPathString:function(){for(var t=0,e=this._parts.length,i="";e>t;t++)i+=this._getPathPartStr(this._parts[t]);return i},getLatLngs:function(){return this._latlngs},setLatLngs:function(t){return this._latlngs=this._convertLatLngs(t),this.redraw()},addLatLng:function(t){return this._latlngs.push(s.latLng(t)),this.redraw()},spliceLatLngs:function(){var t=[].splice.apply(this._latlngs,arguments);return this._convertLatLngs(this._latlngs,!0),this.redraw(),t},closestLayerPoint:function(t){for(var e,i,n=1/0,o=this._parts,a=null,r=0,l=o.length;l>r;r++)for(var h=o[r],u=1,c=h.length;c>u;u++){e=h[u-1],i=h[u];var p=s.LineUtil._sqClosestPointOnSegment(t,e,i,!0);n>p&&(n=p,a=s.LineUtil._sqClosestPointOnSegment(t,e,i))}return a&&(a.distance=Math.sqrt(n)),a},getBounds:function(){return new s.LatLngBounds(this.getLatLngs())},_convertLatLngs:function(t,e){var i,n,o=e?t:[];for(i=0,n=t.length;n>i;i++){if(s.Util.isArray(t[i])&&"number"!=typeof t[i][0])return;o[i]=s.latLng(t[i])}return o},_initEvents:function(){s.Path.prototype._initEvents.call(this)},_getPathPartStr:function(t){for(var e,i=s.Path.VML,n=0,o=t.length,a="";o>n;n++)e=t[n],i&&e._round(),a+=(n?"L":"M")+e.x+" "+e.y;return a},_clipPoints:function(){var t,e,i,n=this._originalPoints,o=n.length;if(this.options.noClip)return this._parts=[n],void 0;this._parts=[];var a=this._parts,r=this._map._pathViewport,l=s.LineUtil;for(t=0,e=0;o-1>t;t++)i=l.clipSegment(n[t],n[t+1],r,t),i&&(a[e]=a[e]||[],a[e].push(i[0]),(i[1]!==n[t+1]||t===o-2)&&(a[e].push(i[1]),e++))},_simplifyPoints:function(){for(var t=this._parts,e=s.LineUtil,i=0,n=t.length;n>i;i++)t[i]=e.simplify(t[i],this.options.smoothFactor)},_updatePath:function(){this._map&&(this._clipPoints(),this._simplifyPoints(),s.Path.prototype._updatePath.call(this))}}),s.polyline=function(t,e){return new s.Polyline(t,e)},s.PolyUtil={},s.PolyUtil.clipPolygon=function(t,e){var i,n,o,a,r,l,h,u,c,p=[1,4,2,8],d=s.LineUtil;for(n=0,h=t.length;h>n;n++)t[n]._code=d._getBitCode(t[n],e);for(a=0;4>a;a++){for(u=p[a],i=[],n=0,h=t.length,o=h-1;h>n;o=n++)r=t[n],l=t[o],r._code&u?l._code&u||(c=d._getEdgeIntersection(l,r,u,e),c._code=d._getBitCode(c,e),i.push(c)):(l._code&u&&(c=d._getEdgeIntersection(l,r,u,e),c._code=d._getBitCode(c,e),i.push(c)),i.push(r));t=i}return t},s.Polygon=s.Polyline.extend({options:{fill:!0},initialize:function(t,e){s.Polyline.prototype.initialize.call(this,t,e),this._initWithHoles(t)},_initWithHoles:function(t){var e,i,n;if(t&&s.Util.isArray(t[0])&&"number"!=typeof t[0][0])for(this._latlngs=this._convertLatLngs(t[0]),this._holes=t.slice(1),e=0,i=this._holes.length;i>e;e++)n=this._holes[e]=this._convertLatLngs(this._holes[e]),n[0].equals(n[n.length-1])&&n.pop();t=this._latlngs,t.length>=2&&t[0].equals(t[t.length-1])&&t.pop()},projectLatlngs:function(){if(s.Polyline.prototype.projectLatlngs.call(this),this._holePoints=[],this._holes){var t,e,i,n;for(t=0,i=this._holes.length;i>t;t++)for(this._holePoints[t]=[],e=0,n=this._holes[t].length;n>e;e++)this._holePoints[t][e]=this._map.latLngToLayerPoint(this._holes[t][e])}},setLatLngs:function(t){return t&&s.Util.isArray(t[0])&&"number"!=typeof t[0][0]?(this._initWithHoles(t),this.redraw()):s.Polyline.prototype.setLatLngs.call(this,t)},_clipPoints:function(){var t=this._originalPoints,e=[];if(this._parts=[t].concat(this._holePoints),!this.options.noClip){for(var i=0,n=this._parts.length;n>i;i++){var o=s.PolyUtil.clipPolygon(this._parts[i],this._map._pathViewport);o.length&&e.push(o)}this._parts=e}},_getPathPartStr:function(t){var e=s.Polyline.prototype._getPathPartStr.call(this,t);return e+(s.Browser.svg?"z":"x")}}),s.polygon=function(t,e){return new s.Polygon(t,e)},function(){function t(t){return s.FeatureGroup.extend({initialize:function(t,e){this._layers={},this._options=e,this.setLatLngs(t)},setLatLngs:function(e){var i=0,n=e.length;for(this.eachLayer(function(t){n>i?t.setLatLngs(e[i++]):this.removeLayer(t)},this);n>i;)this.addLayer(new t(e[i++],this._options));return this},getLatLngs:function(){var t=[];return this.eachLayer(function(e){t.push(e.getLatLngs())}),t}})}s.MultiPolyline=t(s.Polyline),s.MultiPolygon=t(s.Polygon),s.multiPolyline=function(t,e){return new s.MultiPolyline(t,e)},s.multiPolygon=function(t,e){return new s.MultiPolygon(t,e)}}(),s.Rectangle=s.Polygon.extend({initialize:function(t,e){s.Polygon.prototype.initialize.call(this,this._boundsToLatLngs(t),e)},setBounds:function(t){this.setLatLngs(this._boundsToLatLngs(t))},_boundsToLatLngs:function(t){return t=s.latLngBounds(t),[t.getSouthWest(),t.getNorthWest(),t.getNorthEast(),t.getSouthEast()]}}),s.rectangle=function(t,e){return new s.Rectangle(t,e)},s.Circle=s.Path.extend({initialize:function(t,e,i){s.Path.prototype.initialize.call(this,i),this._latlng=s.latLng(t),this._mRadius=e},options:{fill:!0},setLatLng:function(t){return this._latlng=s.latLng(t),this.redraw()},setRadius:function(t){return this._mRadius=t,this.redraw()},projectLatlngs:function(){var t=this._getLngRadius(),e=this._latlng,i=this._map.latLngToLayerPoint([e.lat,e.lng-t]);this._point=this._map.latLngToLayerPoint(e),this._radius=Math.max(this._point.x-i.x,1)},getBounds:function(){var t=this._getLngRadius(),e=this._mRadius/40075017*360,i=this._latlng;return new s.LatLngBounds([i.lat-e,i.lng-t],[i.lat+e,i.lng+t])},getLatLng:function(){return this._latlng},getPathString:function(){var t=this._point,e=this._radius;return this._checkIfEmpty()?"":s.Browser.svg?"M"+t.x+","+(t.y-e)+"A"+e+","+e+",0,1,1,"+(t.x-.1)+","+(t.y-e)+" z":(t._round(),e=Math.round(e),"AL "+t.x+","+t.y+" "+e+","+e+" 0,23592600")},getRadius:function(){return this._mRadius},_getLatRadius:function(){return this._mRadius/40075017*360},_getLngRadius:function(){return this._getLatRadius()/Math.cos(s.LatLng.DEG_TO_RAD*this._latlng.lat)},_checkIfEmpty:function(){if(!this._map)return!1;var t=this._map._pathViewport,e=this._radius,i=this._point;return i.x-e>t.max.x||i.y-e>t.max.y||i.x+e<t.min.x||i.y+e<t.min.y}}),s.circle=function(t,e,i){return new s.Circle(t,e,i)},s.CircleMarker=s.Circle.extend({options:{radius:10,weight:2},initialize:function(t,e){s.Circle.prototype.initialize.call(this,t,null,e),this._radius=this.options.radius},projectLatlngs:function(){this._point=this._map.latLngToLayerPoint(this._latlng)},_updateStyle:function(){s.Circle.prototype._updateStyle.call(this),this.setRadius(this.options.radius)},setLatLng:function(t){return s.Circle.prototype.setLatLng.call(this,t),this._popup&&this._popup._isOpen&&this._popup.setLatLng(t),this},setRadius:function(t){return this.options.radius=this._radius=t,this.redraw()},getRadius:function(){return this._radius}}),s.circleMarker=function(t,e){return new s.CircleMarker(t,e)},s.Polyline.include(s.Path.CANVAS?{_containsPoint:function(t,e){var i,n,o,a,r,l,h,u=this.options.weight/2;for(s.Browser.touch&&(u+=10),i=0,a=this._parts.length;a>i;i++)for(h=this._parts[i],n=0,r=h.length,o=r-1;r>n;o=n++)if((e||0!==n)&&(l=s.LineUtil.pointToSegmentDistance(t,h[o],h[n]),u>=l))return!0;return!1}}:{}),s.Polygon.include(s.Path.CANVAS?{_containsPoint:function(t){var e,i,n,o,a,r,l,h,u=!1;if(s.Polyline.prototype._containsPoint.call(this,t,!0))return!0;for(o=0,l=this._parts.length;l>o;o++)for(e=this._parts[o],a=0,h=e.length,r=h-1;h>a;r=a++)i=e[a],n=e[r],i.y>t.y!=n.y>t.y&&t.x<(n.x-i.x)*(t.y-i.y)/(n.y-i.y)+i.x&&(u=!u);return u}}:{}),s.Circle.include(s.Path.CANVAS?{_drawPath:function(){var t=this._point;this._ctx.beginPath(),this._ctx.arc(t.x,t.y,this._radius,0,2*Math.PI,!1)},_containsPoint:function(t){var e=this._point,i=this.options.stroke?this.options.weight/2:0;return t.distanceTo(e)<=this._radius+i}}:{}),s.CircleMarker.include(s.Path.CANVAS?{_updateStyle:function(){s.Path.prototype._updateStyle.call(this)}}:{}),s.GeoJSON=s.FeatureGroup.extend({initialize:function(t,e){s.setOptions(this,e),this._layers={},t&&this.addData(t)},addData:function(t){var e,i,n,o=s.Util.isArray(t)?t:t.features;if(o){for(e=0,i=o.length;i>e;e++)n=o[e],(n.geometries||n.geometry||n.features||n.coordinates)&&this.addData(o[e]);return this}var a=this.options;if(!a.filter||a.filter(t)){var r=s.GeoJSON.geometryToLayer(t,a.pointToLayer,a.coordsToLatLng,a);return r.feature=s.GeoJSON.asFeature(t),r.defaultOptions=r.options,this.resetStyle(r),a.onEachFeature&&a.onEachFeature(t,r),this.addLayer(r)}},resetStyle:function(t){var e=this.options.style;e&&(s.Util.extend(t.options,t.defaultOptions),this._setLayerStyle(t,e))},setStyle:function(t){this.eachLayer(function(e){this._setLayerStyle(e,t)},this)},_setLayerStyle:function(t,e){"function"==typeof e&&(e=e(t.feature)),t.setStyle&&t.setStyle(e)}}),s.extend(s.GeoJSON,{geometryToLayer:function(t,e,i,n){var o,a,r,l,h="Feature"===t.type?t.geometry:t,u=h.coordinates,c=[];switch(i=i||this.coordsToLatLng,h.type){case"Point":return o=i(u),e?e(t,o):new s.Marker(o);case"MultiPoint":for(r=0,l=u.length;l>r;r++)o=i(u[r]),c.push(e?e(t,o):new s.Marker(o));return new s.FeatureGroup(c);case"LineString":return a=this.coordsToLatLngs(u,0,i),new s.Polyline(a,n);case"Polygon":if(2===u.length&&!u[1].length)throw new Error("Invalid GeoJSON object.");return a=this.coordsToLatLngs(u,1,i),new s.Polygon(a,n);case"MultiLineString":return a=this.coordsToLatLngs(u,1,i),new s.MultiPolyline(a,n);case"MultiPolygon":return a=this.coordsToLatLngs(u,2,i),new s.MultiPolygon(a,n);case"GeometryCollection":for(r=0,l=h.geometries.length;l>r;r++)c.push(this.geometryToLayer({geometry:h.geometries[r],type:"Feature",properties:t.properties},e,i,n));return new s.FeatureGroup(c);default:throw new Error("Invalid GeoJSON object.")}},coordsToLatLng:function(t){return new s.LatLng(t[1],t[0],t[2])},coordsToLatLngs:function(t,e,i){var n,o,s,a=[];for(o=0,s=t.length;s>o;o++)n=e?this.coordsToLatLngs(t[o],e-1,i):(i||this.coordsToLatLng)(t[o]),a.push(n);return a},latLngToCoords:function(t){var e=[t.lng,t.lat];return t.alt!==n&&e.push(t.alt),e},latLngsToCoords:function(t){for(var e=[],i=0,n=t.length;n>i;i++)e.push(s.GeoJSON.latLngToCoords(t[i]));return e},getFeature:function(t,e){return t.feature?s.extend({},t.feature,{geometry:e}):s.GeoJSON.asFeature(e)},asFeature:function(t){return"Feature"===t.type?t:{type:"Feature",properties:{},geometry:t}}});var r={toGeoJSON:function(){return s.GeoJSON.getFeature(this,{type:"Point",coordinates:s.GeoJSON.latLngToCoords(this.getLatLng())})}};s.Marker.include(r),s.Circle.include(r),s.CircleMarker.include(r),s.Polyline.include({toGeoJSON:function(){return s.GeoJSON.getFeature(this,{type:"LineString",coordinates:s.GeoJSON.latLngsToCoords(this.getLatLngs())})}}),s.Polygon.include({toGeoJSON:function(){var t,e,i,n=[s.GeoJSON.latLngsToCoords(this.getLatLngs())];if(n[0].push(n[0][0]),this._holes)for(t=0,e=this._holes.length;e>t;t++)i=s.GeoJSON.latLngsToCoords(this._holes[t]),i.push(i[0]),n.push(i);return s.GeoJSON.getFeature(this,{type:"Polygon",coordinates:n})}}),function(){function t(t){return function(){var e=[];return this.eachLayer(function(t){e.push(t.toGeoJSON().geometry.coordinates)}),s.GeoJSON.getFeature(this,{type:t,coordinates:e})}}s.MultiPolyline.include({toGeoJSON:t("MultiLineString")}),s.MultiPolygon.include({toGeoJSON:t("MultiPolygon")}),s.LayerGroup.include({toGeoJSON:function(){var e,i=this.feature&&this.feature.geometry,n=[];if(i&&"MultiPoint"===i.type)return t("MultiPoint").call(this);var o=i&&"GeometryCollection"===i.type;return this.eachLayer(function(t){t.toGeoJSON&&(e=t.toGeoJSON(),n.push(o?e.geometry:s.GeoJSON.asFeature(e)))}),o?s.GeoJSON.getFeature(this,{geometries:n,type:"GeometryCollection"}):{type:"FeatureCollection",features:n}}})}(),s.geoJson=function(t,e){return new s.GeoJSON(t,e)},s.DomEvent={addListener:function(t,e,i,n){var o,a,r,l=s.stamp(i),h="_leaflet_"+e+l;return t[h]?this:(o=function(e){return i.call(n||t,e||s.DomEvent._getEvent())},s.Browser.pointer&&0===e.indexOf("touch")?this.addPointerListener(t,e,o,l):(s.Browser.touch&&"dblclick"===e&&this.addDoubleTapListener&&this.addDoubleTapListener(t,o,l),"addEventListener"in t?"mousewheel"===e?(t.addEventListener("DOMMouseScroll",o,!1),t.addEventListener(e,o,!1)):"mouseenter"===e||"mouseleave"===e?(a=o,r="mouseenter"===e?"mouseover":"mouseout",o=function(e){return s.DomEvent._checkMouse(t,e)?a(e):void 0},t.addEventListener(r,o,!1)):"click"===e&&s.Browser.android?(a=o,o=function(t){return s.DomEvent._filterClick(t,a)},t.addEventListener(e,o,!1)):t.addEventListener(e,o,!1):"attachEvent"in t&&t.attachEvent("on"+e,o),t[h]=o,this))},removeListener:function(t,e,i){var n=s.stamp(i),o="_leaflet_"+e+n,a=t[o];return a?(s.Browser.pointer&&0===e.indexOf("touch")?this.removePointerListener(t,e,n):s.Browser.touch&&"dblclick"===e&&this.removeDoubleTapListener?this.removeDoubleTapListener(t,n):"removeEventListener"in t?"mousewheel"===e?(t.removeEventListener("DOMMouseScroll",a,!1),t.removeEventListener(e,a,!1)):"mouseenter"===e||"mouseleave"===e?t.removeEventListener("mouseenter"===e?"mouseover":"mouseout",a,!1):t.removeEventListener(e,a,!1):"detachEvent"in t&&t.detachEvent("on"+e,a),t[o]=null,this):this},stopPropagation:function(t){return t.stopPropagation?t.stopPropagation():t.cancelBubble=!0,s.DomEvent._skipped(t),this},disableScrollPropagation:function(t){var e=s.DomEvent.stopPropagation;return s.DomEvent.on(t,"mousewheel",e).on(t,"MozMousePixelScroll",e)},disableClickPropagation:function(t){for(var e=s.DomEvent.stopPropagation,i=s.Draggable.START.length-1;i>=0;i--)s.DomEvent.on(t,s.Draggable.START[i],e);return s.DomEvent.on(t,"click",s.DomEvent._fakeStop).on(t,"dblclick",e)},preventDefault:function(t){return t.preventDefault?t.preventDefault():t.returnValue=!1,this},stop:function(t){return s.DomEvent.preventDefault(t).stopPropagation(t)},getMousePosition:function(t,e){if(!e)return new s.Point(t.clientX,t.clientY);var i=e.getBoundingClientRect();return new s.Point(t.clientX-i.left-e.clientLeft,t.clientY-i.top-e.clientTop)},getWheelDelta:function(t){var e=0;return t.wheelDelta&&(e=t.wheelDelta/120),t.detail&&(e=-t.detail/3),e},_skipEvents:{},_fakeStop:function(t){s.DomEvent._skipEvents[t.type]=!0},_skipped:function(t){var e=this._skipEvents[t.type];return this._skipEvents[t.type]=!1,e},_checkMouse:function(t,e){var i=e.relatedTarget;if(!i)return!0;try{for(;i&&i!==t;)i=i.parentNode}catch(n){return!1}return i!==t},_getEvent:function(){var e=t.event;if(!e)for(var i=arguments.callee.caller;i&&(e=i.arguments[0],!e||t.Event!==e.constructor);)i=i.caller;return e},_filterClick:function(t,e){var i=t.timeStamp||t.originalEvent.timeStamp,n=s.DomEvent._lastClick&&i-s.DomEvent._lastClick;return n&&n>100&&500>n||t.target._simulatedClick&&!t._simulated?(s.DomEvent.stop(t),void 0):(s.DomEvent._lastClick=i,e(t))}},s.DomEvent.on=s.DomEvent.addListener,s.DomEvent.off=s.DomEvent.removeListener,s.Draggable=s.Class.extend({includes:s.Mixin.Events,statics:{START:s.Browser.touch?["touchstart","mousedown"]:["mousedown"],END:{mousedown:"mouseup",touchstart:"touchend",pointerdown:"touchend",MSPointerDown:"touchend"},MOVE:{mousedown:"mousemove",touchstart:"touchmove",pointerdown:"touchmove",MSPointerDown:"touchmove"}},initialize:function(t,e){this._element=t,this._dragStartTarget=e||t},enable:function(){if(!this._enabled){for(var t=s.Draggable.START.length-1;t>=0;t--)s.DomEvent.on(this._dragStartTarget,s.Draggable.START[t],this._onDown,this);this._enabled=!0}},disable:function(){if(this._enabled){for(var t=s.Draggable.START.length-1;t>=0;t--)s.DomEvent.off(this._dragStartTarget,s.Draggable.START[t],this._onDown,this);this._enabled=!1,this._moved=!1}},_onDown:function(t){if(this._moved=!1,!(t.shiftKey||1!==t.which&&1!==t.button&&!t.touches||(s.DomEvent.stopPropagation(t),s.Draggable._disabled||(s.DomUtil.disableImageDrag(),s.DomUtil.disableTextSelection(),this._moving)))){var e=t.touches?t.touches[0]:t;this._startPoint=new s.Point(e.clientX,e.clientY),this._startPos=this._newPos=s.DomUtil.getPosition(this._element),s.DomEvent.on(i,s.Draggable.MOVE[t.type],this._onMove,this).on(i,s.Draggable.END[t.type],this._onUp,this)}},_onMove:function(t){if(t.touches&&t.touches.length>1)return this._moved=!0,void 0;var e=t.touches&&1===t.touches.length?t.touches[0]:t,n=new s.Point(e.clientX,e.clientY),o=n.subtract(this._startPoint);(o.x||o.y)&&(s.Browser.touch&&Math.abs(o.x)+Math.abs(o.y)<3||(s.DomEvent.preventDefault(t),this._moved||(this.fire("dragstart"),this._moved=!0,this._startPos=s.DomUtil.getPosition(this._element).subtract(o),s.DomUtil.addClass(i.body,"leaflet-dragging"),this._lastTarget=t.target||t.srcElement,s.DomUtil.addClass(this._lastTarget,"leaflet-drag-target")),this._newPos=this._startPos.add(o),this._moving=!0,s.Util.cancelAnimFrame(this._animRequest),this._animRequest=s.Util.requestAnimFrame(this._updatePosition,this,!0,this._dragStartTarget)))},_updatePosition:function(){this.fire("predrag"),s.DomUtil.setPosition(this._element,this._newPos),this.fire("drag")},_onUp:function(){s.DomUtil.removeClass(i.body,"leaflet-dragging"),this._lastTarget&&(s.DomUtil.removeClass(this._lastTarget,"leaflet-drag-target"),this._lastTarget=null);for(var t in s.Draggable.MOVE)s.DomEvent.off(i,s.Draggable.MOVE[t],this._onMove).off(i,s.Draggable.END[t],this._onUp);s.DomUtil.enableImageDrag(),s.DomUtil.enableTextSelection(),this._moved&&this._moving&&(s.Util.cancelAnimFrame(this._animRequest),this.fire("dragend",{distance:this._newPos.distanceTo(this._startPos)})),this._moving=!1}}),s.Handler=s.Class.extend({initialize:function(t){this._map=t},enable:function(){this._enabled||(this._enabled=!0,this.addHooks())},disable:function(){this._enabled&&(this._enabled=!1,this.removeHooks())},enabled:function(){return!!this._enabled}}),s.Map.mergeOptions({dragging:!0,inertia:!s.Browser.android23,inertiaDeceleration:3400,inertiaMaxSpeed:1/0,inertiaThreshold:s.Browser.touch?32:18,easeLinearity:.25,worldCopyJump:!1}),s.Map.Drag=s.Handler.extend({addHooks:function(){if(!this._draggable){var t=this._map;this._draggable=new s.Draggable(t._mapPane,t._container),this._draggable.on({dragstart:this._onDragStart,drag:this._onDrag,dragend:this._onDragEnd},this),t.options.worldCopyJump&&(this._draggable.on("predrag",this._onPreDrag,this),t.on("viewreset",this._onViewReset,this),t.whenReady(this._onViewReset,this))}this._draggable.enable()},removeHooks:function(){this._draggable.disable()},moved:function(){return this._draggable&&this._draggable._moved},_onDragStart:function(){var t=this._map;t._panAnim&&t._panAnim.stop(),t.fire("movestart").fire("dragstart"),t.options.inertia&&(this._positions=[],this._times=[])},_onDrag:function(){if(this._map.options.inertia){var t=this._lastTime=+new Date,e=this._lastPos=this._draggable._newPos;this._positions.push(e),this._times.push(t),t-this._times[0]>200&&(this._positions.shift(),this._times.shift())}this._map.fire("move").fire("drag")},_onViewReset:function(){var t=this._map.getSize()._divideBy(2),e=this._map.latLngToLayerPoint([0,0]);this._initialWorldOffset=e.subtract(t).x,this._worldWidth=this._map.project([0,180]).x},_onPreDrag:function(){var t=this._worldWidth,e=Math.round(t/2),i=this._initialWorldOffset,n=this._draggable._newPos.x,o=(n-e+i)%t+e-i,s=(n+e+i)%t-e-i,a=Math.abs(o+i)<Math.abs(s+i)?o:s;this._draggable._newPos.x=a},_onDragEnd:function(t){var e=this._map,i=e.options,n=+new Date-this._lastTime,o=!i.inertia||n>i.inertiaThreshold||!this._positions[0];if(e.fire("dragend",t),o)e.fire("moveend");else{var a=this._lastPos.subtract(this._positions[0]),r=(this._lastTime+n-this._times[0])/1e3,l=i.easeLinearity,h=a.multiplyBy(l/r),u=h.distanceTo([0,0]),c=Math.min(i.inertiaMaxSpeed,u),p=h.multiplyBy(c/u),d=c/(i.inertiaDeceleration*l),m=p.multiplyBy(-d/2).round();m.x&&m.y?(m=e._limitOffset(m,e.options.maxBounds),s.Util.requestAnimFrame(function(){e.panBy(m,{duration:d,easeLinearity:l,noMoveStart:!0})})):e.fire("moveend")}}}),s.Map.addInitHook("addHandler","dragging",s.Map.Drag),s.Map.mergeOptions({doubleClickZoom:!0}),s.Map.DoubleClickZoom=s.Handler.extend({addHooks:function(){this._map.on("dblclick",this._onDoubleClick,this)},removeHooks:function(){this._map.off("dblclick",this._onDoubleClick,this)},_onDoubleClick:function(t){var e=this._map,i=e.getZoom()+(t.originalEvent.shiftKey?-1:1);"center"===e.options.doubleClickZoom?e.setZoom(i):e.setZoomAround(t.containerPoint,i)}}),s.Map.addInitHook("addHandler","doubleClickZoom",s.Map.DoubleClickZoom),s.Map.mergeOptions({scrollWheelZoom:!0}),s.Map.ScrollWheelZoom=s.Handler.extend({addHooks:function(){s.DomEvent.on(this._map._container,"mousewheel",this._onWheelScroll,this),s.DomEvent.on(this._map._container,"MozMousePixelScroll",s.DomEvent.preventDefault),this._delta=0},removeHooks:function(){s.DomEvent.off(this._map._container,"mousewheel",this._onWheelScroll),s.DomEvent.off(this._map._container,"MozMousePixelScroll",s.DomEvent.preventDefault)},_onWheelScroll:function(t){var e=s.DomEvent.getWheelDelta(t);this._delta+=e,this._lastMousePos=this._map.mouseEventToContainerPoint(t),this._startTime||(this._startTime=+new Date);var i=Math.max(40-(+new Date-this._startTime),0);clearTimeout(this._timer),this._timer=setTimeout(s.bind(this._performZoom,this),i),s.DomEvent.preventDefault(t),s.DomEvent.stopPropagation(t)},_performZoom:function(){var t=this._map,e=this._delta,i=t.getZoom();e=e>0?Math.ceil(e):Math.floor(e),e=Math.max(Math.min(e,4),-4),e=t._limitZoom(i+e)-i,this._delta=0,this._startTime=null,e&&("center"===t.options.scrollWheelZoom?t.setZoom(i+e):t.setZoomAround(this._lastMousePos,i+e))}}),s.Map.addInitHook("addHandler","scrollWheelZoom",s.Map.ScrollWheelZoom),s.extend(s.DomEvent,{_touchstart:s.Browser.msPointer?"MSPointerDown":s.Browser.pointer?"pointerdown":"touchstart",_touchend:s.Browser.msPointer?"MSPointerUp":s.Browser.pointer?"pointerup":"touchend",addDoubleTapListener:function(t,e,n){function o(t){var e;if(s.Browser.pointer?(m.push(t.pointerId),e=m.length):e=t.touches.length,!(e>1)){var i=Date.now(),n=i-(r||i);l=t.touches?t.touches[0]:t,h=n>0&&u>=n,r=i}}function a(t){if(s.Browser.pointer){var i=m.indexOf(t.pointerId);if(-1===i)return;m.splice(i,1)}if(h){if(s.Browser.pointer){var n,o={};for(var a in l)n=l[a],o[a]="function"==typeof n?n.bind(l):n;l=o}l.type="dblclick",e(l),r=null
+  }}var r,l,h=!1,u=250,c="_leaflet_",p=this._touchstart,d=this._touchend,m=[];t[c+p+n]=o,t[c+d+n]=a;var f=s.Browser.pointer?i.documentElement:t;return t.addEventListener(p,o,!1),f.addEventListener(d,a,!1),s.Browser.pointer&&f.addEventListener(s.DomEvent.POINTER_CANCEL,a,!1),this},removeDoubleTapListener:function(t,e){var n="_leaflet_";return t.removeEventListener(this._touchstart,t[n+this._touchstart+e],!1),(s.Browser.pointer?i.documentElement:t).removeEventListener(this._touchend,t[n+this._touchend+e],!1),s.Browser.pointer&&i.documentElement.removeEventListener(s.DomEvent.POINTER_CANCEL,t[n+this._touchend+e],!1),this}}),s.extend(s.DomEvent,{POINTER_DOWN:s.Browser.msPointer?"MSPointerDown":"pointerdown",POINTER_MOVE:s.Browser.msPointer?"MSPointerMove":"pointermove",POINTER_UP:s.Browser.msPointer?"MSPointerUp":"pointerup",POINTER_CANCEL:s.Browser.msPointer?"MSPointerCancel":"pointercancel",_pointers:[],_pointerDocumentListener:!1,addPointerListener:function(t,e,i,n){switch(e){case"touchstart":return this.addPointerListenerStart(t,e,i,n);case"touchend":return this.addPointerListenerEnd(t,e,i,n);case"touchmove":return this.addPointerListenerMove(t,e,i,n);default:throw"Unknown touch event type"}},addPointerListenerStart:function(t,e,n,o){var a="_leaflet_",r=this._pointers,l=function(t){s.DomEvent.preventDefault(t);for(var e=!1,i=0;i<r.length;i++)if(r[i].pointerId===t.pointerId){e=!0;break}e||r.push(t),t.touches=r.slice(),t.changedTouches=[t],n(t)};if(t[a+"touchstart"+o]=l,t.addEventListener(this.POINTER_DOWN,l,!1),!this._pointerDocumentListener){var h=function(t){for(var e=0;e<r.length;e++)if(r[e].pointerId===t.pointerId){r.splice(e,1);break}};i.documentElement.addEventListener(this.POINTER_UP,h,!1),i.documentElement.addEventListener(this.POINTER_CANCEL,h,!1),this._pointerDocumentListener=!0}return this},addPointerListenerMove:function(t,e,i,n){function o(t){if(t.pointerType!==t.MSPOINTER_TYPE_MOUSE&&"mouse"!==t.pointerType||0!==t.buttons){for(var e=0;e<a.length;e++)if(a[e].pointerId===t.pointerId){a[e]=t;break}t.touches=a.slice(),t.changedTouches=[t],i(t)}}var s="_leaflet_",a=this._pointers;return t[s+"touchmove"+n]=o,t.addEventListener(this.POINTER_MOVE,o,!1),this},addPointerListenerEnd:function(t,e,i,n){var o="_leaflet_",s=this._pointers,a=function(t){for(var e=0;e<s.length;e++)if(s[e].pointerId===t.pointerId){s.splice(e,1);break}t.touches=s.slice(),t.changedTouches=[t],i(t)};return t[o+"touchend"+n]=a,t.addEventListener(this.POINTER_UP,a,!1),t.addEventListener(this.POINTER_CANCEL,a,!1),this},removePointerListener:function(t,e,i){var n="_leaflet_",o=t[n+e+i];switch(e){case"touchstart":t.removeEventListener(this.POINTER_DOWN,o,!1);break;case"touchmove":t.removeEventListener(this.POINTER_MOVE,o,!1);break;case"touchend":t.removeEventListener(this.POINTER_UP,o,!1),t.removeEventListener(this.POINTER_CANCEL,o,!1)}return this}}),s.Map.mergeOptions({touchZoom:s.Browser.touch&&!s.Browser.android23,bounceAtZoomLimits:!0}),s.Map.TouchZoom=s.Handler.extend({addHooks:function(){s.DomEvent.on(this._map._container,"touchstart",this._onTouchStart,this)},removeHooks:function(){s.DomEvent.off(this._map._container,"touchstart",this._onTouchStart,this)},_onTouchStart:function(t){var e=this._map;if(t.touches&&2===t.touches.length&&!e._animatingZoom&&!this._zooming){var n=e.mouseEventToLayerPoint(t.touches[0]),o=e.mouseEventToLayerPoint(t.touches[1]),a=e._getCenterLayerPoint();this._startCenter=n.add(o)._divideBy(2),this._startDist=n.distanceTo(o),this._moved=!1,this._zooming=!0,this._centerOffset=a.subtract(this._startCenter),e._panAnim&&e._panAnim.stop(),s.DomEvent.on(i,"touchmove",this._onTouchMove,this).on(i,"touchend",this._onTouchEnd,this),s.DomEvent.preventDefault(t)}},_onTouchMove:function(t){var e=this._map;if(t.touches&&2===t.touches.length&&this._zooming){var i=e.mouseEventToLayerPoint(t.touches[0]),n=e.mouseEventToLayerPoint(t.touches[1]);this._scale=i.distanceTo(n)/this._startDist,this._delta=i._add(n)._divideBy(2)._subtract(this._startCenter),1!==this._scale&&(e.options.bounceAtZoomLimits||!(e.getZoom()===e.getMinZoom()&&this._scale<1||e.getZoom()===e.getMaxZoom()&&this._scale>1))&&(this._moved||(s.DomUtil.addClass(e._mapPane,"leaflet-touching"),e.fire("movestart").fire("zoomstart"),this._moved=!0),s.Util.cancelAnimFrame(this._animRequest),this._animRequest=s.Util.requestAnimFrame(this._updateOnMove,this,!0,this._map._container),s.DomEvent.preventDefault(t))}},_updateOnMove:function(){var t=this._map,e=this._getScaleOrigin(),i=t.layerPointToLatLng(e),n=t.getScaleZoom(this._scale);t._animateZoom(i,n,this._startCenter,this._scale,this._delta,!1,!0)},_onTouchEnd:function(){if(!this._moved||!this._zooming)return this._zooming=!1,void 0;var t=this._map;this._zooming=!1,s.DomUtil.removeClass(t._mapPane,"leaflet-touching"),s.Util.cancelAnimFrame(this._animRequest),s.DomEvent.off(i,"touchmove",this._onTouchMove).off(i,"touchend",this._onTouchEnd);var e=this._getScaleOrigin(),n=t.layerPointToLatLng(e),o=t.getZoom(),a=t.getScaleZoom(this._scale)-o,r=a>0?Math.ceil(a):Math.floor(a),l=t._limitZoom(o+r),h=t.getZoomScale(l)/this._scale;t._animateZoom(n,l,e,h)},_getScaleOrigin:function(){var t=this._centerOffset.subtract(this._delta).divideBy(this._scale);return this._startCenter.add(t)}}),s.Map.addInitHook("addHandler","touchZoom",s.Map.TouchZoom),s.Map.mergeOptions({tap:!0,tapTolerance:15}),s.Map.Tap=s.Handler.extend({addHooks:function(){s.DomEvent.on(this._map._container,"touchstart",this._onDown,this)},removeHooks:function(){s.DomEvent.off(this._map._container,"touchstart",this._onDown,this)},_onDown:function(t){if(t.touches){if(s.DomEvent.preventDefault(t),this._fireClick=!0,t.touches.length>1)return this._fireClick=!1,clearTimeout(this._holdTimeout),void 0;var e=t.touches[0],n=e.target;this._startPos=this._newPos=new s.Point(e.clientX,e.clientY),n.tagName&&"a"===n.tagName.toLowerCase()&&s.DomUtil.addClass(n,"leaflet-active"),this._holdTimeout=setTimeout(s.bind(function(){this._isTapValid()&&(this._fireClick=!1,this._onUp(),this._simulateEvent("contextmenu",e))},this),1e3),s.DomEvent.on(i,"touchmove",this._onMove,this).on(i,"touchend",this._onUp,this)}},_onUp:function(t){if(clearTimeout(this._holdTimeout),s.DomEvent.off(i,"touchmove",this._onMove,this).off(i,"touchend",this._onUp,this),this._fireClick&&t&&t.changedTouches){var e=t.changedTouches[0],n=e.target;n&&n.tagName&&"a"===n.tagName.toLowerCase()&&s.DomUtil.removeClass(n,"leaflet-active"),this._isTapValid()&&this._simulateEvent("click",e)}},_isTapValid:function(){return this._newPos.distanceTo(this._startPos)<=this._map.options.tapTolerance},_onMove:function(t){var e=t.touches[0];this._newPos=new s.Point(e.clientX,e.clientY)},_simulateEvent:function(e,n){var o=i.createEvent("MouseEvents");o._simulated=!0,n.target._simulatedClick=!0,o.initMouseEvent(e,!0,!0,t,1,n.screenX,n.screenY,n.clientX,n.clientY,!1,!1,!1,!1,0,null),n.target.dispatchEvent(o)}}),s.Browser.touch&&!s.Browser.pointer&&s.Map.addInitHook("addHandler","tap",s.Map.Tap),s.Map.mergeOptions({boxZoom:!0}),s.Map.BoxZoom=s.Handler.extend({initialize:function(t){this._map=t,this._container=t._container,this._pane=t._panes.overlayPane,this._moved=!1},addHooks:function(){s.DomEvent.on(this._container,"mousedown",this._onMouseDown,this)},removeHooks:function(){s.DomEvent.off(this._container,"mousedown",this._onMouseDown),this._moved=!1},moved:function(){return this._moved},_onMouseDown:function(t){return this._moved=!1,!t.shiftKey||1!==t.which&&1!==t.button?!1:(s.DomUtil.disableTextSelection(),s.DomUtil.disableImageDrag(),this._startLayerPoint=this._map.mouseEventToLayerPoint(t),s.DomEvent.on(i,"mousemove",this._onMouseMove,this).on(i,"mouseup",this._onMouseUp,this).on(i,"keydown",this._onKeyDown,this),void 0)},_onMouseMove:function(t){this._moved||(this._box=s.DomUtil.create("div","leaflet-zoom-box",this._pane),s.DomUtil.setPosition(this._box,this._startLayerPoint),this._container.style.cursor="crosshair",this._map.fire("boxzoomstart"));var e=this._startLayerPoint,i=this._box,n=this._map.mouseEventToLayerPoint(t),o=n.subtract(e),a=new s.Point(Math.min(n.x,e.x),Math.min(n.y,e.y));s.DomUtil.setPosition(i,a),this._moved=!0,i.style.width=Math.max(0,Math.abs(o.x)-4)+"px",i.style.height=Math.max(0,Math.abs(o.y)-4)+"px"},_finish:function(){this._moved&&(this._pane.removeChild(this._box),this._container.style.cursor=""),s.DomUtil.enableTextSelection(),s.DomUtil.enableImageDrag(),s.DomEvent.off(i,"mousemove",this._onMouseMove).off(i,"mouseup",this._onMouseUp).off(i,"keydown",this._onKeyDown)},_onMouseUp:function(t){this._finish();var e=this._map,i=e.mouseEventToLayerPoint(t);if(!this._startLayerPoint.equals(i)){var n=new s.LatLngBounds(e.layerPointToLatLng(this._startLayerPoint),e.layerPointToLatLng(i));e.fitBounds(n),e.fire("boxzoomend",{boxZoomBounds:n})}},_onKeyDown:function(t){27===t.keyCode&&this._finish()}}),s.Map.addInitHook("addHandler","boxZoom",s.Map.BoxZoom),s.Map.mergeOptions({keyboard:!0,keyboardPanOffset:80,keyboardZoomOffset:1}),s.Map.Keyboard=s.Handler.extend({keyCodes:{left:[37],right:[39],down:[40],up:[38],zoomIn:[187,107,61,171],zoomOut:[189,109,173]},initialize:function(t){this._map=t,this._setPanOffset(t.options.keyboardPanOffset),this._setZoomOffset(t.options.keyboardZoomOffset)},addHooks:function(){var t=this._map._container;-1===t.tabIndex&&(t.tabIndex="0"),s.DomEvent.on(t,"focus",this._onFocus,this).on(t,"blur",this._onBlur,this).on(t,"mousedown",this._onMouseDown,this),this._map.on("focus",this._addHooks,this).on("blur",this._removeHooks,this)},removeHooks:function(){this._removeHooks();var t=this._map._container;s.DomEvent.off(t,"focus",this._onFocus,this).off(t,"blur",this._onBlur,this).off(t,"mousedown",this._onMouseDown,this),this._map.off("focus",this._addHooks,this).off("blur",this._removeHooks,this)},_onMouseDown:function(){if(!this._focused){var e=i.body,n=i.documentElement,o=e.scrollTop||n.scrollTop,s=e.scrollLeft||n.scrollLeft;this._map._container.focus(),t.scrollTo(s,o)}},_onFocus:function(){this._focused=!0,this._map.fire("focus")},_onBlur:function(){this._focused=!1,this._map.fire("blur")},_setPanOffset:function(t){var e,i,n=this._panKeys={},o=this.keyCodes;for(e=0,i=o.left.length;i>e;e++)n[o.left[e]]=[-1*t,0];for(e=0,i=o.right.length;i>e;e++)n[o.right[e]]=[t,0];for(e=0,i=o.down.length;i>e;e++)n[o.down[e]]=[0,t];for(e=0,i=o.up.length;i>e;e++)n[o.up[e]]=[0,-1*t]},_setZoomOffset:function(t){var e,i,n=this._zoomKeys={},o=this.keyCodes;for(e=0,i=o.zoomIn.length;i>e;e++)n[o.zoomIn[e]]=t;for(e=0,i=o.zoomOut.length;i>e;e++)n[o.zoomOut[e]]=-t},_addHooks:function(){s.DomEvent.on(i,"keydown",this._onKeyDown,this)},_removeHooks:function(){s.DomEvent.off(i,"keydown",this._onKeyDown,this)},_onKeyDown:function(t){var e=t.keyCode,i=this._map;if(e in this._panKeys){if(i._panAnim&&i._panAnim._inProgress)return;i.panBy(this._panKeys[e]),i.options.maxBounds&&i.panInsideBounds(i.options.maxBounds)}else{if(!(e in this._zoomKeys))return;i.setZoom(i.getZoom()+this._zoomKeys[e])}s.DomEvent.stop(t)}}),s.Map.addInitHook("addHandler","keyboard",s.Map.Keyboard),s.Handler.MarkerDrag=s.Handler.extend({initialize:function(t){this._marker=t},addHooks:function(){var t=this._marker._icon;this._draggable||(this._draggable=new s.Draggable(t,t)),this._draggable.on("dragstart",this._onDragStart,this).on("drag",this._onDrag,this).on("dragend",this._onDragEnd,this),this._draggable.enable(),s.DomUtil.addClass(this._marker._icon,"leaflet-marker-draggable")},removeHooks:function(){this._draggable.off("dragstart",this._onDragStart,this).off("drag",this._onDrag,this).off("dragend",this._onDragEnd,this),this._draggable.disable(),s.DomUtil.removeClass(this._marker._icon,"leaflet-marker-draggable")},moved:function(){return this._draggable&&this._draggable._moved},_onDragStart:function(){this._marker.closePopup().fire("movestart").fire("dragstart")},_onDrag:function(){var t=this._marker,e=t._shadow,i=s.DomUtil.getPosition(t._icon),n=t._map.layerPointToLatLng(i);e&&s.DomUtil.setPosition(e,i),t._latlng=n,t.fire("move",{latlng:n}).fire("drag")},_onDragEnd:function(t){this._marker.fire("moveend").fire("dragend",t)}}),s.Control=s.Class.extend({options:{position:"topright"},initialize:function(t){s.setOptions(this,t)},getPosition:function(){return this.options.position},setPosition:function(t){var e=this._map;return e&&e.removeControl(this),this.options.position=t,e&&e.addControl(this),this},getContainer:function(){return this._container},addTo:function(t){this._map=t;var e=this._container=this.onAdd(t),i=this.getPosition(),n=t._controlCorners[i];return s.DomUtil.addClass(e,"leaflet-control"),-1!==i.indexOf("bottom")?n.insertBefore(e,n.firstChild):n.appendChild(e),this},removeFrom:function(t){var e=this.getPosition(),i=t._controlCorners[e];return i.removeChild(this._container),this._map=null,this.onRemove&&this.onRemove(t),this},_refocusOnMap:function(){this._map&&this._map.getContainer().focus()}}),s.control=function(t){return new s.Control(t)},s.Map.include({addControl:function(t){return t.addTo(this),this},removeControl:function(t){return t.removeFrom(this),this},_initControlPos:function(){function t(t,o){var a=i+t+" "+i+o;e[t+o]=s.DomUtil.create("div",a,n)}var e=this._controlCorners={},i="leaflet-",n=this._controlContainer=s.DomUtil.create("div",i+"control-container",this._container);t("top","left"),t("top","right"),t("bottom","left"),t("bottom","right")},_clearControlPos:function(){this._container.removeChild(this._controlContainer)}}),s.Control.Zoom=s.Control.extend({options:{position:"topleft",zoomInText:"+",zoomInTitle:"Zoom in",zoomOutText:"-",zoomOutTitle:"Zoom out"},onAdd:function(t){var e="leaflet-control-zoom",i=s.DomUtil.create("div",e+" leaflet-bar");return this._map=t,this._zoomInButton=this._createButton(this.options.zoomInText,this.options.zoomInTitle,e+"-in",i,this._zoomIn,this),this._zoomOutButton=this._createButton(this.options.zoomOutText,this.options.zoomOutTitle,e+"-out",i,this._zoomOut,this),this._updateDisabled(),t.on("zoomend zoomlevelschange",this._updateDisabled,this),i},onRemove:function(t){t.off("zoomend zoomlevelschange",this._updateDisabled,this)},_zoomIn:function(t){this._map.zoomIn(t.shiftKey?3:1)},_zoomOut:function(t){this._map.zoomOut(t.shiftKey?3:1)},_createButton:function(t,e,i,n,o,a){var r=s.DomUtil.create("a",i,n);r.innerHTML=t,r.href="#",r.title=e;var l=s.DomEvent.stopPropagation;return s.DomEvent.on(r,"click",l).on(r,"mousedown",l).on(r,"dblclick",l).on(r,"click",s.DomEvent.preventDefault).on(r,"click",o,a).on(r,"click",this._refocusOnMap,a),r},_updateDisabled:function(){var t=this._map,e="leaflet-disabled";s.DomUtil.removeClass(this._zoomInButton,e),s.DomUtil.removeClass(this._zoomOutButton,e),t._zoom===t.getMinZoom()&&s.DomUtil.addClass(this._zoomOutButton,e),t._zoom===t.getMaxZoom()&&s.DomUtil.addClass(this._zoomInButton,e)}}),s.Map.mergeOptions({zoomControl:!0}),s.Map.addInitHook(function(){this.options.zoomControl&&(this.zoomControl=new s.Control.Zoom,this.addControl(this.zoomControl))}),s.control.zoom=function(t){return new s.Control.Zoom(t)},s.Control.Attribution=s.Control.extend({options:{position:"bottomright",prefix:'<a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a>'},initialize:function(t){s.setOptions(this,t),this._attributions={}},onAdd:function(t){this._container=s.DomUtil.create("div","leaflet-control-attribution"),s.DomEvent.disableClickPropagation(this._container);for(var e in t._layers)t._layers[e].getAttribution&&this.addAttribution(t._layers[e].getAttribution());return t.on("layeradd",this._onLayerAdd,this).on("layerremove",this._onLayerRemove,this),this._update(),this._container},onRemove:function(t){t.off("layeradd",this._onLayerAdd).off("layerremove",this._onLayerRemove)},setPrefix:function(t){return this.options.prefix=t,this._update(),this},addAttribution:function(t){return t?(this._attributions[t]||(this._attributions[t]=0),this._attributions[t]++,this._update(),this):void 0},removeAttribution:function(t){return t?(this._attributions[t]&&(this._attributions[t]--,this._update()),this):void 0},_update:function(){if(this._map){var t=[];for(var e in this._attributions)this._attributions[e]&&t.push(e);var i=[];this.options.prefix&&i.push(this.options.prefix),t.length&&i.push(t.join(", ")),this._container.innerHTML=i.join(" | ")}},_onLayerAdd:function(t){t.layer.getAttribution&&this.addAttribution(t.layer.getAttribution())},_onLayerRemove:function(t){t.layer.getAttribution&&this.removeAttribution(t.layer.getAttribution())}}),s.Map.mergeOptions({attributionControl:!0}),s.Map.addInitHook(function(){this.options.attributionControl&&(this.attributionControl=(new s.Control.Attribution).addTo(this))}),s.control.attribution=function(t){return new s.Control.Attribution(t)},s.Control.Scale=s.Control.extend({options:{position:"bottomleft",maxWidth:100,metric:!0,imperial:!0,updateWhenIdle:!1},onAdd:function(t){this._map=t;var e="leaflet-control-scale",i=s.DomUtil.create("div",e),n=this.options;return this._addScales(n,e,i),t.on(n.updateWhenIdle?"moveend":"move",this._update,this),t.whenReady(this._update,this),i},onRemove:function(t){t.off(this.options.updateWhenIdle?"moveend":"move",this._update,this)},_addScales:function(t,e,i){t.metric&&(this._mScale=s.DomUtil.create("div",e+"-line",i)),t.imperial&&(this._iScale=s.DomUtil.create("div",e+"-line",i))},_update:function(){var t=this._map.getBounds(),e=t.getCenter().lat,i=6378137*Math.PI*Math.cos(e*Math.PI/180),n=i*(t.getNorthEast().lng-t.getSouthWest().lng)/180,o=this._map.getSize(),s=this.options,a=0;o.x>0&&(a=n*(s.maxWidth/o.x)),this._updateScales(s,a)},_updateScales:function(t,e){t.metric&&e&&this._updateMetric(e),t.imperial&&e&&this._updateImperial(e)},_updateMetric:function(t){var e=this._getRoundNum(t);this._mScale.style.width=this._getScaleWidth(e/t)+"px",this._mScale.innerHTML=1e3>e?e+" m":e/1e3+" km"},_updateImperial:function(t){var e,i,n,o=3.2808399*t,s=this._iScale;o>5280?(e=o/5280,i=this._getRoundNum(e),s.style.width=this._getScaleWidth(i/e)+"px",s.innerHTML=i+" mi"):(n=this._getRoundNum(o),s.style.width=this._getScaleWidth(n/o)+"px",s.innerHTML=n+" ft")},_getScaleWidth:function(t){return Math.round(this.options.maxWidth*t)-10},_getRoundNum:function(t){var e=Math.pow(10,(Math.floor(t)+"").length-1),i=t/e;return i=i>=10?10:i>=5?5:i>=3?3:i>=2?2:1,e*i}}),s.control.scale=function(t){return new s.Control.Scale(t)},s.Control.Layers=s.Control.extend({options:{collapsed:!0,position:"topright",autoZIndex:!0},initialize:function(t,e,i){s.setOptions(this,i),this._layers={},this._lastZIndex=0,this._handlingClick=!1;for(var n in t)this._addLayer(t[n],n);for(n in e)this._addLayer(e[n],n,!0)},onAdd:function(t){return this._initLayout(),this._update(),t.on("layeradd",this._onLayerChange,this).on("layerremove",this._onLayerChange,this),this._container},onRemove:function(t){t.off("layeradd",this._onLayerChange,this).off("layerremove",this._onLayerChange,this)},addBaseLayer:function(t,e){return this._addLayer(t,e),this._update(),this},addOverlay:function(t,e){return this._addLayer(t,e,!0),this._update(),this},removeLayer:function(t){var e=s.stamp(t);return delete this._layers[e],this._update(),this},_initLayout:function(){var t="leaflet-control-layers",e=this._container=s.DomUtil.create("div",t);e.setAttribute("aria-haspopup",!0),s.Browser.touch?s.DomEvent.on(e,"click",s.DomEvent.stopPropagation):s.DomEvent.disableClickPropagation(e).disableScrollPropagation(e);var i=this._form=s.DomUtil.create("form",t+"-list");if(this.options.collapsed){s.Browser.android||s.DomEvent.on(e,"mouseover",this._expand,this).on(e,"mouseout",this._collapse,this);var n=this._layersLink=s.DomUtil.create("a",t+"-toggle",e);n.href="#",n.title="Layers",s.Browser.touch?s.DomEvent.on(n,"click",s.DomEvent.stop).on(n,"click",this._expand,this):s.DomEvent.on(n,"focus",this._expand,this),s.DomEvent.on(i,"click",function(){setTimeout(s.bind(this._onInputClick,this),0)},this),this._map.on("click",this._collapse,this)}else this._expand();this._baseLayersList=s.DomUtil.create("div",t+"-base",i),this._separator=s.DomUtil.create("div",t+"-separator",i),this._overlaysList=s.DomUtil.create("div",t+"-overlays",i),e.appendChild(i)},_addLayer:function(t,e,i){var n=s.stamp(t);this._layers[n]={layer:t,name:e,overlay:i},this.options.autoZIndex&&t.setZIndex&&(this._lastZIndex++,t.setZIndex(this._lastZIndex))},_update:function(){if(this._container){this._baseLayersList.innerHTML="",this._overlaysList.innerHTML="";var t,e,i=!1,n=!1;for(t in this._layers)e=this._layers[t],this._addItem(e),n=n||e.overlay,i=i||!e.overlay;this._separator.style.display=n&&i?"":"none"}},_onLayerChange:function(t){var e=this._layers[s.stamp(t.layer)];if(e){this._handlingClick||this._update();var i=e.overlay?"layeradd"===t.type?"overlayadd":"overlayremove":"layeradd"===t.type?"baselayerchange":null;i&&this._map.fire(i,e)}},_createRadioElement:function(t,e){var n='<input type="radio" class="leaflet-control-layers-selector" name="'+t+'"';e&&(n+=' checked="checked"'),n+="/>";var o=i.createElement("div");return o.innerHTML=n,o.firstChild},_addItem:function(t){var e,n=i.createElement("label"),o=this._map.hasLayer(t.layer);t.overlay?(e=i.createElement("input"),e.type="checkbox",e.className="leaflet-control-layers-selector",e.defaultChecked=o):e=this._createRadioElement("leaflet-base-layers",o),e.layerId=s.stamp(t.layer),s.DomEvent.on(e,"click",this._onInputClick,this);var a=i.createElement("span");a.innerHTML=" "+t.name,n.appendChild(e),n.appendChild(a);var r=t.overlay?this._overlaysList:this._baseLayersList;return r.appendChild(n),n},_onInputClick:function(){var t,e,i,n=this._form.getElementsByTagName("input"),o=n.length;for(this._handlingClick=!0,t=0;o>t;t++)e=n[t],i=this._layers[e.layerId],e.checked&&!this._map.hasLayer(i.layer)?this._map.addLayer(i.layer):!e.checked&&this._map.hasLayer(i.layer)&&this._map.removeLayer(i.layer);this._handlingClick=!1,this._refocusOnMap()},_expand:function(){s.DomUtil.addClass(this._container,"leaflet-control-layers-expanded")},_collapse:function(){this._container.className=this._container.className.replace(" leaflet-control-layers-expanded","")}}),s.control.layers=function(t,e,i){return new s.Control.Layers(t,e,i)},s.PosAnimation=s.Class.extend({includes:s.Mixin.Events,run:function(t,e,i,n){this.stop(),this._el=t,this._inProgress=!0,this._newPos=e,this.fire("start"),t.style[s.DomUtil.TRANSITION]="all "+(i||.25)+"s cubic-bezier(0,0,"+(n||.5)+",1)",s.DomEvent.on(t,s.DomUtil.TRANSITION_END,this._onTransitionEnd,this),s.DomUtil.setPosition(t,e),s.Util.falseFn(t.offsetWidth),this._stepTimer=setInterval(s.bind(this._onStep,this),50)},stop:function(){this._inProgress&&(s.DomUtil.setPosition(this._el,this._getPos()),this._onTransitionEnd(),s.Util.falseFn(this._el.offsetWidth))},_onStep:function(){var t=this._getPos();return t?(this._el._leaflet_pos=t,this.fire("step"),void 0):(this._onTransitionEnd(),void 0)},_transformRe:/([-+]?(?:\d*\.)?\d+)\D*, ([-+]?(?:\d*\.)?\d+)\D*\)/,_getPos:function(){var e,i,n,o=this._el,a=t.getComputedStyle(o);if(s.Browser.any3d){if(n=a[s.DomUtil.TRANSFORM].match(this._transformRe),!n)return;e=parseFloat(n[1]),i=parseFloat(n[2])}else e=parseFloat(a.left),i=parseFloat(a.top);return new s.Point(e,i,!0)},_onTransitionEnd:function(){s.DomEvent.off(this._el,s.DomUtil.TRANSITION_END,this._onTransitionEnd,this),this._inProgress&&(this._inProgress=!1,this._el.style[s.DomUtil.TRANSITION]="",this._el._leaflet_pos=this._newPos,clearInterval(this._stepTimer),this.fire("step").fire("end"))}}),s.Map.include({setView:function(t,e,i){if(e=e===n?this._zoom:this._limitZoom(e),t=this._limitCenter(s.latLng(t),e,this.options.maxBounds),i=i||{},this._panAnim&&this._panAnim.stop(),this._loaded&&!i.reset&&i!==!0){i.animate!==n&&(i.zoom=s.extend({animate:i.animate},i.zoom),i.pan=s.extend({animate:i.animate},i.pan));var o=this._zoom!==e?this._tryAnimatedZoom&&this._tryAnimatedZoom(t,e,i.zoom):this._tryAnimatedPan(t,i.pan);if(o)return clearTimeout(this._sizeTimer),this}return this._resetView(t,e),this},panBy:function(t,e){if(t=s.point(t).round(),e=e||{},!t.x&&!t.y)return this;if(this._panAnim||(this._panAnim=new s.PosAnimation,this._panAnim.on({step:this._onPanTransitionStep,end:this._onPanTransitionEnd},this)),e.noMoveStart||this.fire("movestart"),e.animate!==!1){s.DomUtil.addClass(this._mapPane,"leaflet-pan-anim");var i=this._getMapPanePos().subtract(t);this._panAnim.run(this._mapPane,i,e.duration||.25,e.easeLinearity)}else this._rawPanBy(t),this.fire("move").fire("moveend");return this},_onPanTransitionStep:function(){this.fire("move")},_onPanTransitionEnd:function(){s.DomUtil.removeClass(this._mapPane,"leaflet-pan-anim"),this.fire("moveend")},_tryAnimatedPan:function(t,e){var i=this._getCenterOffset(t)._floor();return(e&&e.animate)===!0||this.getSize().contains(i)?(this.panBy(i,e),!0):!1}}),s.PosAnimation=s.DomUtil.TRANSITION?s.PosAnimation:s.PosAnimation.extend({run:function(t,e,i,n){this.stop(),this._el=t,this._inProgress=!0,this._duration=i||.25,this._easeOutPower=1/Math.max(n||.5,.2),this._startPos=s.DomUtil.getPosition(t),this._offset=e.subtract(this._startPos),this._startTime=+new Date,this.fire("start"),this._animate()},stop:function(){this._inProgress&&(this._step(),this._complete())},_animate:function(){this._animId=s.Util.requestAnimFrame(this._animate,this),this._step()},_step:function(){var t=+new Date-this._startTime,e=1e3*this._duration;e>t?this._runFrame(this._easeOut(t/e)):(this._runFrame(1),this._complete())},_runFrame:function(t){var e=this._startPos.add(this._offset.multiplyBy(t));s.DomUtil.setPosition(this._el,e),this.fire("step")},_complete:function(){s.Util.cancelAnimFrame(this._animId),this._inProgress=!1,this.fire("end")},_easeOut:function(t){return 1-Math.pow(1-t,this._easeOutPower)}}),s.Map.mergeOptions({zoomAnimation:!0,zoomAnimationThreshold:4}),s.DomUtil.TRANSITION&&s.Map.addInitHook(function(){this._zoomAnimated=this.options.zoomAnimation&&s.DomUtil.TRANSITION&&s.Browser.any3d&&!s.Browser.android23&&!s.Browser.mobileOpera,this._zoomAnimated&&s.DomEvent.on(this._mapPane,s.DomUtil.TRANSITION_END,this._catchTransitionEnd,this)}),s.Map.include(s.DomUtil.TRANSITION?{_catchTransitionEnd:function(t){this._animatingZoom&&t.propertyName.indexOf("transform")>=0&&this._onZoomTransitionEnd()},_nothingToAnimate:function(){return!this._container.getElementsByClassName("leaflet-zoom-animated").length},_tryAnimatedZoom:function(t,e,i){if(this._animatingZoom)return!0;if(i=i||{},!this._zoomAnimated||i.animate===!1||this._nothingToAnimate()||Math.abs(e-this._zoom)>this.options.zoomAnimationThreshold)return!1;var n=this.getZoomScale(e),o=this._getCenterOffset(t)._divideBy(1-1/n),s=this._getCenterLayerPoint()._add(o);return i.animate===!0||this.getSize().contains(o)?(this.fire("movestart").fire("zoomstart"),this._animateZoom(t,e,s,n,null,!0),!0):!1},_animateZoom:function(t,e,i,n,o,a,r){r||(this._animatingZoom=!0),s.DomUtil.addClass(this._mapPane,"leaflet-zoom-anim"),this._animateToCenter=t,this._animateToZoom=e,s.Draggable&&(s.Draggable._disabled=!0),s.Util.requestAnimFrame(function(){this.fire("zoomanim",{center:t,zoom:e,origin:i,scale:n,delta:o,backwards:a})},this)},_onZoomTransitionEnd:function(){this._animatingZoom=!1,s.DomUtil.removeClass(this._mapPane,"leaflet-zoom-anim"),this._resetView(this._animateToCenter,this._animateToZoom,!0,!0),s.Draggable&&(s.Draggable._disabled=!1)}}:{}),s.TileLayer.include({_animateZoom:function(t){this._animating||(this._animating=!0,this._prepareBgBuffer());var e=this._bgBuffer,i=s.DomUtil.TRANSFORM,n=t.delta?s.DomUtil.getTranslateString(t.delta):e.style[i],o=s.DomUtil.getScaleString(t.scale,t.origin);e.style[i]=t.backwards?o+" "+n:n+" "+o},_endZoomAnim:function(){var t=this._tileContainer,e=this._bgBuffer;t.style.visibility="",t.parentNode.appendChild(t),s.Util.falseFn(e.offsetWidth),this._animating=!1},_clearBgBuffer:function(){var t=this._map;!t||t._animatingZoom||t.touchZoom._zooming||(this._bgBuffer.innerHTML="",this._bgBuffer.style[s.DomUtil.TRANSFORM]="")},_prepareBgBuffer:function(){var t=this._tileContainer,e=this._bgBuffer,i=this._getLoadedTilesPercentage(e),n=this._getLoadedTilesPercentage(t);return e&&i>.5&&.5>n?(t.style.visibility="hidden",this._stopLoadingImages(t),void 0):(e.style.visibility="hidden",e.style[s.DomUtil.TRANSFORM]="",this._tileContainer=e,e=this._bgBuffer=t,this._stopLoadingImages(e),clearTimeout(this._clearBgBufferTimer),void 0)},_getLoadedTilesPercentage:function(t){var e,i,n=t.getElementsByTagName("img"),o=0;for(e=0,i=n.length;i>e;e++)n[e].complete&&o++;return o/i},_stopLoadingImages:function(t){var e,i,n,o=Array.prototype.slice.call(t.getElementsByTagName("img"));for(e=0,i=o.length;i>e;e++)n=o[e],n.complete||(n.onload=s.Util.falseFn,n.onerror=s.Util.falseFn,n.src=s.Util.emptyImageUrl,n.parentNode.removeChild(n))}}),s.Map.include({_defaultLocateOptions:{watch:!1,setView:!1,maxZoom:1/0,timeout:1e4,maximumAge:0,enableHighAccuracy:!1},locate:function(t){if(t=this._locateOptions=s.extend(this._defaultLocateOptions,t),!navigator.geolocation)return this._handleGeolocationError({code:0,message:"Geolocation not supported."}),this;var e=s.bind(this._handleGeolocationResponse,this),i=s.bind(this._handleGeolocationError,this);return t.watch?this._locationWatchId=navigator.geolocation.watchPosition(e,i,t):navigator.geolocation.getCurrentPosition(e,i,t),this},stopLocate:function(){return navigator.geolocation&&navigator.geolocation.clearWatch(this._locationWatchId),this._locateOptions&&(this._locateOptions.setView=!1),this},_handleGeolocationError:function(t){var e=t.code,i=t.message||(1===e?"permission denied":2===e?"position unavailable":"timeout");this._locateOptions.setView&&!this._loaded&&this.fitWorld(),this.fire("locationerror",{code:e,message:"Geolocation error: "+i+"."})},_handleGeolocationResponse:function(t){var e=t.coords.latitude,i=t.coords.longitude,n=new s.LatLng(e,i),o=180*t.coords.accuracy/40075017,a=o/Math.cos(s.LatLng.DEG_TO_RAD*e),r=s.latLngBounds([e-o,i-a],[e+o,i+a]),l=this._locateOptions;if(l.setView){var h=Math.min(this.getBoundsZoom(r),l.maxZoom);this.setView(n,h)}var u={latlng:n,bounds:r,timestamp:t.timestamp};for(var c in t.coords)"number"==typeof t.coords[c]&&(u[c]=t.coords[c]);this.fire("locationfound",u)}})}(window,document)},{}],3:[function(t,e,i){!function(t,e){if("object"==typeof i&&i)e(i);else{var n={};e(n),"function"==typeof define&&define.amd?define(n):t.Mustache=n}}(this,function(t){function e(t,e){return L.call(t,e)}function i(t){return!e(_,t)}function n(t){return"function"==typeof t}function o(t){return t.replace(/[\-\[\]{}()*+?.,\\\^$|#\s]/g,"\\$&")}function s(t){return String(t).replace(/[&<>"'\/]/g,function(t){return P[t]})}function a(t){this.string=t,this.tail=t,this.pos=0}function r(t,e){this.view=null==t?{}:t,this.parent=e,this._cache={".":this.view}}function l(){this.clearCache()}function h(e,i,o,s){function a(t){return i.render(t,o)}for(var r,l,u,c="",p=0,d=e.length;d>p;++p)switch(r=e[p],l=r[1],r[0]){case"#":if(u=o.lookup(l),"object"==typeof u||"string"==typeof u)if(T(u))for(var m=0,f=u.length;f>m;++m)c+=h(r[4],i,o.push(u[m]),s);else u&&(c+=h(r[4],i,o.push(u),s));else if(n(u)){var _=null==s?null:s.slice(r[3],r[5]);u=u.call(o.view,_,a),null!=u&&(c+=u)}else u&&(c+=h(r[4],i,o,s));break;case"^":u=o.lookup(l),(!u||T(u)&&0===u.length)&&(c+=h(r[4],i,o,s));break;case">":u=i.getPartial(l),n(u)&&(c+=u(o));break;case"&":u=o.lookup(l),null!=u&&(c+=u);break;case"name":u=o.lookup(l),null!=u&&(c+=t.escape(u));break;case"text":c+=l}return c}function u(t){for(var e,i=[],n=i,o=[],s=0,a=t.length;a>s;++s)switch(e=t[s],e[0]){case"#":case"^":o.push(e),n.push(e),n=e[4]=[];break;case"/":var r=o.pop();r[5]=e[2],n=o.length>0?o[o.length-1][4]:i;break;default:n.push(e)}return i}function c(t){for(var e,i,n=[],o=0,s=t.length;s>o;++o)e=t[o],e&&("text"===e[0]&&i&&"text"===i[0]?(i[1]+=e[1],i[3]=e[3]):(i=e,n.push(e)));return n}function p(t){return[new RegExp(o(t[0])+"\\s*"),new RegExp("\\s*"+o(t[1]))]}function d(e,n){function s(){if(w&&!C)for(;x.length;)delete E[x.pop()];
+  else x=[];w=!1,C=!1}if(e=e||"",n=n||t.tags,"string"==typeof n&&(n=n.split(f)),2!==n.length)throw new Error("Invalid tags: "+n.join(", "));for(var r,l,h,d,_,L,b=p(n),T=new a(e),P=[],E=[],x=[],w=!1,C=!1;!T.eos();){if(r=T.pos,h=T.scanUntil(b[0]))for(var M=0,D=h.length;D>M;++M)d=h.charAt(M),i(d)?x.push(E.length):C=!0,E.push(["text",d,r,r+1]),r+=1,"\n"==d&&s();if(!T.scan(b[0]))break;if(w=!0,l=T.scan(y)||"name",T.scan(m),"="===l?(h=T.scanUntil(g),T.scan(g),T.scanUntil(b[1])):"{"===l?(h=T.scanUntil(new RegExp("\\s*"+o("}"+n[1]))),T.scan(v),T.scanUntil(b[1]),l="&"):h=T.scanUntil(b[1]),!T.scan(b[1]))throw new Error("Unclosed tag at "+T.pos);if(_=[l,h,r,T.pos],E.push(_),"#"===l||"^"===l)P.push(_);else if("/"===l){if(L=P.pop(),!L)throw new Error('Unopened section "'+h+'" at '+r);if(L[1]!==h)throw new Error('Unclosed section "'+L[1]+'" at '+r)}else if("name"===l||"{"===l||"&"===l)C=!0;else if("="===l){if(n=h.split(f),2!==n.length)throw new Error("Invalid tags at "+r+": "+n.join(", "));b=p(n)}}if(L=P.pop())throw new Error('Unclosed section "'+L[1]+'" at '+T.pos);return u(c(E))}var m=/\s*/,f=/\s+/,_=/\S/,g=/\s*=/,v=/\s*\}/,y=/#|\^|\/|>|\{|&|=|!/,L=RegExp.prototype.test,b=Object.prototype.toString,T=Array.isArray||function(t){return"[object Array]"===b.call(t)},P={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;","/":"&#x2F;"};a.prototype.eos=function(){return""===this.tail},a.prototype.scan=function(t){var e=this.tail.match(t);if(e&&0===e.index){var i=e[0];return this.tail=this.tail.substring(i.length),this.pos+=i.length,i}return""},a.prototype.scanUntil=function(t){var e,i=this.tail.search(t);switch(i){case-1:e=this.tail,this.tail="";break;case 0:e="";break;default:e=this.tail.substring(0,i),this.tail=this.tail.substring(i)}return this.pos+=e.length,e},r.make=function(t){return t instanceof r?t:new r(t)},r.prototype.push=function(t){return new r(t,this)},r.prototype.lookup=function(t){var e;if(t in this._cache)e=this._cache[t];else{for(var i=this;i;){if(t.indexOf(".")>0){e=i.view;for(var o=t.split("."),s=0;null!=e&&s<o.length;)e=e[o[s++]]}else e=i.view[t];if(null!=e)break;i=i.parent}this._cache[t]=e}return n(e)&&(e=e.call(this.view)),e},l.prototype.clearCache=function(){this._cache={},this._partialCache={}},l.prototype.compile=function(e,i){var n=this._cache[e];if(!n){var o=t.parse(e,i);n=this._cache[e]=this.compileTokens(o,e)}return n},l.prototype.compilePartial=function(t,e,i){var n=this.compile(e,i);return this._partialCache[t]=n,n},l.prototype.getPartial=function(t){return t in this._partialCache||!this._loadPartial||this.compilePartial(t,this._loadPartial(t)),this._partialCache[t]},l.prototype.compileTokens=function(t,e){var i=this;return function(o,s){if(s)if(n(s))i._loadPartial=s;else for(var a in s)i.compilePartial(a,s[a]);return h(t,i,r.make(o),e)}},l.prototype.render=function(t,e,i){return this.compile(t)(e,i)},t.name="mustache.js",t.version="0.7.3",t.tags=["{{","}}"],t.Scanner=a,t.Context=r,t.Writer=l,t.parse=d,t.escape=s;var E=new l;t.clearCache=function(){return E.clearCache()},t.compile=function(t,e){return E.compile(t,e)},t.compilePartial=function(t,e,i){return E.compilePartial(t,e,i)},t.compileTokens=function(t,e){return E.compileTokens(t,e)},t.render=function(t,e,i){return E.render(t,e,i)},t.to_html=function(e,i,o,s){var a=t.render(e,i,o);return n(s)?(s(a),void 0):a}})},{}],4:[function(t,e){function i(t){"use strict";return/^https?/.test(t.getScheme())?t.toString():"data"==t.getScheme()&&/^image/.test(t.getPath())?t.toString():void 0}function n(t){return t}var o=t("./sanitizer-bundle.js");e.exports=function(t){return t?o(t,i,n):""}},{"./sanitizer-bundle.js":5}],5:[function(t,e){var i=function(){function t(t){var e=(""+t).match(d);return e?new l(h(e[1]),h(e[2]),h(e[3]),h(e[4]),h(e[5]),h(e[6]),h(e[7])):null}function e(t,e,s,a,r,h,u){var c=new l(n(t,m),n(e,m),i(s),a>0?a.toString():null,n(r,f),null,i(u));return h&&("string"==typeof h?c.setRawQuery(h.replace(/[^?&=0-9A-Za-z_\-~.%]/g,o)):c.setAllParameters(h)),c}function i(t){return"string"==typeof t?encodeURIComponent(t):null}function n(t,e){return"string"==typeof t?encodeURI(t).replace(e,o):null}function o(t){var e=t.charCodeAt(0);return"%"+"0123456789ABCDEF".charAt(e>>4&15)+"0123456789ABCDEF".charAt(15&e)}function s(t){return t.replace(/(^|\/)\.(?:\/|$)/g,"$1").replace(/\/{2,}/g,"/")}function a(t){if(null===t)return null;for(var e,i=s(t),n=c;(e=i.replace(n,"$1"))!=i;i=e);return i}function r(t,e){var i=t.clone(),n=e.hasScheme();n?i.setRawScheme(e.getRawScheme()):n=e.hasCredentials(),n?i.setRawCredentials(e.getRawCredentials()):n=e.hasDomain(),n?i.setRawDomain(e.getRawDomain()):n=e.hasPort();var o=e.getRawPath(),s=a(o);if(n)i.setPort(e.getPort()),s=s&&s.replace(p,"");else if(n=!!o){if(47!==s.charCodeAt(0)){var r=a(i.getRawPath()||"").replace(p,""),l=r.lastIndexOf("/")+1;s=a((l?r.substring(0,l):"")+a(o)).replace(p,"")}}else s=s&&s.replace(p,""),s!==o&&i.setRawPath(s);return n?i.setRawPath(s):n=e.hasQuery(),n?i.setRawQuery(e.getRawQuery()):n=e.hasFragment(),n&&i.setRawFragment(e.getRawFragment()),i}function l(t,e,i,n,o,s,a){this.scheme_=t,this.credentials_=e,this.domain_=i,this.port_=n,this.path_=o,this.query_=s,this.fragment_=a,this.paramCache_=null}function h(t){return"string"==typeof t&&t.length>0?t:null}var u=new RegExp("(/|^)(?:[^./][^/]*|\\.{2,}(?:[^./][^/]*)|\\.{3,}[^/]*)/\\.\\.(?:/|$)"),c=new RegExp(u),p=/^(?:\.\.\/)*(?:\.\.$)?/;l.prototype.toString=function(){var t=[];return null!==this.scheme_&&t.push(this.scheme_,":"),null!==this.domain_&&(t.push("//"),null!==this.credentials_&&t.push(this.credentials_,"@"),t.push(this.domain_),null!==this.port_&&t.push(":",this.port_.toString())),null!==this.path_&&t.push(this.path_),null!==this.query_&&t.push("?",this.query_),null!==this.fragment_&&t.push("#",this.fragment_),t.join("")},l.prototype.clone=function(){return new l(this.scheme_,this.credentials_,this.domain_,this.port_,this.path_,this.query_,this.fragment_)},l.prototype.getScheme=function(){return this.scheme_&&decodeURIComponent(this.scheme_).toLowerCase()},l.prototype.getRawScheme=function(){return this.scheme_},l.prototype.setScheme=function(t){return this.scheme_=n(t,m),this},l.prototype.setRawScheme=function(t){return this.scheme_=t?t:null,this},l.prototype.hasScheme=function(){return null!==this.scheme_},l.prototype.getCredentials=function(){return this.credentials_&&decodeURIComponent(this.credentials_)},l.prototype.getRawCredentials=function(){return this.credentials_},l.prototype.setCredentials=function(t){return this.credentials_=n(t,m),this},l.prototype.setRawCredentials=function(t){return this.credentials_=t?t:null,this},l.prototype.hasCredentials=function(){return null!==this.credentials_},l.prototype.getDomain=function(){return this.domain_&&decodeURIComponent(this.domain_)},l.prototype.getRawDomain=function(){return this.domain_},l.prototype.setDomain=function(t){return this.setRawDomain(t&&encodeURIComponent(t))},l.prototype.setRawDomain=function(t){return this.domain_=t?t:null,this.setRawPath(this.path_)},l.prototype.hasDomain=function(){return null!==this.domain_},l.prototype.getPort=function(){return this.port_&&decodeURIComponent(this.port_)},l.prototype.setPort=function(t){if(t){if(t=Number(t),t!==(65535&t))throw new Error("Bad port number "+t);this.port_=""+t}else this.port_=null;return this},l.prototype.hasPort=function(){return null!==this.port_},l.prototype.getPath=function(){return this.path_&&decodeURIComponent(this.path_)},l.prototype.getRawPath=function(){return this.path_},l.prototype.setPath=function(t){return this.setRawPath(n(t,f))},l.prototype.setRawPath=function(t){return t?(t=String(t),this.path_=!this.domain_||/^\//.test(t)?t:"/"+t):this.path_=null,this},l.prototype.hasPath=function(){return null!==this.path_},l.prototype.getQuery=function(){return this.query_&&decodeURIComponent(this.query_).replace(/\+/g," ")},l.prototype.getRawQuery=function(){return this.query_},l.prototype.setQuery=function(t){return this.paramCache_=null,this.query_=i(t),this},l.prototype.setRawQuery=function(t){return this.paramCache_=null,this.query_=t?t:null,this},l.prototype.hasQuery=function(){return null!==this.query_},l.prototype.setAllParameters=function(t){if("object"==typeof t&&!(t instanceof Array)&&(t instanceof Object||"[object Array]"!==Object.prototype.toString.call(t))){var e=[],i=-1;for(var n in t){var o=t[n];"string"==typeof o&&(e[++i]=n,e[++i]=o)}t=e}this.paramCache_=null;for(var s=[],a="",r=0;r<t.length;){var n=t[r++],o=t[r++];s.push(a,encodeURIComponent(n.toString())),a="&",o&&s.push("=",encodeURIComponent(o.toString()))}return this.query_=s.join(""),this},l.prototype.checkParameterCache_=function(){if(!this.paramCache_){var t=this.query_;if(t){for(var e=t.split(/[&\?]/),i=[],n=-1,o=0;o<e.length;++o){var s=e[o].match(/^([^=]*)(?:=(.*))?$/);i[++n]=decodeURIComponent(s[1]).replace(/\+/g," "),i[++n]=decodeURIComponent(s[2]||"").replace(/\+/g," ")}this.paramCache_=i}else this.paramCache_=[]}},l.prototype.setParameterValues=function(t,e){"string"==typeof e&&(e=[e]),this.checkParameterCache_();for(var i=0,n=this.paramCache_,o=[],s=0;s<n.length;s+=2)t===n[s]?i<e.length&&o.push(t,e[i++]):o.push(n[s],n[s+1]);for(;i<e.length;)o.push(t,e[i++]);return this.setAllParameters(o),this},l.prototype.removeParameter=function(t){return this.setParameterValues(t,[])},l.prototype.getAllParameters=function(){return this.checkParameterCache_(),this.paramCache_.slice(0,this.paramCache_.length)},l.prototype.getParameterValues=function(t){this.checkParameterCache_();for(var e=[],i=0;i<this.paramCache_.length;i+=2)t===this.paramCache_[i]&&e.push(this.paramCache_[i+1]);return e},l.prototype.getParameterMap=function(){this.checkParameterCache_();for(var t={},e=0;e<this.paramCache_.length;e+=2){var i=this.paramCache_[e++],n=this.paramCache_[e++];i in t?t[i].push(n):t[i]=[n]}return t},l.prototype.getParameterValue=function(t){this.checkParameterCache_();for(var e=0;e<this.paramCache_.length;e+=2)if(t===this.paramCache_[e])return this.paramCache_[e+1];return null},l.prototype.getFragment=function(){return this.fragment_&&decodeURIComponent(this.fragment_)},l.prototype.getRawFragment=function(){return this.fragment_},l.prototype.setFragment=function(t){return this.fragment_=t?encodeURIComponent(t):null,this},l.prototype.setRawFragment=function(t){return this.fragment_=t?t:null,this},l.prototype.hasFragment=function(){return null!==this.fragment_};var d=new RegExp("^(?:([^:/?#]+):)?(?://(?:([^/?#]*)@)?([^/?#:@]*)(?::([0-9]+))?)?([^?#]+)?(?:\\?([^#]*))?(?:#(.*))?$"),m=/[#\/\?@]/g,f=/[\#\?]/g;return l.parse=t,l.create=e,l.resolve=r,l.collapse_dots=a,l.utils={mimeTypeOf:function(e){var i=t(e);return/\.html$/.test(i.getPath())?"text/html":"application/javascript"},resolve:function(e,i){return e?r(t(e),t(i)).toString():""+i}},l}(),n={};if(n.atype={NONE:0,URI:1,URI_FRAGMENT:11,SCRIPT:2,STYLE:3,HTML:12,ID:4,IDREF:5,IDREFS:6,GLOBAL_NAME:7,LOCAL_NAME:8,CLASSES:9,FRAME_TARGET:10,MEDIA_QUERY:13},n.atype=n.atype,n.ATTRIBS={"*::class":9,"*::dir":0,"*::draggable":0,"*::hidden":0,"*::id":4,"*::inert":0,"*::itemprop":0,"*::itemref":6,"*::itemscope":0,"*::lang":0,"*::onblur":2,"*::onchange":2,"*::onclick":2,"*::ondblclick":2,"*::onfocus":2,"*::onkeydown":2,"*::onkeypress":2,"*::onkeyup":2,"*::onload":2,"*::onmousedown":2,"*::onmousemove":2,"*::onmouseout":2,"*::onmouseover":2,"*::onmouseup":2,"*::onreset":2,"*::onscroll":2,"*::onselect":2,"*::onsubmit":2,"*::onunload":2,"*::spellcheck":0,"*::style":3,"*::title":0,"*::translate":0,"a::accesskey":0,"a::coords":0,"a::href":1,"a::hreflang":0,"a::name":7,"a::onblur":2,"a::onfocus":2,"a::shape":0,"a::tabindex":0,"a::target":10,"a::type":0,"area::accesskey":0,"area::alt":0,"area::coords":0,"area::href":1,"area::nohref":0,"area::onblur":2,"area::onfocus":2,"area::shape":0,"area::tabindex":0,"area::target":10,"audio::controls":0,"audio::loop":0,"audio::mediagroup":5,"audio::muted":0,"audio::preload":0,"bdo::dir":0,"blockquote::cite":1,"br::clear":0,"button::accesskey":0,"button::disabled":0,"button::name":8,"button::onblur":2,"button::onfocus":2,"button::tabindex":0,"button::type":0,"button::value":0,"canvas::height":0,"canvas::width":0,"caption::align":0,"col::align":0,"col::char":0,"col::charoff":0,"col::span":0,"col::valign":0,"col::width":0,"colgroup::align":0,"colgroup::char":0,"colgroup::charoff":0,"colgroup::span":0,"colgroup::valign":0,"colgroup::width":0,"command::checked":0,"command::command":5,"command::disabled":0,"command::icon":1,"command::label":0,"command::radiogroup":0,"command::type":0,"data::value":0,"del::cite":1,"del::datetime":0,"details::open":0,"dir::compact":0,"div::align":0,"dl::compact":0,"fieldset::disabled":0,"font::color":0,"font::face":0,"font::size":0,"form::accept":0,"form::action":1,"form::autocomplete":0,"form::enctype":0,"form::method":0,"form::name":7,"form::novalidate":0,"form::onreset":2,"form::onsubmit":2,"form::target":10,"h1::align":0,"h2::align":0,"h3::align":0,"h4::align":0,"h5::align":0,"h6::align":0,"hr::align":0,"hr::noshade":0,"hr::size":0,"hr::width":0,"iframe::align":0,"iframe::frameborder":0,"iframe::height":0,"iframe::marginheight":0,"iframe::marginwidth":0,"iframe::width":0,"img::align":0,"img::alt":0,"img::border":0,"img::height":0,"img::hspace":0,"img::ismap":0,"img::name":7,"img::src":1,"img::usemap":11,"img::vspace":0,"img::width":0,"input::accept":0,"input::accesskey":0,"input::align":0,"input::alt":0,"input::autocomplete":0,"input::checked":0,"input::disabled":0,"input::inputmode":0,"input::ismap":0,"input::list":5,"input::max":0,"input::maxlength":0,"input::min":0,"input::multiple":0,"input::name":8,"input::onblur":2,"input::onchange":2,"input::onfocus":2,"input::onselect":2,"input::placeholder":0,"input::readonly":0,"input::required":0,"input::size":0,"input::src":1,"input::step":0,"input::tabindex":0,"input::type":0,"input::usemap":11,"input::value":0,"ins::cite":1,"ins::datetime":0,"label::accesskey":0,"label::for":5,"label::onblur":2,"label::onfocus":2,"legend::accesskey":0,"legend::align":0,"li::type":0,"li::value":0,"map::name":7,"menu::compact":0,"menu::label":0,"menu::type":0,"meter::high":0,"meter::low":0,"meter::max":0,"meter::min":0,"meter::value":0,"ol::compact":0,"ol::reversed":0,"ol::start":0,"ol::type":0,"optgroup::disabled":0,"optgroup::label":0,"option::disabled":0,"option::label":0,"option::selected":0,"option::value":0,"output::for":6,"output::name":8,"p::align":0,"pre::width":0,"progress::max":0,"progress::min":0,"progress::value":0,"q::cite":1,"select::autocomplete":0,"select::disabled":0,"select::multiple":0,"select::name":8,"select::onblur":2,"select::onchange":2,"select::onfocus":2,"select::required":0,"select::size":0,"select::tabindex":0,"source::type":0,"table::align":0,"table::bgcolor":0,"table::border":0,"table::cellpadding":0,"table::cellspacing":0,"table::frame":0,"table::rules":0,"table::summary":0,"table::width":0,"tbody::align":0,"tbody::char":0,"tbody::charoff":0,"tbody::valign":0,"td::abbr":0,"td::align":0,"td::axis":0,"td::bgcolor":0,"td::char":0,"td::charoff":0,"td::colspan":0,"td::headers":6,"td::height":0,"td::nowrap":0,"td::rowspan":0,"td::scope":0,"td::valign":0,"td::width":0,"textarea::accesskey":0,"textarea::autocomplete":0,"textarea::cols":0,"textarea::disabled":0,"textarea::inputmode":0,"textarea::name":8,"textarea::onblur":2,"textarea::onchange":2,"textarea::onfocus":2,"textarea::onselect":2,"textarea::placeholder":0,"textarea::readonly":0,"textarea::required":0,"textarea::rows":0,"textarea::tabindex":0,"textarea::wrap":0,"tfoot::align":0,"tfoot::char":0,"tfoot::charoff":0,"tfoot::valign":0,"th::abbr":0,"th::align":0,"th::axis":0,"th::bgcolor":0,"th::char":0,"th::charoff":0,"th::colspan":0,"th::headers":6,"th::height":0,"th::nowrap":0,"th::rowspan":0,"th::scope":0,"th::valign":0,"th::width":0,"thead::align":0,"thead::char":0,"thead::charoff":0,"thead::valign":0,"tr::align":0,"tr::bgcolor":0,"tr::char":0,"tr::charoff":0,"tr::valign":0,"track::default":0,"track::kind":0,"track::label":0,"track::srclang":0,"ul::compact":0,"ul::type":0,"video::controls":0,"video::height":0,"video::loop":0,"video::mediagroup":5,"video::muted":0,"video::poster":1,"video::preload":0,"video::width":0},n.ATTRIBS=n.ATTRIBS,n.eflags={OPTIONAL_ENDTAG:1,EMPTY:2,CDATA:4,RCDATA:8,UNSAFE:16,FOLDABLE:32,SCRIPT:64,STYLE:128,VIRTUALIZED:256},n.eflags=n.eflags,n.ELEMENTS={a:0,abbr:0,acronym:0,address:0,applet:272,area:2,article:0,aside:0,audio:0,b:0,base:274,basefont:274,bdi:0,bdo:0,big:0,blockquote:0,body:305,br:2,button:0,canvas:0,caption:0,center:0,cite:0,code:0,col:2,colgroup:1,command:2,data:0,datalist:0,dd:1,del:0,details:0,dfn:0,dialog:272,dir:0,div:0,dl:0,dt:1,em:0,fieldset:0,figcaption:0,figure:0,font:0,footer:0,form:0,frame:274,frameset:272,h1:0,h2:0,h3:0,h4:0,h5:0,h6:0,head:305,header:0,hgroup:0,hr:2,html:305,i:0,iframe:4,img:2,input:2,ins:0,isindex:274,kbd:0,keygen:274,label:0,legend:0,li:1,link:274,map:0,mark:0,menu:0,meta:274,meter:0,nav:0,nobr:0,noembed:276,noframes:276,noscript:276,object:272,ol:0,optgroup:0,option:1,output:0,p:1,param:274,pre:0,progress:0,q:0,s:0,samp:0,script:84,section:0,select:0,small:0,source:2,span:0,strike:0,strong:0,style:148,sub:0,summary:0,sup:0,table:0,tbody:1,td:1,textarea:8,tfoot:1,th:1,thead:1,time:0,title:280,tr:1,track:2,tt:0,u:0,ul:0,"var":0,video:0,wbr:2},n.ELEMENTS=n.ELEMENTS,n.ELEMENT_DOM_INTERFACES={a:"HTMLAnchorElement",abbr:"HTMLElement",acronym:"HTMLElement",address:"HTMLElement",applet:"HTMLAppletElement",area:"HTMLAreaElement",article:"HTMLElement",aside:"HTMLElement",audio:"HTMLAudioElement",b:"HTMLElement",base:"HTMLBaseElement",basefont:"HTMLBaseFontElement",bdi:"HTMLElement",bdo:"HTMLElement",big:"HTMLElement",blockquote:"HTMLQuoteElement",body:"HTMLBodyElement",br:"HTMLBRElement",button:"HTMLButtonElement",canvas:"HTMLCanvasElement",caption:"HTMLTableCaptionElement",center:"HTMLElement",cite:"HTMLElement",code:"HTMLElement",col:"HTMLTableColElement",colgroup:"HTMLTableColElement",command:"HTMLCommandElement",data:"HTMLElement",datalist:"HTMLDataListElement",dd:"HTMLElement",del:"HTMLModElement",details:"HTMLDetailsElement",dfn:"HTMLElement",dialog:"HTMLDialogElement",dir:"HTMLDirectoryElement",div:"HTMLDivElement",dl:"HTMLDListElement",dt:"HTMLElement",em:"HTMLElement",fieldset:"HTMLFieldSetElement",figcaption:"HTMLElement",figure:"HTMLElement",font:"HTMLFontElement",footer:"HTMLElement",form:"HTMLFormElement",frame:"HTMLFrameElement",frameset:"HTMLFrameSetElement",h1:"HTMLHeadingElement",h2:"HTMLHeadingElement",h3:"HTMLHeadingElement",h4:"HTMLHeadingElement",h5:"HTMLHeadingElement",h6:"HTMLHeadingElement",head:"HTMLHeadElement",header:"HTMLElement",hgroup:"HTMLElement",hr:"HTMLHRElement",html:"HTMLHtmlElement",i:"HTMLElement",iframe:"HTMLIFrameElement",img:"HTMLImageElement",input:"HTMLInputElement",ins:"HTMLModElement",isindex:"HTMLUnknownElement",kbd:"HTMLElement",keygen:"HTMLKeygenElement",label:"HTMLLabelElement",legend:"HTMLLegendElement",li:"HTMLLIElement",link:"HTMLLinkElement",map:"HTMLMapElement",mark:"HTMLElement",menu:"HTMLMenuElement",meta:"HTMLMetaElement",meter:"HTMLMeterElement",nav:"HTMLElement",nobr:"HTMLElement",noembed:"HTMLElement",noframes:"HTMLElement",noscript:"HTMLElement",object:"HTMLObjectElement",ol:"HTMLOListElement",optgroup:"HTMLOptGroupElement",option:"HTMLOptionElement",output:"HTMLOutputElement",p:"HTMLParagraphElement",param:"HTMLParamElement",pre:"HTMLPreElement",progress:"HTMLProgressElement",q:"HTMLQuoteElement",s:"HTMLElement",samp:"HTMLElement",script:"HTMLScriptElement",section:"HTMLElement",select:"HTMLSelectElement",small:"HTMLElement",source:"HTMLSourceElement",span:"HTMLSpanElement",strike:"HTMLElement",strong:"HTMLElement",style:"HTMLStyleElement",sub:"HTMLElement",summary:"HTMLElement",sup:"HTMLElement",table:"HTMLTableElement",tbody:"HTMLTableSectionElement",td:"HTMLTableDataCellElement",textarea:"HTMLTextAreaElement",tfoot:"HTMLTableSectionElement",th:"HTMLTableHeaderCellElement",thead:"HTMLTableSectionElement",time:"HTMLTimeElement",title:"HTMLTitleElement",tr:"HTMLTableRowElement",track:"HTMLTrackElement",tt:"HTMLElement",u:"HTMLElement",ul:"HTMLUListElement","var":"HTMLElement",video:"HTMLVideoElement",wbr:"HTMLElement"},n.ELEMENT_DOM_INTERFACES=n.ELEMENT_DOM_INTERFACES,n.ueffects={NOT_LOADED:0,SAME_DOCUMENT:1,NEW_DOCUMENT:2},n.ueffects=n.ueffects,n.URIEFFECTS={"a::href":2,"area::href":2,"blockquote::cite":0,"command::icon":1,"del::cite":0,"form::action":2,"img::src":1,"input::src":1,"ins::cite":0,"q::cite":0,"video::poster":1},n.URIEFFECTS=n.URIEFFECTS,n.ltypes={UNSANDBOXED:2,SANDBOXED:1,DATA:0},n.ltypes=n.ltypes,n.LOADERTYPES={"a::href":2,"area::href":2,"blockquote::cite":2,"command::icon":1,"del::cite":2,"form::action":2,"img::src":1,"input::src":1,"ins::cite":2,"q::cite":2,"video::poster":1},n.LOADERTYPES=n.LOADERTYPES,"i"!=="I".toLowerCase())throw"I/i problem";var o=function(t){function e(t){if(k.hasOwnProperty(t))return k[t];var e=t.match(A);if(e)return String.fromCharCode(parseInt(e[1],10));if(e=t.match(U))return String.fromCharCode(parseInt(e[1],16));if(I&&O.test(t)){I.innerHTML="&"+t+";";var i=I.textContent;return k[t]=i,i}return"&"+t+";"}function n(t,i){return e(i)}function o(t){return t.replace(R,"")}function s(t){return t.replace(z,n)}function a(t){return(""+t).replace(N,"&amp;").replace(Z,"&lt;").replace(j,"&gt;").replace(F,"&#34;")}function r(t){return t.replace(H,"&amp;$1").replace(Z,"&lt;").replace(j,"&gt;")}function l(t){var e={cdata:t.cdata||t.cdata,comment:t.comment||t.comment,endDoc:t.endDoc||t.endDoc,endTag:t.endTag||t.endTag,pcdata:t.pcdata||t.pcdata,rcdata:t.rcdata||t.rcdata,startDoc:t.startDoc||t.startDoc,startTag:t.startTag||t.startTag};return function(t,i){return h(t,e,i)}}function h(t,e,i){var n=p(t),o={noMoreGT:!1,noMoreEndComments:!1};c(e,n,0,o,i)}function u(t,e,i,n,o){return function(){c(t,e,i,n,o)}}function c(e,i,n,o,s){try{e.startDoc&&0==n&&e.startDoc(s);for(var a,r,l,h=n,c=i.length;c>h;){var p=i[h++],_=i[h];switch(p){case"&":B.test(_)?(e.pcdata&&e.pcdata("&"+_,s,V,u(e,i,h,o,s)),h++):e.pcdata&&e.pcdata("&amp;",s,V,u(e,i,h,o,s));break;case"</":(a=/^([-\w:]+)[^\'\"]*/.exec(_))?a[0].length===_.length&&">"===i[h+1]?(h+=2,l=a[1].toLowerCase(),e.endTag&&e.endTag(l,s,V,u(e,i,h,o,s))):h=d(i,h,e,s,V,o):e.pcdata&&e.pcdata("&lt;/",s,V,u(e,i,h,o,s));break;case"<":if(a=/^([-\w:]+)\s*\/?/.exec(_))if(a[0].length===_.length&&">"===i[h+1]){h+=2,l=a[1].toLowerCase(),e.startTag&&e.startTag(l,[],s,V,u(e,i,h,o,s));var g=t.ELEMENTS[l];if(g&q){var v={name:l,next:h,eflags:g};h=f(i,v,e,s,V,o)}}else h=m(i,h,e,s,V,o);else e.pcdata&&e.pcdata("&lt;",s,V,u(e,i,h,o,s));break;case"<!--":if(!o.noMoreEndComments){for(r=h+1;c>r&&(">"!==i[r]||!/--$/.test(i[r-1]));r++);if(c>r){if(e.comment){var y=i.slice(h,r).join("");e.comment(y.substr(0,y.length-2),s,V,u(e,i,r+1,o,s))}h=r+1}else o.noMoreEndComments=!0}o.noMoreEndComments&&e.pcdata&&e.pcdata("&lt;!--",s,V,u(e,i,h,o,s));break;case"<!":if(/^\w/.test(_)){if(!o.noMoreGT){for(r=h+1;c>r&&">"!==i[r];r++);c>r?h=r+1:o.noMoreGT=!0}o.noMoreGT&&e.pcdata&&e.pcdata("&lt;!",s,V,u(e,i,h,o,s))}else e.pcdata&&e.pcdata("&lt;!",s,V,u(e,i,h,o,s));break;case"<?":if(!o.noMoreGT){for(r=h+1;c>r&&">"!==i[r];r++);c>r?h=r+1:o.noMoreGT=!0}o.noMoreGT&&e.pcdata&&e.pcdata("&lt;?",s,V,u(e,i,h,o,s));break;case">":e.pcdata&&e.pcdata("&gt;",s,V,u(e,i,h,o,s));break;case"":break;default:e.pcdata&&e.pcdata(p,s,V,u(e,i,h,o,s))}}e.endDoc&&e.endDoc(s)}catch(L){if(L!==V)throw L}}function p(t){var e=/(<\/|<\!--|<[!?]|[&<>])/g;if(t+="",W)return t.split(e);for(var i,n=[],o=0;null!==(i=e.exec(t));)n.push(t.substring(o,i.index)),n.push(i[0]),o=i.index+i[0].length;return n.push(t.substring(o)),n}function d(t,e,i,n,o,s){var a=_(t,e);return a?(i.endTag&&i.endTag(a.name,n,o,u(i,t,e,s,n)),a.next):t.length}function m(t,e,i,n,o,s){var a=_(t,e);return a?(i.startTag&&i.startTag(a.name,a.attrs,n,o,u(i,t,a.next,s,n)),a.eflags&q?f(t,a,i,n,o,s):a.next):t.length}function f(e,i,n,o,s,a){var l=e.length;J.hasOwnProperty(i.name)||(J[i.name]=new RegExp("^"+i.name+"(?:[\\s\\/]|$)","i"));for(var h=J[i.name],c=i.next,p=i.next+1;l>p&&("</"!==e[p-1]||!h.test(e[p]));p++);l>p&&(p-=1);var d=e.slice(c,p).join("");if(i.eflags&t.eflags.CDATA)n.cdata&&n.cdata(d,o,s,u(n,e,p,a,o));else{if(!(i.eflags&t.eflags.RCDATA))throw new Error("bug");n.rcdata&&n.rcdata(r(d),o,s,u(n,e,p,a,o))}return p}function _(e,i){var n=/^([-\w:]+)/.exec(e[i]),o={};o.name=n[1].toLowerCase(),o.eflags=t.ELEMENTS[o.name];for(var s=e[i].substr(n[0].length),a=i+1,r=e.length;r>a&&">"!==e[a];a++)s+=e[a];if(a>=r)return void 0;for(var l=[];""!==s;)if(n=G.exec(s)){if(n[4]&&!n[5]||n[6]&&!n[7]){for(var h=n[4]||n[6],u=!1,c=[s,e[a++]];r>a;a++){if(u){if(">"===e[a])break}else 0<=e[a].indexOf(h)&&(u=!0);c.push(e[a])}if(a>=r)break;s=c.join("");continue}var p=n[1].toLowerCase(),d=n[2]?g(n[3]):"";l.push(p,d),s=s.substr(n[0].length)}else s=s.replace(/^[\s\S][^a-z\s]*/,"");return o.attrs=l,o.next=a+1,o}function g(t){var e=t.charCodeAt(0);return(34===e||39===e)&&(t=t.substr(1,t.length-2)),s(o(t))}function v(e){var i,n,o=function(t,e){n||e.push(t)};return l({startDoc:function(){i=[],n=!1},startTag:function(o,s,r){if(!n&&t.ELEMENTS.hasOwnProperty(o)){var l=t.ELEMENTS[o];if(!(l&t.eflags.FOLDABLE)){var h=e(o,s);if(!h)return n=!(l&t.eflags.EMPTY),void 0;if("object"!=typeof h)throw new Error("tagPolicy did not return object (old API?)");if(!("attribs"in h))throw new Error("tagPolicy gave no attribs");s=h.attribs;var u,c;if("tagName"in h?(c=h.tagName,u=t.ELEMENTS[c]):(c=o,u=l),l&t.eflags.OPTIONAL_ENDTAG){var p=i[i.length-1];!p||p.orig!==o||p.rep===c&&o===c||r.push("</",p.rep,">")}l&t.eflags.EMPTY||i.push({orig:o,rep:c}),r.push("<",c);for(var d=0,m=s.length;m>d;d+=2){var f=s[d],_=s[d+1];null!==_&&void 0!==_&&r.push(" ",f,'="',a(_),'"')}r.push(">"),l&t.eflags.EMPTY&&!(u&t.eflags.EMPTY)&&r.push("</",c,">")}}},endTag:function(e,o){if(n)return n=!1,void 0;if(t.ELEMENTS.hasOwnProperty(e)){var s=t.ELEMENTS[e];if(!(s&(t.eflags.EMPTY|t.eflags.FOLDABLE))){var a;if(s&t.eflags.OPTIONAL_ENDTAG)for(a=i.length;--a>=0;){var r=i[a].orig;if(r===e)break;if(!(t.ELEMENTS[r]&t.eflags.OPTIONAL_ENDTAG))return}else for(a=i.length;--a>=0&&i[a].orig!==e;);if(0>a)return;for(var l=i.length;--l>a;){var h=i[l].rep;t.ELEMENTS[h]&t.eflags.OPTIONAL_ENDTAG||o.push("</",h,">")}a<i.length&&(e=i[a].rep),i.length=a,o.push("</",e,">")}}},pcdata:o,rcdata:o,cdata:o,endDoc:function(t){for(;i.length;i.length--)t.push("</",i[i.length-1].rep,">")}})}function y(t,e,n,o,s){if(!s)return null;try{var a=i.parse(""+t);if(a&&(!a.hasScheme()||K.test(a.getScheme()))){var r=s(a,e,n,o);return r?r.toString():null}}catch(l){return null}return null}function L(t,e,i,n,o){if(i||t(e+" removed",{change:"removed",tagName:e}),n!==o){var s="changed";n&&!o?s="removed":!n&&o&&(s="added"),t(e+"."+i+" "+s,{change:s,tagName:e,attribName:i,oldValue:n,newValue:o})}}function b(t,e,i){var n;return n=e+"::"+i,t.hasOwnProperty(n)?t[n]:(n="*::"+i,t.hasOwnProperty(n)?t[n]:void 0)}function T(e,i){return b(t.LOADERTYPES,e,i)}function P(e,i){return b(t.URIEFFECTS,e,i)}function E(e,i,n,o,s){for(var a=0;a<i.length;a+=2){var r,l=i[a],h=i[a+1],u=h,c=null;if(r=e+"::"+l,(t.ATTRIBS.hasOwnProperty(r)||(r="*::"+l,t.ATTRIBS.hasOwnProperty(r)))&&(c=t.ATTRIBS[r]),null!==c)switch(c){case t.atype.NONE:break;case t.atype.SCRIPT:h=null,s&&L(s,e,l,u,h);break;case t.atype.STYLE:if("undefined"==typeof M){h=null,s&&L(s,e,l,u,h);break}var p=[];M(h,{declaration:function(e,i){var o=e.toLowerCase(),s=S[o];s&&(D(o,s,i,n?function(e){return y(e,t.ueffects.SAME_DOCUMENT,t.ltypes.SANDBOXED,{TYPE:"CSS",CSS_PROP:o},n)}:null),p.push(e+": "+i.join(" ")))}}),h=p.length>0?p.join(" ; "):null,s&&L(s,e,l,u,h);break;case t.atype.ID:case t.atype.IDREF:case t.atype.IDREFS:case t.atype.GLOBAL_NAME:case t.atype.LOCAL_NAME:case t.atype.CLASSES:h=o?o(h):h,s&&L(s,e,l,u,h);break;case t.atype.URI:h=y(h,P(e,l),T(e,l),{TYPE:"MARKUP",XML_ATTR:l,XML_TAG:e},n),s&&L(s,e,l,u,h);break;case t.atype.URI_FRAGMENT:h&&"#"===h.charAt(0)?(h=h.substring(1),h=o?o(h):h,null!==h&&void 0!==h&&(h="#"+h)):h=null,s&&L(s,e,l,u,h);break;default:h=null,s&&L(s,e,l,u,h)}else h=null,s&&L(s,e,l,u,h);i[a+1]=h}return i}function x(e,i,n){return function(o,s){return t.ELEMENTS[o]&t.eflags.UNSAFE?(n&&L(n,o,void 0,void 0,void 0),void 0):{attribs:E(o,s,e,i,n)}}}function w(t,e){var i=[];return v(e)(t,i),i.join("")}function C(t,e,i,n){var o=x(e,i,n);return w(t,o)}var M,D,S;"undefined"!=typeof window&&(M=window.parseCssDeclarations,D=window.sanitizeCssProperty,S=window.cssSchema);var k={lt:"<",LT:"<",gt:">",GT:">",amp:"&",AMP:"&",quot:'"',apos:"'",nbsp:"Â "},A=/^#(\d+)$/,U=/^#x([0-9A-Fa-f]+)$/,O=/^[A-Za-z][A-za-z0-9]+$/,I="undefined"!=typeof window&&window.document?window.document.createElement("textarea"):null,R=/\0/g,z=/&(#[0-9]+|#[xX][0-9A-Fa-f]+|\w+);/g,B=/^(#[0-9]+|#[xX][0-9A-Fa-f]+|\w+);/,N=/&/g,H=/&([^a-z#]|#(?:[^0-9x]|x(?:[^0-9a-f]|$)|$)|$)/gi,Z=/[<]/g,j=/>/g,F=/\"/g,G=new RegExp("^\\s*([-.:\\w]+)(?:\\s*(=)\\s*((\")[^\"]*(\"|$)|(')[^']*('|$)|(?=[a-z][-\\w]*\\s*=)|[^\"'\\s]*))?","i"),W=3==="a,b".split(/(,)/).length,q=t.eflags.CDATA|t.eflags.RCDATA,V={},J={},K=/^(?:https?|mailto|data)$/i,X={};return X.escapeAttrib=X.escapeAttrib=a,X.makeHtmlSanitizer=X.makeHtmlSanitizer=v,X.makeSaxParser=X.makeSaxParser=l,X.makeTagPolicy=X.makeTagPolicy=x,X.normalizeRCData=X.normalizeRCData=r,X.sanitize=X.sanitize=C,X.sanitizeAttribs=X.sanitizeAttribs=E,X.sanitizeWithPolicy=X.sanitizeWithPolicy=w,X.unescapeEntities=X.unescapeEntities=s,X}(n),s=o.sanitize;n.ATTRIBS["*::style"]=0,n.ELEMENTS.style=0,n.ATTRIBS["a::target"]=0,n.ELEMENTS.video=0,n.ATTRIBS["video::src"]=0,n.ATTRIBS["video::poster"]=0,n.ATTRIBS["video::controls"]=0,n.ELEMENTS.audio=0,n.ATTRIBS["audio::src"]=0,n.ATTRIBS["video::autoplay"]=0,n.ATTRIBS["video::controls"]=0,"undefined"!=typeof e&&(e.exports=s)},{}],6:[function(t,e){e.exports={author:"Mapbox",name:"mapbox.js",description:"mapbox javascript api",version:"2.0.1",homepage:"http://mapbox.com/",repository:{type:"git",url:"git://github.com/mapbox/mapbox.js.git"},main:"src/index.js",dependencies:{leaflet:"0.7.3",mustache:"0.7.3",corslite:"0.0.6","sanitize-caja":"0.0.0"},scripts:{test:"jshint src/*.js && mocha-phantomjs test/index.html"},devDependencies:{"leaflet-hash":"0.2.1","leaflet-fullscreen":"0.0.0","uglify-js":"2.4.8",mocha:"1.17.1","expect.js":"0.3.1",sinon:"1.10.2","mocha-phantomjs":"3.1.6",happen:"0.1.3",browserify:"3.23.1",jshint:"2.4.4","clean-css":"~2.0.7",minimist:"0.0.5",marked:"~0.3.0"},optionalDependencies:{},engines:{node:"*"}}},{}],7:[function(t,e){"use strict";e.exports={HTTP_URL:"http://a.tiles.mapbox.com/v4",HTTPS_URL:"https://a.tiles.mapbox.com/v4",FORCE_HTTPS:!1,REQUIRE_ACCESS_TOKEN:!0}},{}],8:[function(t,e){"use strict";var i=t("./util"),n=t("./url"),o=t("./request"),s=t("./marker"),a=t("./simplestyle"),r=L.FeatureGroup.extend({options:{filter:function(){return!0},sanitizer:t("sanitize-caja"),style:a.style},initialize:function(t,e){L.setOptions(this,e),this._layers={},"string"==typeof t?i.idUrl(t,this):t&&"object"==typeof t&&this.setGeoJSON(t)},setGeoJSON:function(t){return this._geojson=t,this.clearLayers(),this._initialize(t),this},getGeoJSON:function(){return this._geojson},loadURL:function(t){return this._request&&"abort"in this._request&&this._request.abort(),this._request=o(t,L.bind(function(e,n){this._request=null,e&&"abort"!==e.type?(i.log("could not load features at "+t),this.fire("error",{error:e})):n&&(this.setGeoJSON(n),this.fire("ready"))},this)),this},loadID:function(t){return this.loadURL(n("/"+t+"/features.json",this.options.accessToken))},setFilter:function(t){return this.options.filter=t,this._geojson&&(this.clearLayers(),this._initialize(this._geojson)),this},getFilter:function(){return this.options.filter},_initialize:function(t){var e,i,n=L.Util.isArray(t)?t:t.features;if(n)for(e=0,i=n.length;i>e;e++)(n[e].geometries||n[e].geometry||n[e].features)&&this._initialize(n[e]);else if(this.options.filter(t)){var o={accessToken:this.options.accessToken},r=L.GeoJSON.geometryToLayer(t,function(t,e){return s.style(t,e,o)}),l=s.createPopup(t,this.options.sanitizer);
+  "setStyle"in r&&r.setStyle(a.style(t)),r.feature=t,l&&r.bindPopup(l,{closeButton:!1}),this.addLayer(r)}}});e.exports.FeatureLayer=r,e.exports.featureLayer=function(t,e){return new r(t,e)}},{"./marker":21,"./request":22,"./simplestyle":24,"./url":26,"./util":27,"sanitize-caja":4}],9:[function(t,e){"use strict";var i=t("./util"),n=t("./url"),o=t("./request");e.exports=function(t,e){var s={};return i.strict(t,"string"),-1===t.indexOf("/")&&(t=n("/geocode/"+t+"/{query}.json",e&&e.accessToken)),s.getURL=function(){return t},s.queryURL=function(t){if("string"!=typeof t){for(var e=[],i=0;i<t.length;i++)e[i]=encodeURIComponent(t[i]);return L.Util.template(s.getURL(),{query:e.join(";")})}return L.Util.template(s.getURL(),{query:encodeURIComponent(t)})},s.query=function(t,e){return i.strict(e,"function"),o(s.queryURL(t),function(t,n){if(n&&(n.length||n.features)){var o={results:n};n.features&&n.features.length&&(o.latlng=[n.features[0].center[1],n.features[0].center[0]],n.features[0].bbox&&(o.bounds=n.features[0].bbox,o.lbounds=i.lbounds(o.bounds))),e(null,o)}else e(t||!0)}),s},s.reverseQuery=function(t,e){function i(t){return void 0!==t.lat&&void 0!==t.lng?t.lng+","+t.lat:void 0!==t.lat&&void 0!==t.lon?t.lon+","+t.lat:t[0]+","+t[1]}var n="";if(t.length&&t[0].length){for(var a=0,r=[];a<t.length;a++)r.push(i(t[a]));n=r.join(";")}else n=i(t);return o(s.queryURL(n),function(t,i){e(t,i)}),s},s}},{"./request":22,"./url":26,"./util":27}],10:[function(t,e){"use strict";var i=t("./geocoder"),n=t("./util"),o=L.Control.extend({includes:L.Mixin.Events,options:{position:"topleft",pointZoom:16,keepOpen:!1},initialize:function(t,e){L.Util.setOptions(this,e),this.setURL(t)},setURL:function(t){return this.geocoder=i(t,{accessToken:this.options.accessToken}),this},getURL:function(){return this.geocoder.getURL()},setID:function(t){return this.setURL(t)},setTileJSON:function(t){return this.setURL(t.geocoder)},_toggle:function(t){t&&L.DomEvent.stop(t),L.DomUtil.hasClass(this._container,"active")?(L.DomUtil.removeClass(this._container,"active"),this._results.innerHTML="",this._input.blur()):(L.DomUtil.addClass(this._container,"active"),this._input.focus(),this._input.select())},_closeIfOpen:function(){L.DomUtil.hasClass(this._container,"active")&&!this.options.keepOpen&&(L.DomUtil.removeClass(this._container,"active"),this._results.innerHTML="",this._input.blur())},onAdd:function(t){var e=L.DomUtil.create("div","leaflet-control-mapbox-geocoder leaflet-bar leaflet-control"),i=L.DomUtil.create("a","leaflet-control-mapbox-geocoder-toggle mapbox-icon mapbox-icon-geocoder",e),n=L.DomUtil.create("div","leaflet-control-mapbox-geocoder-results",e),o=L.DomUtil.create("div","leaflet-control-mapbox-geocoder-wrap",e),s=L.DomUtil.create("form","leaflet-control-mapbox-geocoder-form",o),a=L.DomUtil.create("input","",s);return i.href="#",i.innerHTML="&nbsp;",a.type="text",a.setAttribute("placeholder","Search"),L.DomEvent.addListener(s,"submit",this._geocode,this),L.DomEvent.disableClickPropagation(e),this._map=t,this._results=n,this._input=a,this._form=s,this.options.keepOpen?L.DomUtil.addClass(e,"active"):(this._map.on("click",this._closeIfOpen,this),L.DomEvent.addListener(i,"click",this._toggle,this)),e},_geocode:function(t){L.DomEvent.preventDefault(t),L.DomUtil.addClass(this._container,"searching");var e=this._map,i=L.bind(function(t,e){if(L.DomUtil.removeClass(this._container,"searching"),!t&&e&&e.results&&e.results.features&&e.results.features.length){this._results.innerHTML="";var i=e.results.features;if(1===i.length)this.fire("autoselect",{feature:i[0]}),o(i[0]),this._closeIfOpen();else{for(var n=0,s=Math.min(i.length,5);s>n;n++){var a=i[n],r=a.place_name;if(r.length){var l=L.DomUtil.create("a","",this._results);l.innerText=r,l.href="#",L.bind(function(t){L.DomEvent.addListener(l,"click",function(e){o(t),L.DomEvent.stop(e),this.fire("select",{feature:t})},this)},this)(a)}}if(i.length>5){var h=L.DomUtil.create("span","",this._results);h.innerHTML="Top 5 of "+i.length+"  results"}}this.fire("found",{results:e.results})}else this.fire("error",{error:t})},this),o=L.bind(function(t){t.bbox?this._map.fitBounds(n.lbounds(t.bbox)):t.center&&this._map.setView([t.center[1],t.center[0]],void 0===e.getZoom()?this.options.pointZoom:Math.max(e.getZoom(),this.options.pointZoom))},this);this.geocoder.query(this._input.value,i)}});e.exports.GeocoderControl=o,e.exports.geocoderControl=function(t,e){return new o(t,e)}},{"./geocoder":9,"./util":27}],11:[function(t,e){"use strict";function i(t){return t>=93&&t--,t>=35&&t--,t-32}e.exports=function(t){return function(e,n){if(t){var o=i(t.grid[n].charCodeAt(e)),s=t.keys[o];return t.data[s]}}}},{}],12:[function(t,e){"use strict";var i=t("./util"),n=t("mustache"),o=L.Control.extend({options:{pinnable:!0,follow:!1,sanitizer:t("sanitize-caja"),touchTeaser:!0,location:!0},_currentContent:"",_pinned:!1,initialize:function(t,e){L.Util.setOptions(this,e),i.strict_instance(t,L.Class,"L.mapbox.gridLayer"),this._layer=t},setTemplate:function(t){return i.strict(t,"string"),this.options.template=t,this},_template:function(t,e){if(e){var i=this.options.template||this._layer.getTileJSON().template;if(i){var o={};return o["__"+t+"__"]=!0,this.options.sanitizer(n.to_html(i,L.extend(o,e)))}}},_show:function(t,e){t!==this._currentContent&&(this._currentContent=t,this.options.follow?(this._popup.setContent(t).setLatLng(e.latLng),this._map._popup!==this._popup&&this._popup.openOn(this._map)):(this._container.style.display="block",this._contentWrapper.innerHTML=t))},hide:function(){return this._pinned=!1,this._currentContent="",this._map.closePopup(),this._container.style.display="none",this._contentWrapper.innerHTML="",L.DomUtil.removeClass(this._container,"closable"),this},_mouseover:function(t){if(t.data?L.DomUtil.addClass(this._map._container,"map-clickable"):L.DomUtil.removeClass(this._map._container,"map-clickable"),!this._pinned){var e=this._template("teaser",t.data);e?this._show(e,t):this.hide()}},_mousemove:function(t){this._pinned||this.options.follow&&this._popup.setLatLng(t.latLng)},_navigateTo:function(t){window.top.location.href=t},_click:function(t){var e=this._template("location",t.data);if(this.options.location&&e&&0===e.search(/^https?:/))return this._navigateTo(this._template("location",t.data));if(this.options.pinnable){var i=this._template("full",t.data);!i&&this.options.touchTeaser&&L.Browser.touch&&(i=this._template("teaser",t.data)),i?(L.DomUtil.addClass(this._container,"closable"),this._pinned=!0,this._show(i,t)):this._pinned&&(L.DomUtil.removeClass(this._container,"closable"),this._pinned=!1,this.hide())}},_onPopupClose:function(){this._currentContent=null,this._pinned=!1},_createClosebutton:function(t,e){var i=L.DomUtil.create("a","close",t);return i.innerHTML="close",i.href="#",i.title="close",L.DomEvent.on(i,"click",L.DomEvent.stopPropagation).on(i,"mousedown",L.DomEvent.stopPropagation).on(i,"dblclick",L.DomEvent.stopPropagation).on(i,"click",L.DomEvent.preventDefault).on(i,"click",e,this),i},onAdd:function(t){this._map=t;var e="leaflet-control-grid map-tooltip",i=L.DomUtil.create("div",e),n=L.DomUtil.create("div","map-tooltip-content");return i.style.display="none",this._createClosebutton(i,this.hide),i.appendChild(n),this._contentWrapper=n,this._popup=new L.Popup({autoPan:!1,closeOnClick:!1}),t.on("popupclose",this._onPopupClose,this),L.DomEvent.disableClickPropagation(i).addListener(i,"mousewheel",L.DomEvent.stopPropagation),this._layer.on("mouseover",this._mouseover,this).on("mousemove",this._mousemove,this).on("click",this._click,this),i},onRemove:function(t){t.off("popupclose",this._onPopupClose,this),this._layer.off("mouseover",this._mouseover,this).off("mousemove",this._mousemove,this).off("click",this._click,this)}});e.exports.GridControl=o,e.exports.gridControl=function(t,e){return new o(t,e)}},{"./util":27,mustache:3,"sanitize-caja":4}],13:[function(t,e){"use strict";var i=t("./util"),n=(t("./url"),t("./request")),o=t("./grid"),s=L.Class.extend({includes:[L.Mixin.Events,t("./load_tilejson")],options:{template:function(){return""}},_mouseOn:null,_tilejson:{},_cache:{},initialize:function(t,e){L.Util.setOptions(this,e),this._loadTileJSON(t)},_setTileJSON:function(t){return i.strict(t,"object"),L.extend(this.options,{grids:t.grids,minZoom:t.minzoom,maxZoom:t.maxzoom,bounds:t.bounds&&i.lbounds(t.bounds)}),this._tilejson=t,this._cache={},this._update(),this},getTileJSON:function(){return this._tilejson},active:function(){return!!(this._map&&this.options.grids&&this.options.grids.length)},addTo:function(t){return t.addLayer(this),this},onAdd:function(t){this._map=t,this._update(),this._map.on("click",this._click,this).on("mousemove",this._move,this).on("moveend",this._update,this)},onRemove:function(){this._map.off("click",this._click,this).off("mousemove",this._move,this).off("moveend",this._update,this)},getData:function(t,e){if(this.active()){var i=this._map,n=i.project(t.wrap()),o=256,s=4,a=Math.floor(n.x/o),r=Math.floor(n.y/o),l=i.options.crs.scale(i.getZoom())/o;return a=(a+l)%l,r=(r+l)%l,this._getTile(i.getZoom(),a,r,function(t){var i=Math.floor((n.x-a*o)/s),l=Math.floor((n.y-r*o)/s);e(t(i,l))}),this}},_click:function(t){this.getData(t.latlng,L.bind(function(e){this.fire("click",{latLng:t.latlng,data:e})},this))},_move:function(t){this.getData(t.latlng,L.bind(function(e){e!==this._mouseOn?(this._mouseOn&&this.fire("mouseout",{latLng:t.latlng,data:this._mouseOn}),this.fire("mouseover",{latLng:t.latlng,data:e}),this._mouseOn=e):this.fire("mousemove",{latLng:t.latlng,data:e})},this))},_getTileURL:function(t){var e=this.options.grids,i=(t.x+t.y)%e.length,n=e[i];return L.Util.template(n,t)},_update:function(){if(this.active()){var t=this._map.getPixelBounds(),e=this._map.getZoom(),i=256;if(!(e>this.options.maxZoom||e<this.options.minZoom))for(var n=L.bounds(t.min.divideBy(i)._floor(),t.max.divideBy(i)._floor()),o=this._map.options.crs.scale(e)/i,s=n.min.x;s<=n.max.x;s++)for(var a=n.min.y;a<=n.max.y;a++)this._getTile(e,(s%o+o)%o,(a%o+o)%o)}},_getTile:function(t,e,i,s){var a=t+"_"+e+"_"+i,r=L.point(e,i);if(r.z=t,this._tileShouldBeLoaded(r)){if(a in this._cache){if(!s)return;return"function"==typeof this._cache[a]?s(this._cache[a]):this._cache[a].push(s),void 0}this._cache[a]=[],s&&this._cache[a].push(s),n(this._getTileURL(r),L.bind(function(t,e){var i=this._cache[a];this._cache[a]=o(e);for(var n=0;n<i.length;++n)i[n](this._cache[a])},this))}},_tileShouldBeLoaded:function(t){if(t.z>this.options.maxZoom||t.z<this.options.minZoom)return!1;if(this.options.bounds){var e=256,i=t.multiplyBy(e),n=i.add(new L.Point(e,e)),o=this._map.unproject(i),s=this._map.unproject(n),a=new L.LatLngBounds([o,s]);if(!this.options.bounds.intersects(a))return!1}return!0}});e.exports.GridLayer=s,e.exports.gridLayer=function(t,e){return new s(t,e)}},{"./grid":11,"./load_tilejson":18,"./request":22,"./url":26,"./util":27}],14:[function(t){t("./leaflet"),t("./mapbox")},{"./leaflet":16,"./mapbox":20}],15:[function(t,e){"use strict";var i=L.Control.extend({options:{position:"bottomright",sanitizer:t("sanitize-caja")},initialize:function(t){L.setOptions(this,t),this._info={}},onAdd:function(t){this._container=L.DomUtil.create("div","mapbox-control-info mapbox-small"),this._content=L.DomUtil.create("div","map-info-container",this._container);var e=L.DomUtil.create("a","mapbox-info-toggle mapbox-icon mapbox-icon-info",this._container);e.href="#",L.DomEvent.addListener(e,"click",this._showInfo,this),L.DomEvent.disableClickPropagation(this._container);for(var i in t._layers)t._layers[i].getAttribution&&this.addInfo(t._layers[i].getAttribution());return t.on("layeradd",this._onLayerAdd,this).on("layerremove",this._onLayerRemove,this),this._update(),this._container},onRemove:function(t){t.off("layeradd",this._onLayerAdd,this).off("layerremove",this._onLayerRemove,this)},addInfo:function(t){return t?(this._info[t]||(this._info[t]=0),this._info[t]=!0,this._update()):this},removeInfo:function(t){return t?(this._info[t]&&(this._info[t]=!1),this._update()):this},_showInfo:function(t){return L.DomEvent.preventDefault(t),this._active===!0?this._hidecontent():(L.DomUtil.addClass(this._container,"active"),this._active=!0,this._update(),void 0)},_hidecontent:function(){this._content.innerHTML="",this._active=!1,L.DomUtil.removeClass(this._container,"active")},_update:function(){if(!this._map)return this;this._content.innerHTML="";var t="none",e=[];for(var i in this._info)this._info.hasOwnProperty(i)&&this._info[i]&&(e.push(this.options.sanitizer(i)),t="block");return this._content.innerHTML+=e.join(" | "),this._container.style.display=t,this},_onLayerAdd:function(t){t.layer.getAttribution&&t.layer.getAttribution()?this.addInfo(t.layer.getAttribution()):"on"in t.layer&&t.layer.getAttribution&&t.layer.on("ready",L.bind(function(){this.addInfo(t.layer.getAttribution())},this))},_onLayerRemove:function(t){t.layer.getAttribution&&this.removeInfo(t.layer.getAttribution())}});e.exports.InfoControl=i,e.exports.infoControl=function(t){return new i(t)}},{"sanitize-caja":4}],16:[function(t){window.L=t("leaflet/dist/leaflet-src")},{"leaflet/dist/leaflet-src":2}],17:[function(t,e){"use strict";var i=L.Control.extend({options:{position:"bottomright",sanitizer:t("sanitize-caja")},initialize:function(t){L.setOptions(this,t),this._legends={}},onAdd:function(){return this._container=L.DomUtil.create("div","map-legends wax-legends"),L.DomEvent.disableClickPropagation(this._container),this._update(),this._container},addLegend:function(t){return t?(this._legends[t]||(this._legends[t]=0),this._legends[t]++,this._update()):this},removeLegend:function(t){return t?(this._legends[t]&&this._legends[t]--,this._update()):this},_update:function(){if(!this._map)return this;this._container.innerHTML="";var t="none";for(var e in this._legends)if(this._legends.hasOwnProperty(e)&&this._legends[e]){var i=L.DomUtil.create("div","map-legend wax-legend",this._container);i.innerHTML=this.options.sanitizer(e),t="block"}return this._container.style.display=t,this}});e.exports.LegendControl=i,e.exports.legendControl=function(t){return new i(t)}},{"sanitize-caja":4}],18:[function(t,e){"use strict";var i=t("./request"),n=t("./url"),o=t("./util");e.exports={_loadTileJSON:function(t){"string"==typeof t?(t=n.tileJSON(t,this.options&&this.options.accessToken),i(t,L.bind(function(e,i){e?(o.log("could not load TileJSON at "+t),this.fire("error",{error:e})):i&&(this._setTileJSON(i),this.fire("ready"))},this))):t&&"object"==typeof t&&this._setTileJSON(t)}}},{"./request":22,"./url":26,"./util":27}],19:[function(t,e){"use strict";function i(t,e){return!e||t.accessToken?t:L.extend({accessToken:e},t)}var n=(t("./util"),t("./tile_layer").tileLayer),o=t("./feature_layer").featureLayer,s=t("./grid_layer").gridLayer,a=t("./grid_control").gridControl,r=t("./info_control").infoControl,l=t("./share_control").shareControl,h=t("./legend_control").legendControl,u=L.Map.extend({includes:[t("./load_tilejson")],options:{tileLayer:{},featureLayer:{},gridLayer:{},legendControl:{},gridControl:{},infoControl:!1,shareControl:!1},_tilejson:{},initialize:function(t,e,u){L.Map.prototype.initialize.call(this,t,u),this.attributionControl&&this.attributionControl.setPrefix(""),this.options.tileLayer&&(this.tileLayer=n(void 0,i(this.options.tileLayer,this.options.accessToken)),this.addLayer(this.tileLayer)),this.options.featureLayer&&(this.featureLayer=o(void 0,i(this.options.featureLayer,this.options.accessToken)),this.addLayer(this.featureLayer)),this.options.gridLayer&&(this.gridLayer=s(void 0,i(this.options.gridLayer,this.options.accessToken)),this.addLayer(this.gridLayer)),this.options.gridLayer&&this.options.gridControl&&(this.gridControl=a(this.gridLayer,this.options.gridControl),this.addControl(this.gridControl)),this.options.infoControl&&(this.infoControl=r(this.options.infoControl),this.addControl(this.infoControl)),this.options.legendControl&&(this.legendControl=h(this.options.legendControl),this.addControl(this.legendControl)),this.options.shareControl&&(this.shareControl=l(void 0,i(this.options.shareControl,this.options.accessToken)),this.addControl(this.shareControl)),this._loadTileJSON(e)},addLayer:function(t){return"on"in t&&t.on("ready",L.bind(function(){this._updateLayer(t)},this)),L.Map.prototype.addLayer.call(this,t)},_setTileJSON:function(t){return this._tilejson=t,this._initialize(t),this},getTileJSON:function(){return this._tilejson},_initialize:function(t){if(this.tileLayer&&(this.tileLayer._setTileJSON(t),this._updateLayer(this.tileLayer)),this.featureLayer&&!this.featureLayer.getGeoJSON()&&t.data&&t.data[0]&&this.featureLayer.loadURL(t.data[0]),this.gridLayer&&(this.gridLayer._setTileJSON(t),this._updateLayer(this.gridLayer)),this.infoControl&&t.attribution&&this.infoControl.addInfo(t.attribution),this.legendControl&&t.legend&&this.legendControl.addLegend(t.legend),this.shareControl&&this.shareControl._setTileJSON(t),!this._loaded&&t.center){var e=t.center[2],i=L.latLng(t.center[1],t.center[0]);this.setView(i,e)}},_editLink:function(){if(this._controlContainer.getElementsByClassName){var t=this._controlContainer.getElementsByClassName("mapbox-improve-map");if(t.length&&this._loaded)for(var e=this.getCenter().wrap(),i=this._tilejson||{},n=i.id||"",o=0;o<t.length;o++)t[o].href=t[o].href.split("#")[0]+"#"+n+"/"+e.lng.toFixed(3)+"/"+e.lat.toFixed(3)+"/"+this.getZoom()}},_updateLayer:function(t){t.options&&(this.infoControl&&this._loaded&&this.infoControl.addInfo(t.options.infoControl),this.attributionControl&&this._loaded&&t.getAttribution&&this.attributionControl.addAttribution(t.getAttribution()),this.on("moveend",this._editLink,this),L.stamp(t)in this._zoomBoundLayers||!t.options.maxZoom&&!t.options.minZoom||(this._zoomBoundLayers[L.stamp(t)]=t),this._editLink(),this._updateZoomLevels())}});e.exports.Map=u,e.exports.map=function(t,e,i){return new u(t,e,i)}},{"./feature_layer":8,"./grid_control":12,"./grid_layer":13,"./info_control":15,"./legend_control":17,"./load_tilejson":18,"./share_control":23,"./tile_layer":25,"./util":27}],20:[function(t,e){"use strict";window.L.Icon.Default.imagePath="//api.tiles.mapbox.com/mapbox.js/v"+t("../package.json").version+"/images";var i=t("./geocoder_control"),n=t("./grid_control"),o=t("./feature_layer"),s=t("./legend_control"),a=t("./share_control"),r=t("./tile_layer"),l=t("./info_control"),h=t("./map"),u=t("./grid_layer");L.mapbox=e.exports={VERSION:t("../package.json").version,geocoder:t("./geocoder"),marker:t("./marker"),simplestyle:t("./simplestyle"),tileLayer:r.tileLayer,TileLayer:r.TileLayer,infoControl:l.infoControl,InfoControl:l.InfoControl,shareControl:a.shareControl,ShareControl:a.ShareControl,legendControl:s.legendControl,LegendControl:s.LegendControl,geocoderControl:i.geocoderControl,GeocoderControl:i.GeocoderControl,gridControl:n.gridControl,GridControl:n.GridControl,gridLayer:u.gridLayer,GridLayer:u.GridLayer,featureLayer:o.featureLayer,FeatureLayer:o.FeatureLayer,map:h.map,Map:h.Map,config:t("./config"),sanitize:t("sanitize-caja"),template:t("mustache").to_html}},{"../package.json":6,"./config":7,"./feature_layer":8,"./geocoder":9,"./geocoder_control":10,"./grid_control":12,"./grid_layer":13,"./info_control":15,"./legend_control":17,"./map":19,"./marker":21,"./share_control":23,"./simplestyle":24,"./tile_layer":25,mustache:3,"sanitize-caja":4}],21:[function(t,e){"use strict";function i(t,e){t=t||{};var i={small:[20,50],medium:[30,70],large:[35,90]},n=t["marker-size"]||"medium",o=t["marker-symbol"]?"-"+t["marker-symbol"]:"",a=(t["marker-color"]||"7e7e7e").replace("#","");return L.icon({iconUrl:s("/marker/pin-"+n.charAt(0)+o+"+"+a+(L.Browser.retina?"@2x":"")+".png",e&&e.accessToken),iconSize:i[n],iconAnchor:[i[n][0]/2,i[n][1]/2],popupAnchor:[0,-i[n][1]/2]})}function n(t,e,n){return L.marker(e,{icon:i(t.properties,n),title:a.strip_tags(r(t.properties&&t.properties.title||""))})}function o(t,e){if(!t||!t.properties)return"";var i="";return t.properties.title&&(i+='<div class="marker-title">'+t.properties.title+"</div>"),t.properties.description&&(i+='<div class="marker-description">'+t.properties.description+"</div>"),(e||r)(i)}var s=t("./url"),a=t("./util"),r=t("sanitize-caja");e.exports={icon:i,style:n,createPopup:o}},{"./url":26,"./util":27,"sanitize-caja":4}],22:[function(t,e){"use strict";var i=t("corslite"),n=t("./util").strict,o=t("./config"),s=/^(https?:)?(?=\/\/(.|api)\.tiles\.mapbox\.com\/)/;e.exports=function(t,e){function a(t,i){!t&&i&&(i=JSON.parse(i.responseText)),e(t,i)}return n(t,"string"),n(e,"function"),t=t.replace(s,function(t,e){return"withCredentials"in new window.XMLHttpRequest?"https:"===e||"https:"===document.location.protocol||o.FORCE_HTTPS?"https:":"http:":document.location.protocol}),i(t,a)}},{"./config":7,"./util":27,corslite:1}],23:[function(t,e){"use strict";var i=t("./url"),n=L.Control.extend({includes:[t("./load_tilejson")],options:{position:"topleft",url:""},initialize:function(t,e){L.setOptions(this,e),this._loadTileJSON(t)},_setTileJSON:function(t){this._tilejson=t},onAdd:function(t){this._map=t;var e=L.DomUtil.create("div","leaflet-control-mapbox-share leaflet-bar"),i=L.DomUtil.create("a","mapbox-share mapbox-icon mapbox-icon-share",e);return i.href="#",this._modal=L.DomUtil.create("div","mapbox-modal",this._map._container),this._mask=L.DomUtil.create("div","mapbox-modal-mask",this._modal),this._content=L.DomUtil.create("div","mapbox-modal-content",this._modal),L.DomEvent.addListener(i,"click",this._shareClick,this),L.DomEvent.disableClickPropagation(e),this._map.on("mousedown",this._clickOut,this),e},_clickOut:function(t){return this._sharing?(L.DomEvent.preventDefault(t),L.DomUtil.removeClass(this._modal,"active"),this._content.innerHTML="",this._sharing=null,void 0):void 0},_shareClick:function(t){if(L.DomEvent.stop(t),this._sharing)return this._clickOut(t);var e=this._tilejson||this._map._tilejson||{},n=encodeURIComponent(this.options.url||e.webpage||window.location),o=encodeURIComponent(e.name),s=i(e.id+"/"+this._map.getCenter().lng+","+this._map.getCenter().lat+","+this._map.getZoom()+"/600x600.png",this.options.accessToken),a=i(e.id+".html",this.options.accessToken),r="//twitter.com/intent/tweet?status="+o+" "+n,l="//www.facebook.com/sharer.php?u="+n+"&t="+encodeURIComponent(e.name),h="//www.pinterest.com/pin/create/button/?url="+n+"&media="+s+"&description="+e.name,u="<h3>Share this map</h3><div class='mapbox-share-buttons'><a class='mapbox-button mapbox-button-icon mapbox-icon-facebook' target='_blank' href='{{facebook}}'>Facebook</a><a class='mapbox-button mapbox-button-icon mapbox-icon-twitter' target='_blank' href='{{twitter}}'>Twitter</a><a class='mapbox-button mapbox-button-icon mapbox-icon-pinterest' target='_blank' href='{{pinterest}}'>Pinterest</a></div>".replace("{{twitter}}",r).replace("{{facebook}}",l).replace("{{pinterest}}",h),c='<iframe width="100%" height="500px" frameBorder="0" src="{{embed}}"></iframe>'.replace("{{embed}}",a),p="Copy and paste this <strong>HTML code</strong> into documents to embed this map on web pages.";L.DomUtil.addClass(this._modal,"active"),this._sharing=L.DomUtil.create("div","mapbox-modal-body",this._content),this._sharing.innerHTML=u;var d=L.DomUtil.create("input","mapbox-embed",this._sharing);d.type="text",d.value=c;var m=L.DomUtil.create("label","mapbox-embed-description",this._sharing);m.innerHTML=p;var f=L.DomUtil.create("a","leaflet-popup-close-button",this._sharing);f.href="#",L.DomEvent.disableClickPropagation(this._sharing),L.DomEvent.addListener(f,"click",this._clickOut,this),L.DomEvent.addListener(d,"click",function(t){t.target.focus(),t.target.select()})}});e.exports.ShareControl=n,e.exports.shareControl=function(t,e){return new n(t,e)}},{"./load_tilejson":18,"./url":26}],24:[function(t,e){"use strict";function i(t,e){var i={};for(var n in e)i[n]=void 0===t[n]?e[n]:t[n];return i}function n(t){for(var e={},i=0;i<a.length;i++)e[a[i][1]]=t[a[i][0]];return e}function o(t){return n(i(t.properties||{},s))}var s={stroke:"#555555","stroke-width":2,"stroke-opacity":1,fill:"#555555","fill-opacity":.5},a=[["stroke","color"],["stroke-width","weight"],["stroke-opacity","opacity"],["fill","fillColor"],["fill-opacity","fillOpacity"]];e.exports={style:o,defaults:s}},{}],25:[function(t,e){"use strict";var i=t("./util"),n=(t("./url"),L.TileLayer.extend({includes:[t("./load_tilejson")],options:{format:"png"},formats:["png","png32","png64","png128","png256","jpg70","jpg80","jpg90"],scalePrefix:"@2x.",initialize:function(t,e){L.TileLayer.prototype.initialize.call(this,void 0,e),this._tilejson={},e&&e.format&&i.strict_oneof(e.format,this.formats),this._loadTileJSON(t)},setFormat:function(t){return i.strict(t,"string"),this.options.format=t,this.redraw(),this},setUrl:null,_setTileJSON:function(t){return i.strict(t,"object"),L.extend(this.options,{tiles:t.tiles,attribution:t.attribution,minZoom:t.minzoom||0,maxZoom:t.maxzoom||18,tms:"tms"===t.scheme,bounds:t.bounds&&i.lbounds(t.bounds)}),this._tilejson=t,this.redraw(),this},getTileJSON:function(){return this._tilejson},getTileUrl:function(t){var e=this.options.tiles,i=Math.floor(Math.abs(t.x+t.y)%e.length),n=e[i],o=L.Util.template(n,t);return o?o.replace(".png",(L.Browser.retina?this.scalePrefix:".")+this.options.format):o},_update:function(){this.options.tiles&&L.TileLayer.prototype._update.call(this)}}));e.exports.TileLayer=n,e.exports.tileLayer=function(t,e){return new n(t,e)}},{"./load_tilejson":18,"./url":26,"./util":27}],26:[function(t,e){"use strict";var i=t("./config"),n=t("../package.json").version;e.exports=function(t,e){if(e=e||L.mapbox.accessToken,!e&&i.REQUIRE_ACCESS_TOKEN)throw new Error("An API access token is required to use Mapbox.js. See https://www.mapbox.com/mapbox.js/api/v"+n+"/api-access-tokens/");var o="https:"===document.location.protocol||i.FORCE_HTTPS?i.HTTPS_URL:i.HTTP_URL;if(o+=t,o+=-1!==o.indexOf("?")?"&access_token=":"?access_token=",i.REQUIRE_ACCESS_TOKEN){if("s"===e[0])throw new Error("Use a public access token (pk.*) with Mapbox.js, not a secret access token (sk.*). See https://www.mapbox.com/mapbox.js/api/v"+n+"/api-access-tokens/");o+=e}return o},e.exports.tileJSON=function(t,i){if(-1!==t.indexOf("/"))return t;var n=e.exports("/"+t+".json",i);return 0===n.indexOf("https")&&(n+="&secure"),n}},{"../package.json":6,"./config":7}],27:[function(t,e){"use strict";function i(t,e){if(!e||!e.length)return!1;for(var i=0;i<e.length;i++)if(e[i]==t)return!0;return!1}e.exports={idUrl:function(t,e){-1==t.indexOf("/")?e.loadID(t):e.loadURL(t)},log:function(t){"object"==typeof console&&"function"==typeof console.error&&console.error(t)},strict:function(t,e){if(typeof t!==e)throw new Error("Invalid argument: "+e+" expected")},strict_instance:function(t,e,i){if(!(t instanceof e))throw new Error("Invalid argument: "+i+" expected")},strict_oneof:function(t,e){if(!i(t,e))throw new Error("Invalid argument: "+t+" given, valid values are "+e.join(", "))},strip_tags:function(t){return t.replace(/<[^<]+>/g,"")},lbounds:function(t){return new L.LatLngBounds([[t[1],t[0]],[t[3],t[2]]])}}},{}]},{},[14]);
+}
+;
+// L.mapbox.accessToken = 'pk.eyJ1IjoibGtiZ2lmdCIsImEiOiJyTERaTml3In0.y2wd_Fi58ux53Wm1Ur1qCg';
+// var geojson = [
+//   {
+//     "type": "Feature",
+//     "geometry": {
+//       "type": "Point",
+//       "coordinates": [-77.03238901390978,38.913188059745586]
+//     },
+//     "properties": {
+//       "title": "Mapbox DC",
+//       "description": "1714 14th St NW, Washington DC",
+//       "marker-color": "#fc4353",
+//       "marker-size": "large",
+//       "marker-symbol": "monument"
+//     }
+//   },
+//   {
+//     "type": "Feature",
+//     "geometry": {
+//       "type": "Point",
+//       "coordinates": [-122.414, 37.776]
+//     },
+//     "properties": {
+//       "title": "Mapbox SF",
+//       "description": "155 9th St, San Francisco",
+//       "marker-color": "#fc4353",
+//       "marker-size": "large",
+//       "marker-symbol": "harbor"
+//     }
+//   }
+// ];
+
+// L.mapbox.map('map', 'examples.map-i86nkdio')
+//   .setView([37.8, -96], 4)
+//   .featureLayer.setGeoJSON(geojson);
+if($('#map').length > 0){
+  L.mapbox.accessToken = 'pk.eyJ1IjoibGtiZ2lmdCIsImEiOiJyTERaTml3In0.y2wd_Fi58ux53Wm1Ur1qCg';
+  var map = L.mapbox.map('map', 'examples.map-h67hf2ic', {
+    zoomControl: false
+  }).setView([geoJSON[0].geometry.coordinates[1], geoJSON[0].geometry.coordinates[0]], 12);
+
+  // Disable drag and zoom handlers.
+  // map.dragging.disable();
+  map.touchZoom.disable();
+  map.doubleClickZoom.disable();
+  // map.scrollWheelZoom.disable();
+
+  // Disable tap handler, if present.
+  if (map.tap) map.tap.disable();
+
+  map.featureLayer.setGeoJSON(geoJSON);
+
+    // var markerList = document.getElementById('marker-list');
+    // map.featureLayer.on('ready', function(e) {
+    //     map.featureLayer.eachLayer(function(layer) {
+    //         var item = markerList.appendChild(document.createElement('li'));
+    //         item.innerHTML = layer.toGeoJSON().properties.title;
+    //         item.onclick = function() {
+    //            map.setView(layer.getLatLng(), 14);
+    //            layer.openPopup();
+    //         };
+    //     });
+    // });
+
+
+    // for( var i = 0; i < geoJSON.length; i++ ){
+    //   var lon = geoJSON[i].geometry.coordinates[0],
+    //       lat  = geoJSON[i].geometry.coordinates[1];
+    // }
+
+
+  $(window).scroll(function(){
+    var isMapTop = $(window).scrollTop() >= $('#map').offset().top - 25  && $('#map').offset().top + 25 >= $(window).scrollTop();
+    var isMapBottom = $(window).scrollTop() <= $('#map').offset().top + $('#map').height();
+    if(isMapTop){
+      $('body').addClass('map-inview');
+    } else {
+      $('body').removeClass('map-inview');
+    }
+  });
+}
+;
 $(document).ready(function(){
   if( $('.owl-carousel').length > 0){
     $('.owl-carousel').owlCarousel({
@@ -32722,6 +47888,145 @@ $(document).ready(function(){
 
 
 }).call(this);
+if($('#timeline-embed').length > 0  ){
+
+    var eventsJSON = {
+        "timeline":
+        {
+            "headline":"Lame in Shanghai",
+            "type":"default",
+            "text":"<p>Before and after</p>",
+            "asset": {
+                "media":"https://farm9.staticflickr.com/8011/7659718044_d93886d294_z_d.jpg",
+                "credit":"Gift",
+                "caption":"Abandoned Parking Structure, Shanghai, China"
+            },
+            "date": [
+                {
+                    "startDate":"2012,7,29",
+                    "endDate":"2012,7,29",
+                    "headline":"Rooftop in the middle of downtown Shanghai, China",
+                    "text":"<p>Blank walls right next to the freeway</p>",
+                    "tag":"blankwalls",
+                    "classname":"optionaluniqueclassnamecanbeaddedhere",
+                    "asset": {
+                        "media":"http://i.imgur.com/LurRBXE.jpg",
+                        "thumbnail":"http://i.imgur.com/LurRBXEs.jpg",
+                        "credit":"Gift",
+                        "caption":"Blank walls to be painted"
+                    }
+                },
+                {
+                    "startDate":"2012,7,29",
+                    "endDate":"2012,7,29",
+                    "headline":"Lame in action",
+                    "text":"<p>Starting off the piece with a sketch</p>",
+                    "tag":"graffiti",
+                    "classname":"optionaluniqueclassnamecanbeaddedhere",
+                    "asset": {
+                        "media":"https://farm8.staticflickr.com/7111/7668246566_3dcd80c505_z_d.jpg",
+                        "thumbnail":"https://farm8.staticflickr.com/7111/7668246566_3dcd80c505_q_d.jpg",
+                        "credit":"Gift",
+                        "caption":"Birds eye Lame"
+                    }
+                },
+                {
+                    "startDate":"2012,7,29",
+                    "endDate":"2012,7,29",
+                    "headline":"Sketching",
+                    "text":"<p>Lame plans out his piece</p>",
+                    "tag":"sketching graffiti",
+                    "classname":"optionaluniqueclassnamecanbeaddedhere",
+                    "asset": {
+                        "media":"https://farm9.staticflickr.com/8023/7668245710_d3708541d7_z_d.jpg",
+                        "thumbnail":"https://farm9.staticflickr.com/8023/7668245710_d3708541d7_q_d.jpg",
+                        "credit":"Gift",
+                        "caption":"Sketching"
+                    }
+                },
+                {
+                    "startDate":"2012,7,29",
+                    "endDate":"2012,7,29",
+                    "headline":"Lame looking badass",
+                    "text":"<p>No words needed</p>",
+                    "tag":"posing",
+                    "classname":"optionaluniqueclassnamecanbeaddedhere",
+                    "asset": {
+                        "media":"https://farm9.staticflickr.com/8282/7668243546_3b7fd32f42_z_d.jpg",
+                        "thumbnail":"https://farm9.staticflickr.com/8282/7668243546_3b7fd32f42_q_d.jpg",
+                        "credit":"Gift",
+                        "caption":"Contemplating"
+                    }
+                },
+                {
+                    "startDate":"2012,7,29",
+                    "endDate":"2012,7,29",
+                    "headline":"Final piece",
+                    "text":"<p>Skull character</p>",
+                    "tag":"graffiti character",
+                    "classname":"optionaluniqueclassnamecanbeaddedhere",
+                    "asset": {
+                        "media":"https://farm9.staticflickr.com/8294/7668242622_8ccf48d6b7_z_d.jpg",
+                        "thumbnail":"https://farm9.staticflickr.com/8294/7668242622_8ccf48d6b7_q_d.jpg",
+                        "credit":"Gift",
+                        "caption":"Skull character"
+                    }
+                }
+            ],
+            "era": [
+                {
+                    "startDate":"2012,7,29",
+                    "endDate":"2012,7,29",
+                    "headline":"Headline Goes Here",
+                    "text":"<p>Body text goes here, some HTML is OK</p>",
+                    "tag":"This is Optional"
+                }
+
+            ]
+        }
+    }
+
+    var timelineConfig = {
+      type: 'timeline',
+      width: '100%',
+      height: '500',
+      source: eventsJSON, //get the events.json format from https://github.com/VeriteCo/TimelineJS#file-formats
+      embed_id: 'time_line'
+    }
+
+    $(document).ready(function() {
+      createStoryJS(timelineConfig);
+    });
+}
+;
+(function() {
+  jQuery(function() {
+    $('#upload_uploaded_file').attr('name', 'upload[uploaded_file]');
+    return $('#new_upload').fileupload({
+      dataType: 'script',
+      add: function(e, data) {
+        var file, types;
+        types = /(\.|\/)(gif|jpe?g|png|mov|mpeg|mpeg4|avi)$/i;
+        file = data.files[0];
+        if (types.test(file.type) || types.test(file.name)) {
+          data.context = $(tmpl("template-upload", file));
+          $('#new_upload').append(data.context);
+          return data.submit();
+        } else {
+          return alert("" + file.name + " is not a gif, jpg or png image file");
+        }
+      },
+      progress: function(e, data) {
+        var progress;
+        if (data.context) {
+          progress = parseInt(data.loaded / data.total * 100, 10);
+          return data.context.find('.bar').css('width', progress + '%');
+        }
+      }
+    });
+  });
+
+}).call(this);
 (function() {
 
 
@@ -32742,6 +48047,9 @@ $(document).ready(function(){
 // Read Sprockets README (https://github.com/sstephenson/sprockets#sprockets-directives) for details
 // about supported directives.
 //
+
+
+
 
 
 
@@ -32794,4 +48102,13 @@ function makeItBounce(bounceTarget){
     $('.upload-slot').removeClass('appear-bounce');
   });
 }
-;
+
+$('.upload-wrapper a').on('click', function(e){
+  e.preventDefault();
+});
+
+
+$('.browse-you-files').click(function(){
+  $('.graffiti_images input[type=file]').click();
+  return false;
+});
