@@ -5,7 +5,7 @@ if($('#map').length > 0){
   }).setView([geoJSON[0].geometry.coordinates[1], geoJSON[0].geometry.coordinates[0]], 12);
 
   // Disable drag and zoom handlers.
-  map.dragging.disable();
+  // map.dragging.disable();
   map.touchZoom.disable();
   map.doubleClickZoom.disable();
   map.scrollWheelZoom.disable();
