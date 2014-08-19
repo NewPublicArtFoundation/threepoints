@@ -65,18 +65,23 @@
   }
 }
 
+#myModal{
+  background: #333;
+  padding: 15px 0px 0px;
+}
+
 a.upload-trigger{
   &.active{
   }
 }
 
 .upload-wrapper{
-  opacity: 0;
-  overflow: hidden;
-  .upload-ready &{
+  // opacity: 0;
+  // overflow: hidden;
+  // .upload-ready &{
     opacity: 1;
     height: auto;
-  }
+  // }
 
   position: relative;
   h3{

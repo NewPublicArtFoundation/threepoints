@@ -1,5 +1,5 @@
- <div id="myModal" class="reveal-modal small" data-reveal>
-  <button class="close-reveal-modal" id="close-reveal-modal">×</button>
+ <div id="myModal" class="reveal-modal medium" data-reveal>
+  <a class="close-reveal-modal" id="close-reveal-modal">×</a>
   <% @graffiti = Graffiti.new %>
     <%= simple_form_for(@graffiti, html: {multipart: true}) do |f| %>
       <%= f.error_notification %>
@@ -8,7 +8,7 @@
         <div class="upload-wrapper">
           <div class="large-9 large-centered column">
             <h4 class="header-upload">Upload images
-            <span class="right "><a href="" class="white">X</a></span>
+            <span class="right "></span>
             </h4>
           </div>
           <div class="hidden-vis"><%= f.input :images, :class => "form-control hidden-vis" %></div>
