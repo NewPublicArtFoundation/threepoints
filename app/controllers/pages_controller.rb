@@ -2,8 +2,6 @@ class PagesController < ApplicationController
   def index
     @users = User.all
     @locations = Location.all
-    @graffitis = Graffiti.limit(15).all
-
   end
 
   # POST /graffitis
@@ -23,6 +21,13 @@ class PagesController < ApplicationController
         format.json { render json: @graffiti.errors, status: :unprocessable_entity }
       end
     end
+  end
+
+  def mapExample
+    @graffitis = Graffiti.limit(15).all
+  end
+
+  def timelineExample
   end
 
   def home

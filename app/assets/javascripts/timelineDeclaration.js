@@ -11,8 +11,8 @@ var eventsJSON = {
         },
         "date": [
             {
-                "startDate":"2011,12,10",
-                "endDate":"2011,12,11",
+                "startDate":"2012,7,29",
+                "endDate":"2012,7,29",
                 "headline":"Rooftop in the middle of downtown Shanghai, China",
                 "text":"<p>Blank walls right next to the freeway</p>",
                 "tag":"blankwalls",
@@ -25,8 +25,8 @@ var eventsJSON = {
                 }
             },
             {
-                "startDate":"2011,12,10",
-                "endDate":"2011,12,11",
+                "startDate":"2012,7,29",
+                "endDate":"2012,7,29",
                 "headline":"Lame in action",
                 "text":"<p>Starting off the piece with a sketch</p>",
                 "tag":"graffiti",
@@ -39,8 +39,8 @@ var eventsJSON = {
                 }
             },
             {
-                "startDate":"2011,12,10",
-                "endDate":"2011,12,11",
+                "startDate":"2012,7,29",
+                "endDate":"2012,7,29",
                 "headline":"Sketching",
                 "text":"<p>Lame plans out his piece</p>",
                 "tag":"sketching graffiti",
@@ -53,8 +53,8 @@ var eventsJSON = {
                 }
             },
             {
-                "startDate":"2011,12,10",
-                "endDate":"2011,12,11",
+                "startDate":"2012,7,29",
+                "endDate":"2012,7,29",
                 "headline":"Lame looking badass",
                 "text":"<p>No words needed</p>",
                 "tag":"posing",
@@ -67,8 +67,8 @@ var eventsJSON = {
                 }
             },
             {
-                "startDate":"2011,12,10",
-                "endDate":"2011,12,11",
+                "startDate":"2012,7,29",
+                "endDate":"2012,7,29",
                 "headline":"Final piece",
                 "text":"<p>Skull character</p>",
                 "tag":"graffiti character",
@@ -83,8 +83,8 @@ var eventsJSON = {
         ],
         "era": [
             {
-                "startDate":"2011,12,10",
-                "endDate":"2011,12,11",
+                "startDate":"2012,7,29",
+                "endDate":"2012,7,29",
                 "headline":"Headline Goes Here",
                 "text":"<p>Body text goes here, some HTML is OK</p>",
                 "tag":"This is Optional"

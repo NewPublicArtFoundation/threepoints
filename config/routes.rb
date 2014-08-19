@@ -8,6 +8,8 @@ Rails.application.routes.draw do
   get 'comments/new'
   resources :activities
   resources :artist_graffitis
+  get 'example/map'       => "pages#mapExample"
+  get 'example/timeline'  => "pages#timelineExample"
   get 'about'       => "pages#index"
   get 'pages/home'
   get 'upload'      => "pages#upload"
