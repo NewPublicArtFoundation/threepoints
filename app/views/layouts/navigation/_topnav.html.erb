@@ -47,7 +47,8 @@
                 <% end %>
               </li>
               <li class="no-span login no-right-pad">
-                <%= link_to new_user_registration_path, :class=>'no-right-pad' do %>
+                <%#= link_to new_user_registration_path, :class=>'no-right-pad' do %>
+                <%= link_to '#', :class=>'upload-trigger top-notice upload-notice-nav', :data=>{:reveal_id => "myModal"} do %>
                   <span>Sign Up</span>
                 <% end %>
               </li>

@@ -120,9 +120,9 @@ Rails.application.routes.draw do
     delete "signout" => "devise/sessions#destroy",     as: :destroy_user_session
     get    '/start'     => 'devise/registrations#new'
 
-    get    "signup"  => "devise/registrations#new",    as: :new_user_registration
-    post   "signup"  => "devise/registrations#create", as: :user_registration
-    patch  "signup"  => "devise/registrations#update", as: :update_user_registration
+    # get    "signup"  => "devise/registrations#new",    as: :new_user_registration
+    # post   "signup"  => "devise/registrations#create", as: :user_registration
+    # patch  "signup"  => "devise/registrations#update", as: :update_user_registration
     get    "account" => "devise/registrations#edit",   as: :edit_user_registration
   end
 
