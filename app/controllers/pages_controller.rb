@@ -24,9 +24,9 @@ class PagesController < ApplicationController
   end
 
   def mapExample
-    jr = Artist.where(:name=>'JR')
-    Graffiti.where(:artist=>jr)
-    @graffitis = Graffiti.all
+    @artist = Artist.friendly.find('jr')
+    @pieces = @artist.graffitis
+    @graffitis = @pieces.all
   end
 
   def timelineExample
