@@ -28,19 +28,16 @@ var geoJSON = [
     <% end %>
     "properties": {
       <% if graffiti.name != nil%>
-      "title": "<%= graffiti.name %>",
+      "title": "<%= graffiti.name.to_json %>",
       <% end %>
       <% if graffiti.name != nil%>
-        "description": "<%= graffiti.description %>",
+        "description": "<%= graffiti.description.to_json %>",
       <% end %>
       "marker-color": "#fc4353",
       "marker-size": "large",
       "marker-symbol": "monument"
     }
-  }
-  <% if graffiti != @graffitis.last %>
-    ,
-  <% end %>
+  }<% if graffiti != @graffitis.last %>,<% end %>
 <% end %>
 ]
 </script>
