@@ -1,7 +1,17 @@
+var mapConfig = {
+  zoomControl: false
+}
+
 L.mapbox.accessToken = 'pk.eyJ1IjoibGtiZ2lmdCIsImEiOiJyTERaTml3In0.y2wd_Fi58ux53Wm1Ur1qCg';
-  var map = L.mapbox.map('map', 'examples.map-i86nkdio')
+  var map = L.mapbox.map('map', 'examples.map-i86nkdio', mapConfig)
     .setView([geoJSON[0].geometry.coordinates[1], geoJSON[0].geometry.coordinates[0]], 12)
     .featureLayer.setGeoJSON(geoJSON);
+
+    map.dragging.disable();
+    map.touchZoom.disable();
+    map.doubleClickZoom.disable();
+    map.scrollWheelZoom.disable();
+
   // var markerList = document.getElementById('marker-list');
   // map.featureLayer.on('ready', function(e) {
   //     map.featureLayer.eachLayer(function(layer) {
