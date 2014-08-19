@@ -24,7 +24,9 @@ class PagesController < ApplicationController
   end
 
   def mapExample
-    @graffitis = Graffiti.limit(15).all
+    jr = Artist.where(:name=>'JR')
+    Graffiti.where(:artist=>jr)
+    @graffitis = Graffiti.all
   end
 
   def timelineExample
