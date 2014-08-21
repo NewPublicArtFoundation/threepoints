@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140806131823) do
+ActiveRecord::Schema.define(version: 20140821125330) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -72,6 +72,16 @@ ActiveRecord::Schema.define(version: 20140806131823) do
   end
 
   add_index "artists", ["slug"], name: "index_artists_on_slug", unique: true
+
+  create_table "arts", force: true do |t|
+    t.string   "description"
+    t.integer  "location_id"
+    t.integer  "artist_id"
+    t.string   "slug"
+    t.string   "name"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
 
   create_table "comments", force: true do |t|
     t.text     "content"
@@ -192,6 +202,15 @@ ActiveRecord::Schema.define(version: 20140806131823) do
   end
 
   add_index "tags", ["name"], name: "index_tags_on_name", unique: true
+
+  create_table "uploads", force: true do |t|
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.string   "image_file_name"
+    t.string   "image_content_type"
+    t.integer  "image_file_size"
+    t.datetime "image_updated_at"
+  end
 
   create_table "users", force: true do |t|
     t.string   "email",                  default: "", null: false
