@@ -4,7 +4,7 @@ class ArtsController < InheritedResources::Base
   # GET /arts
   # GET /arts.json
   def index
-    @arts = Art.limit(20).all
+    @arts = Art.all
   end
 
   # GET /arts/1
@@ -26,12 +26,10 @@ class ArtsController < InheritedResources::Base
   # POST /arts.json
   def create
     @art = Art.new(art_params)
+    @art_uploads = @art.uploads.build
 
     respond_to do |format|
       if @art.save
-
-        track_activity @art
-
         format.html { redirect_to @art, notice: 'Art was successfully created.' }
         format.json { render :show, status: :created, location: @art }
       else
@@ -65,18 +63,6 @@ class ArtsController < InheritedResources::Base
       format.json { head :no_content }
     end
   end
-
-
-  #->Prelang (voting/acts_as_votable)
-  def vote
-
-    @art = Art.find(params[:id])
-    respond_to do |format|
-      format.html { redirect_to action: :index }
-    end
-
-  end
-
 
   private
     # Use callbacks to share common setup or constraints between actions.
