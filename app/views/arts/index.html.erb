@@ -16,8 +16,12 @@
     <% @arts.each do |art| %>
       <tr>
         <td><%= art.description %></td>
-        <td><%= art.location_id %></td>
-        <td><%= art.artist_id %></td>
+        <% if art.location.name != nil %>
+        <td><%= art.location.name %></td>
+        <% end %>
+        <% if art.artist.name != nil %>
+        <td><%= art.artist.name %></td>
+        <% end %>
         <td><%= art.slug %></td>
         <td><%= art.name %></td>
         <td><%= link_to 'Show', art %></td>

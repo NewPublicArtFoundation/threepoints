@@ -13,11 +13,16 @@
 //= require jquery
 //= require jquery_ujs
 //= require jquery-fileupload/basic
+//= require jquery-ui/datepicker
+//= require arts
 //= require foundation
 //= require pace/pace
 //= require timelineJS/embed
+//= require handlebars
 //= require turbolinks
+//= require_tree ../templates
 //= require_tree .
+
 
 $(function(){ $(document).foundation(); });
 
