@@ -1,5 +1,5 @@
 console.log('Art.js is running');
-
+var current_id = 0;
 jQuery( "#content-date" ).datepicker();
 
 function resetTheContentForm(){
@@ -37,10 +37,15 @@ $('.add-content-button').on('click', function(e){
 });
 
 function addContentInPage(content, targetName){
+  current_id = current_id + 1;
   var templateName = '#template-'+targetName;
   var source   = $(templateName).html();
   var template = Handlebars.compile(source);
-  var templateContent   = template(content);
+  var data = {
+    content: content,
+    id: current_id
+  }
+  var templateContent   = template(data);
   $('#content-place').append(templateContent);
 }
 
