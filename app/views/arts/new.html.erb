@@ -2,92 +2,13 @@
   <h1>New art</h1>
 </div>
 
+<div class="row" id="content-place"></div>
 
+<%= render 'arts/add_fields' %>
 
-<div class="row">
-  <div class="large-12 column">
-    <a href="#" data-dropdown="drop1" class="button dropdown white">Add field</a><br>
-    <ul id="drop1" data-dropdown-content class="f-dropdown">
-      <li><%= link_to 'Add text', new_art_path %></li>
-      <li><%= link_to 'Add picture', new_art_path %></li>
-      <li><%= link_to 'Add video', new_art_path %></li>
-      <li><%= link_to 'Add map', new_art_path %></li>
-      <li><%= link_to 'Add time', new_art_path %></li>
-    </ul>
-  </div>
-</div>
+<%= render 'arts/options_fields' %>
 
-<div id="form-file" class="row">
-  <div class="large-12 column">
-    <input type="file">
-  </div>
-</div>
-
-<div id="form-text" class="row">
-  <div class="large-12 columns">
-    <div class="row collapse">
-      <div class="small-10 columns">
-        <textarea type="text" placeholder="Text content here" style=" resize: vertical;"></textarea>
-      </div>
-      <div class="small-2 columns">
-        <a href="#" class="button white postfix">Add</a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="form-address" class="row">
-  <div class="large-12 columns">
-    <div class="row collapse">
-      <div class="small-10 columns">
-        <input type="text" placeholder="1234 Fake st.">
-      </div>
-      <div class="small-2 columns">
-        <a href="#" class="button white postfix">Add</a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="form-url-video" class="row">
-  <div class="large-12 columns">
-    <div class="row collapse">
-      <div class="small-10 columns">
-        <input type="text" placeholder="https://www.youtube.com/watch?v=kfVsfOSbJY0">
-      </div>
-      <div class="small-2 columns">
-        <a href="#" class="button white postfix">Add</a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="form-urlimage" class="row">
-  <div class="large-12 columns">
-    <div class="row collapse">
-      <div class="small-10 columns">
-        <input type="text" placeholder="http://fakeurl.com/thisimage.jpg">
-      </div>
-      <div class="small-2 columns">
-        <a href="#" class="button white postfix">Add</a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="form-date" class="row">
-  <div class="large-12 columns">
-    <div class="row collapse">
-      <div class="small-10 columns">
-        <input type="text" id="datepicker" placeholder="8/23/1989">
-      </div>
-      <div class="small-2 columns">
-        <a href="#" class="button white postfix">Add</a>
-      </div>
-    </div>
-  </div>
-
-</div>
+<%= render 'arts/fieldTemplates' %>
 
 <div class="row">
   <%= link_to 'Back', arts_path %>

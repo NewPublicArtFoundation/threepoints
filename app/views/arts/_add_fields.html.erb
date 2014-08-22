@@ -1,0 +1,71 @@
+
+<div id="form-file" class="row form-wrap">
+  <div class="large-12 column">
+    <input type="file" id='content-file', >
+  </div>
+</div>
+
+<div id="form-text" class="row form-wrap">
+  <div class="large-12 columns">
+    <div class="row collapse">
+      <div class="small-10 columns">
+        <textarea type="text" id="content-text" placeholder="Text content here" style=" resize: vertical;"></textarea>
+      </div>
+      <div class="small-2 columns">
+        <%= link_to 'Add', '#', :id=>'', :class=>"button white postfix add-content-button", :data=>{target: 'text'} %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="form-address" class="row form-wrap">
+  <div class="large-12 columns">
+    <div class="row collapse">
+      <div class="small-10 columns">
+        <input type="text" id="content-address" placeholder="1234 Fake st.">
+      </div>
+      <div class="small-2 columns">
+        <%= link_to 'Add', '#', :id=>'', :class=>"button white postfix add-content-button", :data=>{target: 'address'} %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="form-url-video" class="row form-wrap">
+  <div class="large-12 columns">
+    <div class="row collapse">
+      <div class="small-10 columns">
+        <input type="text" id="content-url-video" placeholder="https://www.youtube.com/watch?v=kfVsfOSbJY0">
+      </div>
+      <div class="small-2 columns">
+        <%= link_to 'Add', '#', :id=>'', :class=>"button white postfix add-content-button", :data=>{target: 'url-video'} %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="form-url-image" class="row form-wrap">
+  <div class="large-12 columns">
+    <div class="row collapse">
+      <div class="small-10 columns">
+        <input type="text" id="content-url-image" placeholder="http://fakeurl.com/thisimage.jpg">
+      </div>
+      <div class="small-2 columns">
+        <%= link_to 'Add', '#', :id=>'', :class=>"button white postfix add-content-button", :data=>{target: 'url-image'} %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="form-date" class="row form-wrap">
+  <div class="large-12 columns">
+    <div class="row collapse">
+      <div class="small-10 columns">
+        <input type="text" id="content-date" placeholder="8/23/1989">
+      </div>
+      <div class="small-2 columns">
+        <%= link_to 'Add', '#', :id=>'content-date', :class=>"button white postfix add-content-button", :data=>{target: 'date'} %>
+      </div>
+    </div>
+  </div>
+</div>
