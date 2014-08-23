@@ -36,16 +36,29 @@ $('.add-content-button').on('click', function(e){
 
 });
 
-function addContentInPage(content, targetName){
-  current_id = current_id + 1;
-  var templateName = '#template-'+targetName;
+function renderTheTemplate(targetName){
+  var templateName = '#template-' + targetName;
   var source   = $(templateName).html();
   var template = Handlebars.compile(source);
+  return template;
+}
+
+function addContentInPage(content, targetName){
+  current_id = current_id + 1;
   var data = {
     content: content,
     id: current_id
   }
+
+  var template          = renderTheTemplate(targetName);
   var templateContent   = template(data);
-  $('#content-place').append(templateContent);
+
+
+  var textTemplate = renderTheTemplate('text');
+  var textTemplateContent   = textTemplate();
+  $('#content-place').after(textTemplateContent);
+
+
+  $('#content-place').after(templateContent);
 }
 
