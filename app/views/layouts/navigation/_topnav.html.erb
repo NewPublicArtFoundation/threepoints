@@ -1,5 +1,5 @@
   <div id="topnavwrapper">
-    <div class="contain-to-grid">
+    <div class="">
       <nav class="top-bar" data-topbar>
         <ul class="title-area">
           <li class="name">
@@ -22,11 +22,7 @@
           <% end %>
           <ul class="left">
 
-            <li class="no-span login">
-              <%= link_to '#', :class=>'upload-trigger top-notice upload-notice-nav', :data=>{:reveal_id => "myModal"} do %>
-                <span></span>Upload Art Pieces
-              <% end %>
-            </li>
+
           </ul>
           <ul class="right">
             <% if signed_in? %>

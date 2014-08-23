@@ -35,7 +35,7 @@
   <div class="large-12 columns">
     <div class="row collapse">
       <div class="small-10 columns">
-        <input type="text" id="content-url-video" placeholder="https://www.youtube.com/watch?v=kfVsfOSbJY0">
+        <input type="url" pattern="url" id="content-url-video" placeholder="https://www.youtube.com/watch?v=kfVsfOSbJY0">
       </div>
       <div class="small-2 columns">
         <%= link_to 'Add', '#', :id=>'', :class=>"button white postfix add-content-button", :data=>{target: 'url-video'} %>
@@ -48,7 +48,7 @@
   <div class="large-12 columns">
     <div class="row collapse">
       <div class="small-10 columns">
-        <input type="text" id="content-url-image" placeholder="http://fakeurl.com/thisimage.jpg">
+        <input type="url" pattern="url" id="content-url-image" placeholder="http://fakeurl.com/thisimage.jpg">
       </div>
       <div class="small-2 columns">
         <%= link_to 'Add', '#', :id=>'', :class=>"button white postfix add-content-button", :data=>{target: 'url-image'} %>

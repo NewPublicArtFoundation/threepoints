@@ -1,12 +1,27 @@
 <div class="row">
   <div class="large-12 column">
-    <a href="#" data-dropdown="art-new-form" class="button dropdown white art-new-form-options">Add field</a><br>
-    <ul id="art-new-form" data-dropdown-content class="f-dropdown">
-      <li><%= link_to 'Add text', '#', :data=>{target: 'text'}, :class => 'add-content-to' %></li>
-      <li><%= link_to 'Add picture', '#', :data=>{target: 'url-image'}, :class => 'add-content-to' %></li>
-      <li><%= link_to 'Add video', '#', :data=>{target: 'url-video'}, :class => 'add-content-to' %></li>
-      <li><%= link_to 'Add map', '#', :data=>{target: 'address'}, :class => 'add-content-to' %></li>
-      <li><%= link_to 'Add time', '#', :data=>{target: 'date'}, :class => 'add-content-to' %></li>
+    <h3 class="text-center">Add to your project</h3>
+    <ul id="art-new-form" class=" large-block-grid-4">
+      <li>
+        <div class="text-center panel">
+          <%= link_to 'Add full-width picture', '#', :data=>{target: 'url-image'}, :class => 'add-content-to' %>
+        </div>
+      </li>
+      <li>
+        <div class="text-center panel">
+          <%= link_to 'Embed a video', '#', :data=>{target: 'url-video'}, :class => 'add-content-to' %>
+        </div>
+      </li>
+      <li>
+        <div class="text-center panel">
+          <%= link_to 'Add map', '#', :data=>{target: 'address'}, :class => 'add-content-to' %>
+        </div>
+      </li>
+      <li>
+        <div class="text-center panel">
+          <%= link_to 'Add time', '#', :data=>{target: 'date'}, :class => 'add-content-to' %>
+        </div>
+      </li>
     </ul>
   </div>
 </div>
