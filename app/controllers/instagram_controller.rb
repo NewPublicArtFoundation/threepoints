@@ -15,7 +15,8 @@ class InstagramController < ApplicationController
     request.body.rewind  # in case someone already read it
     data = request.body.read
 
-    puts data
-
+    respond_to do |format|
+      format.html { render :text => data }
+    end
   end
 end
