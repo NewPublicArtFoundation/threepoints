@@ -9,9 +9,8 @@ class InstagramController < ApplicationController
   end
 
   def create
-    protect_from_forgery with: :null_session, if: Proc.new {
-      |c| c.request.format == 'application/json'
-    }
+    skip_before_filter  :verify_authenticity_token
+
     request.body.rewind  # in case someone already read it
     data = request.body.read
 
