@@ -1,4 +1,6 @@
 class InstagramController < ApplicationController
+  protect_from_forgery except: :create
+
   def subscription
     client = Instagram.client(:access_token => session[:access_token])
     params = request.env['rack.request.query_hash']
