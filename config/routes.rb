@@ -5,6 +5,10 @@ Rails.application.routes.draw do
 
   root 'pages#index'
 
+  get  'instagram/subscription' => 'instagram#subscription'
+  post 'instagram/subscription' => 'instagram#create'
+
+
   get 'api/aws'
   get 'api/return_a_graffiti'
 
