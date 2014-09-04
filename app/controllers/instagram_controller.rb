@@ -20,12 +20,10 @@ class InstagramController < ApplicationController
   end
 
   def store_tag_response
-    # client = Instagram.client(:access_token => session[:access_token])
     tag_name = "streetart"
-    # tags = client.tag_recent_media(tag_name)
     tags = Instagram.tag_recent_media(tag_name)
-
     @arts = []
+
     tags.each do |tag|
       art = {}
       art["image_url"]      = tag["images"]["standard_resolution"]["url"]
