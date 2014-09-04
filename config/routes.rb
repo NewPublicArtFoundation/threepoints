@@ -8,6 +8,7 @@ Rails.application.routes.draw do
   get  'instagram/subscription' => 'instagram#subscription'
   post 'instagram/subscription' => 'instagram#create'
 
+  get 'instagram/store_tag_response' => 'instagram#store_tag_response'
 
   get 'api/aws'
   get 'api/return_a_graffiti'
