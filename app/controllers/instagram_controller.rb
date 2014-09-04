@@ -25,8 +25,6 @@ class InstagramController < ApplicationController
     # tags = client.tag_recent_media(tag_name)
     tags = Instagram.tag_recent_media(tag_name)
 
-
-    i = 0;
     @arts = []
     tags.each do |tag|
       art = {}
