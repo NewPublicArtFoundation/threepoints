@@ -1,4 +1,4 @@
-if($('#timeline-embed').length > 0  ){
+if($('#time_line').length > 0  ){
 
     var eventsJSON = {
         "timeline":
