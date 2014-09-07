@@ -53,7 +53,7 @@ class InstagramController < ApplicationController
   def process_tag tags, tag
     art = {}
 
-    art["everything"] = tag
+    # art["everything"] = tag
     art["image_id"]   = tag["id"]
     art["image_url"]  = tag["images"]["standard_resolution"]["url"]
     art["date_found"] = tag["created_time"]
