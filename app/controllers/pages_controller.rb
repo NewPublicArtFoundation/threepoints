@@ -4,6 +4,10 @@ class PagesController < ApplicationController
     @locations = Location.all
   end
 
+  def jsonTest
+    @graffitis = Graffiti.limit(20).all
+  end
+
   # POST /graffitis
   # POST /graffitis.json
   def create

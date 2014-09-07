@@ -26,6 +26,12 @@ class InstagramController < ApplicationController
 
     tags.each do |tag|
       art = {}
+
+      # comments count and content
+
+      # number of likes
+
+      art["everything"]     = tag
       art["image_url"]      = tag["images"]["standard_resolution"]["url"]
       art["date_found"]     = tag["created_time"]
       art["tags"]           = tag["tags"]
