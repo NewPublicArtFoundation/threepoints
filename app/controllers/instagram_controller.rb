@@ -67,7 +67,7 @@ class InstagramController < ApplicationController
 
     art["tags"]           = tags
 
-    if tag["caption"]["text"] != nil
+    if tag["caption"] != nil
       art["caption"]        = tag["caption"]["text"]
     else
       art["caption"]        = nil
