@@ -22,28 +22,32 @@ class InstagramController < ApplicationController
   def store_tag_response
     tag_name = "streetart"
     tags = Instagram.tag_recent_media(tag_name)
+    @arts = ['1', '2', '3']
+    @arts = parse_tags tags
+  end
+
+  # def create_pages_using_tags(arts)
+  # end
+
+  def parse_tags tags
     @arts = []
 
     tags.each do |tag|
       art = {}
 
-      # comments count and content
-
-      # number of likes
-
       art["everything"]     = tag
       art["image_url"]      = tag["images"]["standard_resolution"]["url"]
       art["date_found"]     = tag["created_time"]
 
-      if(tag["tags"] != nil){
-        tag["tags"].each do tag
-          if( tag != tag["tags"].first )
-            tags = tags + ', ' + tag
+      if (tag["tags"] != nil)
+        tag["tags"].each do |tag_result|
+          if( tag_result != tag["tags"].first )
+            tags = tags + ', ' + tag_result
           else
-            tags = tag
+            tags = tag_result
           end
         end
-      }
+      end
 
       art["tags"]           = tags
 
@@ -69,12 +73,15 @@ class InstagramController < ApplicationController
       @arts << art
     end
 
+    return @arts
   end
+
 
   def get_tag
     tag_name = "streetart"
     last_called_id = ""
     client = Instagram.client(:access_token => session[:access_token])
+
     # tags = client.tag_recent_media(tag_name, :min_id => last_called_id)
     tags = client.tag_recent_media(tag_name)
     puts tags
