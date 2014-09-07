@@ -34,7 +34,18 @@ class InstagramController < ApplicationController
       art["everything"]     = tag
       art["image_url"]      = tag["images"]["standard_resolution"]["url"]
       art["date_found"]     = tag["created_time"]
-      art["tags"]           = tag["tags"]
+
+      if(tag["tags"] != nil){
+        tag["tags"].each do tag
+          if( tag != tag["tags"].first )
+            tags = tags + ', ' + tag
+          else
+            tags = tag
+          end
+        end
+      }
+
+      art["tags"]           = tags
 
       if tag["caption"]["text"] != nil
         art["caption"]        = tag["caption"]["text"]
@@ -42,17 +53,15 @@ class InstagramController < ApplicationController
         art["caption"]        = nil
       end
 
-      art["user"]           = {}
-      art["user"]["name"]   = tag["user"]["username"]
-      art["user"]["id"]     = tag["user"]["id"]
-      art["user"]["avatar"] = tag["user"]["profile_picture"]
+      art["user_name"]   = tag["user"]["username"]
+      art["user_id"]     = tag["user"]["id"]
+      art["user_avatar"] = tag["user"]["profile_picture"]
 
       if(tag["location"] != nil)
-        art["location"]          = {}
-        art["location"]["name"]  = tag["location"]["name"]
-        art["location"]["lon"]   = tag["location"]["longitude"]
-        art["location"]["lat"]   = tag["location"]["latitude"]
-        art["location"]["id"]    = tag["location"]["id"]
+        art["location_name"]  = tag["location"]["name"]
+        art["location_lon"]   = tag["location"]["longitude"]
+        art["location_lat"]   = tag["location"]["latitude"]
+        art["location_id"]    = tag["location"]["id"]
       else
         art["location"]          = nil
       end
