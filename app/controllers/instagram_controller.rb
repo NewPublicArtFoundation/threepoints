@@ -23,7 +23,7 @@ class InstagramController < ApplicationController
     tag_name = "streetart"
     options = {}
     if(InstagramArt.last() != nil)
-      options.min_id = InstagramArt.last().image_id
+      options.min_tag_id = InstagramArt.last().image_id
     end
     tags = Instagram.tag_recent_media(tag_name, options)
     @arts = ['1', '2', '3']
