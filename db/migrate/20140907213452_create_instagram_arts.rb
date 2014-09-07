@@ -7,12 +7,13 @@ class CreateInstagramArts < ActiveRecord::Migration
       t.text :tags
       t.text :caption
       t.string :user_name
-      t.integer :user_id
+      t.string :user_id
       t.string :user_avatar
       t.string :location_name
       t.float :location_lon
       t.float :location_lat
-      t.integer :location_id
+      t.string :location_id
+      t.string :image_id
 
       t.timestamps
     end

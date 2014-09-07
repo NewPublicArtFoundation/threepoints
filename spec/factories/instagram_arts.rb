@@ -8,11 +8,12 @@ FactoryGirl.define do
     tags "MyText"
     caption "MyText"
     user_name "MyString"
-    user_id 1
+    user_id "MyString"
     user_avatar "MyString"
     location_name "MyString"
     location_lon 1.5
     location_lat 1.5
-    location_id 1
+    location_id "MyString"
+    image_id "MyString"
   end
 end

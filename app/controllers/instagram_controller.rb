@@ -22,7 +22,9 @@ class InstagramController < ApplicationController
   def store_tag_response
     tag_name = "streetart"
     options = {}
-    options.min_id = InstagramArts.last().image_id
+    if(InstagramArt.last() != nil)
+      options.min_id = InstagramArt.last().image_id
+    end
     tags = Instagram.tag_recent_media(tag_name, options)
     @arts = ['1', '2', '3']
     @arts = parse_tags tags

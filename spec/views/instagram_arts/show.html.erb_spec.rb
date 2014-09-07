@@ -9,12 +9,13 @@ RSpec.describe "instagram_arts/show", :type => :view do
       :tags => "MyText",
       :caption => "MyText",
       :user_name => "User Name",
-      :user_id => 2,
+      :user_id => "User",
       :user_avatar => "User Avatar",
       :location_name => "Location Name",
       :location_lon => 1.5,
       :location_lat => 1.5,
-      :location_id => 3
+      :location_id => "Location",
+      :image_id => "Image"
     ))
   end
 
@@ -26,11 +27,12 @@ RSpec.describe "instagram_arts/show", :type => :view do
     expect(rendered).to match(/MyText/)
     expect(rendered).to match(/MyText/)
     expect(rendered).to match(/User Name/)
-    expect(rendered).to match(/2/)
+    expect(rendered).to match(/User/)
     expect(rendered).to match(/User Avatar/)
     expect(rendered).to match(/Location Name/)
     expect(rendered).to match(/1.5/)
     expect(rendered).to match(/1.5/)
-    expect(rendered).to match(/3/)
+    expect(rendered).to match(/Location/)
+    expect(rendered).to match(/Image/)
   end
 end

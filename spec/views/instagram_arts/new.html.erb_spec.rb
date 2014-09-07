@@ -9,12 +9,13 @@ RSpec.describe "instagram_arts/new", :type => :view do
       :tags => "MyText",
       :caption => "MyText",
       :user_name => "MyString",
-      :user_id => 1,
+      :user_id => "MyString",
       :user_avatar => "MyString",
       :location_name => "MyString",
       :location_lon => 1.5,
       :location_lat => 1.5,
-      :location_id => 1
+      :location_id => "MyString",
+      :image_id => "MyString"
     ))
   end
 
@@ -46,6 +47,8 @@ RSpec.describe "instagram_arts/new", :type => :view do
       assert_select "input#instagram_art_location_lat[name=?]", "instagram_art[location_lat]"
 
       assert_select "input#instagram_art_location_id[name=?]", "instagram_art[location_id]"
+
+      assert_select "input#instagram_art_image_id[name=?]", "instagram_art[image_id]"
     end
   end
 end
