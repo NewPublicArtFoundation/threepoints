@@ -33,47 +33,52 @@ class InstagramController < ApplicationController
     @arts = []
 
     tags.each do |tag|
-      art = {}
-
-      art["everything"]     = tag
-      art["image_url"]      = tag["images"]["standard_resolution"]["url"]
-      art["date_found"]     = tag["created_time"]
-
-      if (tag["tags"] != nil)
-        tag["tags"].each do |tag_result|
-          if( tag_result != tag["tags"].first )
-            tags = tags + ', ' + tag_result
-          else
-            tags = tag_result
-          end
-        end
-      end
-
-      art["tags"]           = tags
-
-      if tag["caption"]["text"] != nil
-        art["caption"]        = tag["caption"]["text"]
-      else
-        art["caption"]        = nil
-      end
-
-      art["user_name"]   = tag["user"]["username"]
-      art["user_id"]     = tag["user"]["id"]
-      art["user_avatar"] = tag["user"]["profile_picture"]
-
-      if(tag["location"] != nil)
-        art["location_name"]  = tag["location"]["name"]
-        art["location_lon"]   = tag["location"]["longitude"]
-        art["location_lat"]   = tag["location"]["latitude"]
-        art["location_id"]    = tag["location"]["id"]
-      else
-        art["location"]          = nil
-      end
-
+      art = process_tag tags, tag
       @arts << art
     end
 
     return @arts
+  end
+
+  def process_tag tags, tag
+    art = {}
+
+    art["everything"]     = tag
+    art["image_url"]      = tag["images"]["standard_resolution"]["url"]
+    art["date_found"]     = tag["created_time"]
+
+    if (tag["tags"] != nil)
+      tag["tags"].each do |tag_result|
+        if( tag_result != tag["tags"].first )
+          tags = tags + ', ' + tag_result
+        else
+          tags = tag_result
+        end
+      end
+    end
+
+    art["tags"]           = tags
+
+    if tag["caption"]["text"] != nil
+      art["caption"]        = tag["caption"]["text"]
+    else
+      art["caption"]        = nil
+    end
+
+    art["user_name"]   = tag["user"]["username"]
+    art["user_id"]     = tag["user"]["id"]
+    art["user_avatar"] = tag["user"]["profile_picture"]
+
+    if(tag["location"] != nil)
+      art["location_name"]  = tag["location"]["name"]
+      art["location_lon"]   = tag["location"]["longitude"]
+      art["location_lat"]   = tag["location"]["latitude"]
+      art["location_id"]    = tag["location"]["id"]
+    else
+      art["location"]          = nil
+    end
+
+    return art
   end
 
 
