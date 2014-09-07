@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140821141330) do
+ActiveRecord::Schema.define(version: 20140907205244) do
 
   create_table "active_admin_comments", force: true do |t|
     t.string   "namespace"
@@ -148,6 +148,23 @@ ActiveRecord::Schema.define(version: 20140821141330) do
   add_index "graffitis", ["artists_id"], name: "index_graffitis_on_artists_id"
   add_index "graffitis", ["locations_id"], name: "index_graffitis_on_locations_id"
   add_index "graffitis", ["slug"], name: "index_graffitis_on_slug", unique: true
+
+  create_table "instagram_arts", force: true do |t|
+    t.text     "everything"
+    t.string   "image_url"
+    t.integer  "date_found"
+    t.text     "tags"
+    t.text     "caption"
+    t.string   "user_name"
+    t.integer  "user_id"
+    t.string   "user_avatar"
+    t.string   "location_name"
+    t.float    "location_lon"
+    t.float    "location_lat"
+    t.integer  "location_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
 
   create_table "locations", force: true do |t|
     t.text     "address"

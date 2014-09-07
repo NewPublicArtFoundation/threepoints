@@ -21,6 +21,8 @@ class InstagramController < ApplicationController
 
   def store_tag_response
     tag_name = "streetart"
+    options = {}
+    # options.min_id = InstagramArts.last()
     tags = Instagram.tag_recent_media(tag_name, options)
     @arts = ['1', '2', '3']
     @arts = parse_tags tags
@@ -46,9 +48,10 @@ class InstagramController < ApplicationController
   def process_tag tags, tag
     art = {}
 
-    art["everything"]     = tag
-    art["image_url"]      = tag["images"]["standard_resolution"]["url"]
-    art["date_found"]     = tag["created_time"]
+    art["everything"] = tag
+    art["image_id"]   = tag["id"]
+    art["image_url"]  = tag["images"]["standard_resolution"]["url"]
+    art["date_found"] = tag["created_time"]
 
     if (tag["tags"] != nil)
       tag["tags"].each do |tag_result|
