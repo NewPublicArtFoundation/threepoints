@@ -1,0 +1,64 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Everything:</strong>
+  <%= @instagram_art.everything %>
+</p>
+
+<p>
+  <strong>Image url:</strong>
+  <%= @instagram_art.image_url %>
+</p>
+
+<p>
+  <strong>Date found:</strong>
+  <%= @instagram_art.date_found %>
+</p>
+
+<p>
+  <strong>Tags:</strong>
+  <%= @instagram_art.tags %>
+</p>
+
+<p>
+  <strong>Caption:</strong>
+  <%= @instagram_art.caption %>
+</p>
+
+<p>
+  <strong>User name:</strong>
+  <%= @instagram_art.user_name %>
+</p>
+
+<p>
+  <strong>User:</strong>
+  <%= @instagram_art.user_id %>
+</p>
+
+<p>
+  <strong>User avatar:</strong>
+  <%= @instagram_art.user_avatar %>
+</p>
+
+<p>
+  <strong>Location name:</strong>
+  <%= @instagram_art.location_name %>
+</p>
+
+<p>
+  <strong>Location lon:</strong>
+  <%= @instagram_art.location_lon %>
+</p>
+
+<p>
+  <strong>Location lat:</strong>
+  <%= @instagram_art.location_lat %>
+</p>
+
+<p>
+  <strong>Location:</strong>
+  <%= @instagram_art.location_id %>
+</p>
+
+<%= link_to 'Edit', edit_instagram_art_path(@instagram_art) %> |
+<%= link_to 'Back', instagram_arts_path %>

@@ -21,13 +21,14 @@ class InstagramController < ApplicationController
 
   def store_tag_response
     tag_name = "streetart"
-    tags = Instagram.tag_recent_media(tag_name)
+    tags = Instagram.tag_recent_media(tag_name, options)
     @arts = ['1', '2', '3']
     @arts = parse_tags tags
   end
 
-  # def create_pages_using_tags(arts)
-  # end
+  def create_pages_using_tags arts
+
+  end
 
   # Used by store_tag_response
   def parse_tags tags
