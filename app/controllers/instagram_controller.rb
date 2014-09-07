@@ -11,12 +11,7 @@ class InstagramController < ApplicationController
   end
 
   def create
-    request.body.rewind  # in case someone already read it
-    data = request.body.read
-
-    respond_to do |format|
-      format.html { render :text => data }
-    end
+    store_tag_response
   end
 
   def store_tag_response
