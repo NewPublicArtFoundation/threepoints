@@ -31,10 +31,16 @@ class InstagramController < ApplicationController
     tags = Instagram.tag_recent_media(tag_name, options)
     @arts = ['1', '2', '3']
     @arts = parse_tags tags
+    create_pages_using_tags @arts
   end
 
   def create_pages_using_tags arts
-
+    arts.each do |art|
+      result = InstagramArt.where(:image_url=>art['image_url'])
+      if(result == nil)
+        InstagramArt.create(art)
+      end
+    end
   end
 
   # Used by store_tag_response
@@ -88,7 +94,7 @@ class InstagramController < ApplicationController
       art["location_lat"]   = tag["location"]["latitude"]
       art["location_id"]    = tag["location"]["id"]
     else
-      art["location"]          = nil
+      art["location_name"]          = nil
     end
 
     return art
