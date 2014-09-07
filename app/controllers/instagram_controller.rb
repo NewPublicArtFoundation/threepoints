@@ -78,7 +78,7 @@ class InstagramController < ApplicationController
 
     if tag["caption"] != nil
       if tag["caption"]["text"] != nil
-        art["caption"]        = tag["caption"]["text"].gsub(/\360\237/, '')
+        art["caption"]        = tag["caption"]["text"]
       end
     else
       art["caption"]        = nil
