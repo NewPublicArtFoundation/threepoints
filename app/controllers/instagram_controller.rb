@@ -29,6 +29,7 @@ class InstagramController < ApplicationController
   # def create_pages_using_tags(arts)
   # end
 
+  # Used by store_tag_response
   def parse_tags tags
     @arts = []
 
@@ -40,6 +41,7 @@ class InstagramController < ApplicationController
     return @arts
   end
 
+  # Used by parse_tags
   def process_tag tags, tag
     art = {}
 
