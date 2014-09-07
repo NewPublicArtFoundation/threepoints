@@ -16,7 +16,7 @@ gem 'coffee-rails', '~> 4.0.0'
 gem 'pace-rails'
 gem 'handlebars_assets'
 gem 'timelineJS-rails', '~> 1.1.5'
-
+gem 'emoji'
 
 gem 'acts-as-taggable-on'
 gem 'paperclip', github: 'thoughtbot/paperclip'

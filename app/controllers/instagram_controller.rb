@@ -37,7 +37,7 @@ class InstagramController < ApplicationController
   def create_pages_using_tags arts
     arts.each do |art|
       result = InstagramArt.where(:image_url=>art['image_url'])
-      if(result == nil)
+      if(result == [])
         InstagramArt.create(art)
       end
     end
@@ -78,7 +78,7 @@ class InstagramController < ApplicationController
 
     if tag["caption"] != nil
       if tag["caption"]["text"] != nil
-        art["caption"]        = tag["caption"]["text"]
+        art["caption"]        = tag["caption"]["text"].gsub(/\360\237/, '')
       end
     else
       art["caption"]        = nil
