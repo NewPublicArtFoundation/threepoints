@@ -20,7 +20,7 @@ class InstagramController < ApplicationController
     if(InstagramArt.last() != nil)
       last_id = InstagramArt.last().image_id
       options = {
-        :min_id => last_id
+        :next_min_id => last_id.to_i
       }
     end
     tags = Instagram.tag_recent_media(tag_name, options)
