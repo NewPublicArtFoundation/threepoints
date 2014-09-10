@@ -30,7 +30,7 @@ class InstagramArtsController < InheritedResources::Base
 
     respond_to do |format|
       if @instagram_arts.save
-        format.html { redirect_to @instagram_arts, notice: 'Art was successfully created.' }
+        format.html { redirect_to root_url, notice: 'Art was successfully created.' }
         format.json { render :show, status: :created, location: @instagram_arts }
       else
         format.html { render :new }
