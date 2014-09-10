@@ -4,7 +4,7 @@ class InstagramArtsController < InheritedResources::Base
     # GET /arts
     # GET /arts.json
     def index
-      @instagram_artss = InstagramArts.all
+      @instagram_arts = InstagramArts.all
     end
 
     # GET /arts/1
