@@ -4,7 +4,7 @@ class InstagramArtsController < InheritedResources::Base
   # GET /arts
   # GET /arts.json
   def index
-    @instagram_arts = InstagramArt.limit(20).all
+    @instagram_arts = InstagramArt.limit(20).all.reverse
   end
 
   # GET /arts/1
