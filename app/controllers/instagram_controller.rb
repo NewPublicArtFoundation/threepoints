@@ -11,7 +11,7 @@ class InstagramController < ApplicationController
   end
 
   def create
-    # store_tag_response
+    store_tag_response
   end
 
   def store_tag_response
