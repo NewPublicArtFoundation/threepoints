@@ -6,6 +6,8 @@ Rails.application.routes.draw do
     resources :uploads
   end
 
+  get 'sitemap', to: 'api#sitemap'
+
   root 'pages#index'
 
   get  'instagram/subscription' => 'instagram#subscription'

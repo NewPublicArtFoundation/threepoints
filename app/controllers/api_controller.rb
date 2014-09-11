@@ -1,4 +1,8 @@
 class ApiController < ApplicationController
+  def sitemap
+    redirect_to 'https://s3.amazonaws.com/lkbg-aws-box/0_sitemap/sitemap.xml.gz'
+  end
+
   def aws
     s3 = AWS::S3.new(access_key_id: ENV['AWS_ACCESS_KEY_ID'], secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'], region: 'us-east-1')
     i = 0
