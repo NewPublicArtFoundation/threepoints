@@ -15,9 +15,9 @@
         prefix : '',
         suffix : ''
       }
+      window.current_count = parseInt($('#count-amount').html(), 10);
       var continueCount = new countUp("count-amount", current_count, data, 0, .5, options);
       continueCount.start();
-      window.current_count = data;
     });
   }, 2000);
 </script>
