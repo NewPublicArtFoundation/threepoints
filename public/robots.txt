@@ -4,13 +4,22 @@
 
 User-agent: *
 Disallow: http://www.publicartfound.com/graffitis/new
+Disallow: /graffitis/new
 Disallow: http://www.publicartfound.com/locations/new
+Disallow: /locations/new
 Disallow: http://www.publicartfound.com/instagram_arts/new
+Disallow: /instagram_arts/new
 Disallow: http://www.publicartfound.com/api/new
+Disallow: /api/new
 Disallow: http://www.publicartfound.com/artists/new
+Disallow: /artists/new
 Disallow: http://www.publicartfound.com/instagram/new
+Disallow: /instagram/new
 Disallow: http://www.publicartfound.com/pages/new
+Disallow: /pages/new
 Disallow: http://www.publicartfound.com/uploads/new
+Disallow: /uploads/new
 Disallow: http://www.publicartfound.com/users/new
+Disallow: /users/new
 
 Sitemap: http://www.publicartfound.com/sitemap.xml.gz
