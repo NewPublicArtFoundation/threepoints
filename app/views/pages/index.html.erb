@@ -9,6 +9,14 @@
   <%#= render 'layouts/about/projectSource' %>
 
 <% else %>
+  <%
+    set_meta_tags :og => {
+      :title    => 'Public Artfound',
+      :type     => 'website',
+      :url      => 'http://www.publicartfound.com',
+      :image    => 'http://www.publicartfound.com/assets/ex-macbook.png',
+    }
+  %>
   <% set_meta_tags :canonical => "http://www.publicartfound.com/" %>
   <% set_meta_tags :site => 'Public Artfound', :title => 'The only platform to showcase street art and graffiti.', :reverse => true %>
 
