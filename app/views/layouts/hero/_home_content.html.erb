@@ -3,9 +3,10 @@
   <div class="large-6 large-push-3 column">
     <div class="hero-example-text">
       <%= render 'layouts/hero/logo_base64' %>
-      <h1 class="hero-white second">The best way to track and <br>share public art experiments</h1>
-      <p class="">We want to be the place you collect your pictures of street art, attribute artists, and annotate important dates. We want to be where artists showcase interactive art projects that span large spaces. We want to be the place to reference when you are curious about public art installations.</p>
-      <h2 class="hero-white fifth text-center">
+      <%= render 'layouts/hero/countup' %>
+      <h1 class="hero-white second text-center">The best way to track and <br>share public art experiments</h1>
+
+       <h2 class="fifth text-center">
         <%= link_to '#', :class =>'success radius button white bold scrollDownToContent' do %>
           Learn more
         <% end %>
