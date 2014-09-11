@@ -1,54 +1,50 @@
 <div class="row h10"></div>
-<div class="large-12 editable-content">
-  <div class="large-6 column">
-    <%= image_tag @instagram_arts.image_url %>
+<div class="large-7 editable-content column large-centered">
+  <div class="row">
+    <div class="large-12 column text-center">
+      <%= image_tag @instagram_arts.image_url %>
+    </div>
   </div>
-  <div class="large-6 column">
+  <div class="row h10"></div>
+  <div class="page-button-wrap">
+    <%= link_to "<", instagram_art_path(:id => @instagram_arts.id-1), {:class => 'tiny secondary button round'} %>
+    <%= link_to ">", instagram_art_path(:id => @instagram_arts.id+1), {:class => 'tiny secondary button round button-right'} %>
+  </div>
+  <div class="row h10"></div>
+  <% if @instagram_arts.location_lat != nil %>
     <div class="row">
-      <div class="large-12 column">
-        <div class="row">
-          <%= image_tag @instagram_arts.user_avatar %>
-          <h1 class="inline-block">
-            <%= @instagram_arts.user_name %>
-          </h1>
-        </div>
+      <div class="large-8 column">
+        <div id="map-small"></div>
+      </div>
+      <div class="large-4 column">
+        <p>
+          <strong>Location name:</strong>
+          <%= @instagram_arts.location_name %>
+        </p>
+        <p>
+          <strong>Lat: </strong><%= @instagram_arts.location_lat %><br>
+          <strong>Lon: </strong><%= @instagram_arts.location_lon %>
+        </p>
+        <p>
+          <%= @instagram_arts.tags %>
+        </p>
       </div>
     </div>
-    <div class="row">
-      <div class="large-12 column">
-        <h3><%= @instagram_arts.caption %></h3>
-      </div>
+  <% end %>
+  <div class="row h10"></div>
+  <div class="row">
+    <%= image_tag @instagram_arts.user_avatar %>
+    <h1 class="inline-block">
+      <%= @instagram_arts.user_name %>
+    </h1>
+  </div>
+  <div class="row">
+    <div class="large-12 column">
+      <h3><%= @instagram_arts.caption %></h3>
     </div>
-    <div class="row column">
-      <time <%= @instagram_arts.date_found %>></time>
-    </div>
-    <% if @instagram_arts.location_lat != nil %>
-      <div class="row">
-        <div class="large-8 column">
-          <div id="map-small"></div>
-        </div>
-        <div class="large-4 column">
-          <p>
-            <strong>Location name:</strong>
-            <%= @instagram_arts.location_name %>
-          </p>
-          <p>
-            <strong>Lat: </strong><%= @instagram_arts.location_lat %><br>
-            <strong>Lon: </strong><%= @instagram_arts.location_lon %>
-          </p>
-          <p>
-            <%= @instagram_arts.tags %>
-          </p>
-        </div>
-      </div>
-    <% end %>
   </div>
 </div>
-<%#= link_to "Add Info", instagram_art_path(:id => @instagram_arts.id-1), {:class => 'button large-12 row secondary round'} %>
-<div class="page-button-wrap">
-  <%= link_to "Prev Piece", instagram_art_path(:id => @instagram_arts.id-1), {:class => 'button round'} %>
-  <%= link_to "Next Piece", instagram_art_path(:id => @instagram_arts.id+1), {:class => 'button round button-right'} %>
-</div>
+
 <script src='https://api.tiles.mapbox.com/mapbox.js/v2.1.0/mapbox.js'></script>
 <style>
   #map-small{
