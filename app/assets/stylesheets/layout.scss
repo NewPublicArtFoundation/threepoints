@@ -13,3 +13,12 @@
 .edit{
   background: #333;
 }
+
+.button-page-wrap{
+  position: fixed;
+  top: 420px;
+  width: 100%;
+  .button-right{
+    float:right;
+  }
+}

@@ -44,9 +44,11 @@
     <% end %>
   </div>
 </div>
-<%= link_to "Add Info", instagram_art_path(:id => @instagram_arts.id-1), {:class => 'button large-12 row secondary round'} %>
-<%= link_to "Prev Piece", instagram_art_path(:id => @instagram_arts.id-1), {:class => 'button round'} %>
-<%= link_to "Next Piece", instagram_art_path(:id => @instagram_arts.id+1), {:class => 'button round'} %>
+<%#= link_to "Add Info", instagram_art_path(:id => @instagram_arts.id-1), {:class => 'button large-12 row secondary round'} %>
+<div class="page-button-wrap">
+  <%= link_to "Prev Piece", instagram_art_path(:id => @instagram_arts.id-1), {:class => 'button round'} %>
+  <%= link_to "Next Piece", instagram_art_path(:id => @instagram_arts.id+1), {:class => 'button round button-right'} %>
+</div>
 <script src='https://api.tiles.mapbox.com/mapbox.js/v2.1.0/mapbox.js'></script>
 <style>
   #map-small{
