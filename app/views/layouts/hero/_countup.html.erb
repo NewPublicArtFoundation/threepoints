@@ -3,6 +3,17 @@
 <script src="/js/countup.js"></script>
 
 <script>
+  window.setInterval(function(){
+    $.ajax({
+      url: "/art_count"
+    }).done(function(data) {
+      window.old_count = $('#count-amount').html();
+      window.current_count = data;
+      var countUp = new countUp("count-amount", old_count, current_count, 0, 4.5, options);
+      countUp.start();
+    });
+  }, 2000);
+  window.current_count = <%= InstagramArt.count %>;
   var options = {
     useEasing : true,
     useGrouping : true,
@@ -11,6 +22,6 @@
     prefix : '',
     suffix : ''
   }
-  var countUp = new countUp("count-amount", <%= InstagramArt.count/2 %>, 20000, 0, 4.5, options);
+  var countUp = new countUp("count-amount", <%= InstagramArt.count/2 %>, current_count, 0, 4.5, options);
   countUp.start();
 </script>
