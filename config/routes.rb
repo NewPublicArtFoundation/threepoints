@@ -6,6 +6,7 @@ Rails.application.routes.draw do
     resources :uploads
   end
 
+  get 'art_count'       => 'api#get_count'
   get 'sitemap'         => 'api#sitemap'
   get 'sitemap.xml.gz'  => 'api#sitemap'
   get 'sitemap.xml'     => 'api#sitemap'
