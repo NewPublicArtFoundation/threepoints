@@ -1,4 +1,4 @@
-<h1 class="text-center hero-white">Over <strong id="count-amount"><%= InstagramArt.count/2 %></strong> pieces</h1>
+<h1 class="text-center hero-white">Over <strong id="count-amount"><%= InstagramArt.count %></strong> pieces</h1>
 
 <script src="/js/countup.js"></script>
 
@@ -7,7 +7,7 @@
     $.ajax({
       url: "/art_count"
     }).done(function(data) {
-      window.old_count = $('#count-amount').html();
+      window.old_count = parseInt($('#count-amount').html(), 10);
       window.current_count = data;
       var options = {
         useEasing : true,
@@ -21,15 +21,4 @@
       continueCount.start();
     });
   }, 2000);
-  window.current_count = <%= InstagramArt.count %>;
-  var options = {
-    useEasing : true,
-    useGrouping : true,
-    separator : ',',
-    decimal : '.',
-    prefix : '',
-    suffix : ''
-  }
-  var countUp = new countUp("count-amount", <%= InstagramArt.count/2 %>, current_count, 0, 4.5, options);
-  countUp.start();
 </script>
