@@ -46,7 +46,7 @@
 <link href='https://api.tiles.mapbox.com/mapbox.js/v2.1.0/mapbox.css' rel='stylesheet' />
 <script>
 L.mapbox.accessToken = 'pk.eyJ1IjoibGtiZ2lmdCIsImEiOiJyTERaTml3In0.y2wd_Fi58ux53Wm1Ur1qCg';
-var map = L.mapbox.map('map-small', 'examples.map-20v6611k', , {
+var map = L.mapbox.map('map-small', 'examples.map-20v6611k', {
   zoomControl: false
 })
     .setView([<%= @instagram_arts.location_lat %>,<%= @instagram_arts.location_lon %>], 12);
