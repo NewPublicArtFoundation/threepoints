@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   resources :instagram_arts
+  resources :instagram_arts, as: 'a'
 
   resources :arts do
     resources :uploads
