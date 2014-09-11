@@ -18,24 +18,26 @@
     <div class="row column">
       <time <%= @instagram_arts.date_found %>></time>
     </div>
-    <div class="row">
-      <div class="large-8 column">
-        <div id="map-small"></div>
+    <% if @instagram_arts.location_lat != nil %>
+      <div class="row">
+        <div class="large-8 column">
+          <div id="map-small"></div>
+        </div>
+        <div class="large-4 column">
+          <p>
+            <strong>Location name:</strong>
+            <%= @instagram_arts.location_name %>
+          </p>
+          <p>
+            <strong>Lat: </strong><%= @instagram_arts.location_lat %><br>
+            <strong>Lon: </strong><%= @instagram_arts.location_lon %>
+          </p>
+          <p>
+            <%= @instagram_arts.tags %>
+          </p>
+        </div>
       </div>
-      <div class="large-4 column">
-        <p>
-          <strong>Location name:</strong>
-          <%= @instagram_arts.location_name %>
-        </p>
-        <p>
-          <strong>Lat: </strong><%= @instagram_arts.location_lat %><br>
-          <strong>Lon: </strong><%= @instagram_arts.location_lon %>
-        </p>
-        <p>
-          <%= @instagram_arts.tags %>
-        </p>
-      </div>
-    </div>
+    <% end %>
   </div>
 </div>
 <script src='https://api.tiles.mapbox.com/mapbox.js/v2.1.0/mapbox.js'></script>
