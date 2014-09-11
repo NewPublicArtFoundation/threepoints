@@ -15,6 +15,7 @@ gem 'coffee-rails', '~> 4.0.0'
 
 gem 'tire'
 gem 'sitemap_generator'
+gem 'fog'
 
 gem 'pace-rails'
 gem 'meta-tags'
