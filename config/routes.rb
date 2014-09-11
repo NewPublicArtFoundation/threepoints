@@ -6,7 +6,9 @@ Rails.application.routes.draw do
     resources :uploads
   end
 
-  get 'sitemap', to: 'api#sitemap'
+  match 'sitemap'         => to: 'api#sitemap'
+  match 'sitemap.xml.gz'  => to: 'api#sitemap'
+  match 'sitemap.xml'     => to: 'api#sitemap'
 
   root 'pages#index'
 
