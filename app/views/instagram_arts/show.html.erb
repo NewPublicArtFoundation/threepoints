@@ -16,7 +16,6 @@
     </div>
     <div class="row column">
       <time <%= @instagram_arts.date_found %>></time>
-      <h5><%= @instagram_arts.tags %></h5>
     </div>
     <div class="row">
       <div class="large-8 column">
@@ -28,8 +27,11 @@
           <%= @instagram_arts.location_name %>
         </p>
         <p>
-          <strong>Lon: </strong><%= @instagram_arts.location_lon %><br>
-          <strong>Lat: </strong><%= @instagram_arts.location_lat %>
+          <strong>Lat: </strong><%= @instagram_arts.location_lat %><br>
+          <strong>Lon: </strong><%= @instagram_arts.location_lon %>
+        </p>
+        <p>
+          <%= @instagram_arts.tags %>
         </p>
       </div>
     </div>
@@ -44,8 +46,15 @@
 <link href='https://api.tiles.mapbox.com/mapbox.js/v2.1.0/mapbox.css' rel='stylesheet' />
 <script>
 L.mapbox.accessToken = 'pk.eyJ1IjoibGtiZ2lmdCIsImEiOiJyTERaTml3In0.y2wd_Fi58ux53Wm1Ur1qCg';
-var map = L.mapbox.map('map-small', 'examples.map-20v6611k')
-    .setView([<%= @instagram_arts.location_lon %>, <%= @instagram_arts.location_lat %>], 12);
+var map = L.mapbox.map('map-small', 'examples.map-20v6611k', , {
+  zoomControl: false
+})
+    .setView([<%= @instagram_arts.location_lat %>,<%= @instagram_arts.location_lon %>], 12);
+
+map.dragging.disable();
+map.touchZoom.disable();
+map.doubleClickZoom.disable();
+map.scrollWheelZoom.disable();
 
 L.mapbox.featureLayer({
     // this feature is in the GeoJSON format: see geojson.org
@@ -56,8 +65,8 @@ L.mapbox.featureLayer({
         // coordinates here are in longitude, latitude order because
         // x, y is the standard for GeoJSON and many formats
         coordinates: [
-          <%= @instagram_arts.location_lat %>,
-          <%= @instagram_arts.location_lon %>
+          <%= @instagram_arts.location_lon %>,
+          <%= @instagram_arts.location_lat %>
         ]
     },
     properties: {
