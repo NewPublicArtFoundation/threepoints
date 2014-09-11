@@ -939,7 +939,15 @@ $topbar-height: 50px;
 // Controlling the styles for the title in the top bar
 // $topbar-title-weight: normal;
 // $topbar-title-font-size: rem-calc(17);
-
+nav.top-bar{
+  h1{
+    border-top: 2px solid #C04C32;
+    background: #FFF !important;
+  }
+  .top-bar-section li:not(.has-form) a:not(.button) span{
+      color: white !important;
+  }
+}
 // Style the top bar dropdown elements
 $topbar-dropdown-bg: #c04c32;
 $topbar-dropdown-link-color: #fff;
