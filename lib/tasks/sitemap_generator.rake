@@ -23,10 +23,10 @@ namespace 'sitemap' do
         region: 'us-east-1'
       )
 
-    Dir.entries(File.join(Rails.root, "public", "system", "sitemaps")).each do |file_name|
+    Dir.entries(File.join(Rails.root, "public", "0_sitemap")).each do |file_name|
       next if ['.', '..'].include? file_name
-      path = "sitemaps/#{file_name}"
-      file = File.join(Rails.root, "public", "system", "sitemaps", file_name)
+      path = "0_sitemap/#{file_name}"
+      file = File.join(Rails.root, "public", "0_sitemap", file_name)
 
       begin
         s3 = AWS::S3.new
@@ -52,7 +52,7 @@ Rake::Task[:'sitemap:refresh'].replace do
   # if File.exist?(File.join(Rails.root, "config", "s3.yml"))
     # s3_options = YAML.load_file(File.join(Rails.root, "config", "s3.yml"))[Rails.env].symbolize_keys
     bucket_name = 'lkbg-aws-box'
-    SitemapGenerator::Sitemap.ping_search_engines(:sitemap_index_url => "https://#{bucket_name}.s3.amazonaws.com/sitemaps/sitemap_index.xml.gz")
+    SitemapGenerator::Sitemap.ping_search_engines(:sitemap_index_url => "https://#{bucket_name}.s3.amazonaws.com/0_sitemap/sitemap.xml.gz")
   # else
   #   SitemapGenerator::Sitemap.ping_search_engines
   # end
