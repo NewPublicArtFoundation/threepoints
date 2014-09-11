@@ -1,62 +1,74 @@
-<p id="notice"><%= notice %></p>
+<div class="large-12">
+  <div class="large-6 column">
+    <%= image_tag @instagram_arts.image_url %>
+  </div>
+  <div class="large-6 column">
+    <div class="row">
+      <div class="large-4 column">
+        <h1>
+          <%= image_tag @instagram_arts.user_avatar %>
+          <%= @instagram_arts.user_name %>
+        </h1>
+      </div>
+      <div class="large-8 column">
+        <h3><%= @instagram_arts.caption %></h3>
+      </div>
+    </div>
+    <div class="row column">
+      <time <%= @instagram_arts.date_found %>></time>
+      <h5><%= @instagram_arts.tags %></h5>
+    </div>
+    <div class="row">
+      <div class="large-8 column">
+        <div id="map-small"></div>
+      </div>
+      <div class="large-4 column">
+        <p>
+          <strong>Location name:</strong>
+          <%= @instagram_arts.location_name %>
+        </p>
+        <p>
+          <strong>Lon: </strong><%= @instagram_arts.location_lon %><br>
+          <strong>Lat: </strong><%= @instagram_arts.location_lat %>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+<script src='https://api.tiles.mapbox.com/mapbox.js/v2.1.0/mapbox.js'></script>
+<style>
+  #map-small{
+    height: 500px;
+  }
+</style>
+<link href='https://api.tiles.mapbox.com/mapbox.js/v2.1.0/mapbox.css' rel='stylesheet' />
+<script>
+L.mapbox.accessToken = 'pk.eyJ1IjoibGtiZ2lmdCIsImEiOiJyTERaTml3In0.y2wd_Fi58ux53Wm1Ur1qCg';
+var map = L.mapbox.map('map-small', 'examples.map-20v6611k')
+    .setView([<%= @instagram_arts.location_lon %>, <%= @instagram_arts.location_lat %>], 12);
 
-<p>
-  <strong>Image url:</strong>
-  <%= @instagram_arts.image_url %>
-</p>
-
-<p>
-  <strong>Date found:</strong>
-  <%= @instagram_arts.date_found %>
-</p>
-
-<p>
-  <strong>Tags:</strong>
-  <%= @instagram_arts.tags %>
-</p>
-
-<p>
-  <strong>Caption:</strong>
-  <%= @instagram_arts.caption %>
-</p>
-
-<p>
-  <strong>User name:</strong>
-  <%= @instagram_arts.user_name %>
-</p>
-
-<p>
-  <strong>User:</strong>
-  <%= @instagram_arts.user_id %>
-</p>
-
-<p>
-  <strong>User avatar:</strong>
-  <%= @instagram_arts.user_avatar %>
-</p>
-
-<p>
-  <strong>Location name:</strong>
-  <%= @instagram_arts.location_name %>
-</p>
-
-<p>
-  <strong>Location lon:</strong>
-  <%= @instagram_arts.location_lon %>
-</p>
-
-<p>
-  <strong>Location lat:</strong>
-  <%= @instagram_arts.location_lat %>
-</p>
-
-<p>
-  <strong>Location:</strong>
-  <%= @instagram_arts.location_id %>
-</p>
-
-<p>
-  <strong>Image:</strong>
-  <%= @instagram_arts.image_id %>
-</p>
-
+L.mapbox.featureLayer({
+    // this feature is in the GeoJSON format: see geojson.org
+    // for the full specification
+    type: 'Feature',
+    geometry: {
+        type: 'Point',
+        // coordinates here are in longitude, latitude order because
+        // x, y is the standard for GeoJSON and many formats
+        coordinates: [
+          <%= @instagram_arts.location_lat %>,
+          <%= @instagram_arts.location_lon %>
+        ]
+    },
+    properties: {
+        title: "<%= @instagram_arts.user_name %>'s photo",
+        description: '<%= @instagram_arts.location_name %>',
+        // one can customize markers by adding simplestyle properties
+        // https://www.mapbox.com/foundations/an-open-platform/#simplestyle
+        'marker-size': 'large',
+        'marker-color': '#BE9A6B',
+        "iconUrl": "<%= @instagram_arts.user_avatar %>",
+        "iconSize": [50, 50]
+    }
+}).addTo(map);
+</script>
