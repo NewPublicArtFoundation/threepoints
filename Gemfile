@@ -17,6 +17,8 @@ gem 'tire'
 gem 'sitemap_generator'
 
 gem 'pace-rails'
+gem 'meta-tags'
+
 gem 'handlebars_assets'
 gem 'timelineJS-rails', '~> 1.1.5'
 
