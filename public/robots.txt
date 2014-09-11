@@ -2,6 +2,15 @@
 #
 # To ban all spiders from the entire site uncomment the next two lines:
 # User-agent: *
-# Disallow: /
+
+Disallow: /graffitis/new
+Disallow: /locations/new
+Disallow: /instagram_arts/new
+Disallow: /api/new
+Disallow: /artists/new
+Disallow: /instagram/new
+Disallow: /pages/new
+Disallow: /uploads/new
+Disallow: /users/new
 
 Sitemap: http://www.publicartfound.com/sitemap.xml.gz
