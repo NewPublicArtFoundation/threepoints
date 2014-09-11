@@ -9,8 +9,16 @@
     }).done(function(data) {
       window.old_count = $('#count-amount').html();
       window.current_count = data;
-      var countUp = new countUp("count-amount", old_count, current_count, 0, 4.5, options);
-      countUp.start();
+      var options = {
+        useEasing : true,
+        useGrouping : true,
+        separator : ',',
+        decimal : '.',
+        prefix : '',
+        suffix : ''
+      }
+      var continueCount = new countUp("count-amount", old_count, current_count, 0, 4.5, options);
+      continueCount.start();
     });
   }, 2000);
   window.current_count = <%= InstagramArt.count %>;
