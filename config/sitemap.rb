@@ -22,6 +22,10 @@ SitemapGenerator::Sitemap.create do
   # Add all articles:
   #
   InstagramArt.find_each do |art|
-    add a_path(art), :lastmod => art.updated_at
+    add a_path(art), :lastmod => art.updated_at,
+    :images => [{
+      :loc => art.image_url,
+      :title => art.user_name
+    }]
   end
 end
