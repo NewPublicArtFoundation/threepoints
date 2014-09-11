@@ -16,9 +16,9 @@
         suffix : ''
       }
       window.current_count = parseInt($('#count-amount').html(), 10);
-      console.log('data', data);
-      console.log('current_count', current_count);
-      console.log('current_count == data', data == current_count);
+      // console.log('data', data);
+      // console.log('current_count', current_count);
+      // console.log('current_count == data', data == current_count);
       if(! (data == current_count)){
         var continueCount = new countUp("count-amount", current_count, data, 0, .5, options);
         continueCount.start();
