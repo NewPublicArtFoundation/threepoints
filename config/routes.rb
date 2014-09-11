@@ -23,10 +23,9 @@ Rails.application.routes.draw do
   get 'example/map'       => "pages#mapExample"
   get 'example/json'  => "pages#jsonTest"
   get 'example/timeline'  => "pages#timelineExample"
-  get 'about'       => "pages#index"
   get 'pages/home'
   # get 'upload'      => "pages#upload"
-  get 'pages/about'
+  get 'about', to: 'pages#about'
   get "/user/:id"   => "users#show",   as: :user
   get "/user/"      => redirect("/")
   resources :locations do
