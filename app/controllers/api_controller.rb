@@ -1,10 +1,10 @@
 class ApiController < ApplicationController
   def sitemap
-    if(params[:id] != nil){
+    if(params[:id] != nil)
         redirect_to 'https://s3.amazonaws.com/lkbg-aws-box/0_sitemap/sitemap'+params[:id]+'.xml.gz'
-      } else {
+      else
         redirect_to 'https://s3.amazonaws.com/lkbg-aws-box/0_sitemap/sitemap.xml.gz'
-      }
+     end 
   end
 
   def get_count
