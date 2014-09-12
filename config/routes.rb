@@ -8,6 +8,7 @@ Rails.application.routes.draw do
 
   get 'art_count'       => 'api#get_count'
   get 'sitemap'         => 'api#sitemap'
+  get 'sitemap/:id'     => 'api#sitemap'
   get 'sitemap.xml.gz'  => 'api#sitemap'
   get 'sitemap.xml'     => 'api#sitemap'
 
