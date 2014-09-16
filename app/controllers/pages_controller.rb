@@ -2,7 +2,7 @@ class PagesController < ApplicationController
   def index
     @users = User.all
     @locations = Location.all
-    @graffitis = InstagramArt.all.reverse.limit(20)
+    @graffitis = InstagramArt.paginate(:page => params[:page], :per_page => 40)
   end
 
   def jsonTest

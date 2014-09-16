@@ -29,6 +29,7 @@ gem "jquery-fileupload-rails"
 
 gem 'foundation-rails'
 # Use jquery as the JavaScript library
+gem 'will_paginate'
 gem 'jquery-rails'
 gem 'jquery-ui-rails'
 
