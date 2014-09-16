@@ -38,6 +38,11 @@
               </li>
             <% else %>
               <li class="no-span login">
+                <%= link_to about_path, :class=>'no-right-pad' do %>
+                  <span>About</span>
+                <% end %>
+              </li>
+              <li class="no-span login">
                 <%= link_to new_user_session_path, :class=>'no-right-pad' do %>
                   <span>Sign In</span>
                 <% end %>

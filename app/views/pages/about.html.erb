@@ -3,22 +3,19 @@
 <% set_meta_tags :canonical => "http://www.publicartfound.com/about" %>
 <% set_meta_tags :site => 'Public Artfound', :title => 'About', :reverse => true %>
 
-<div class="full-image-wrap">
-  <div class="row">
-    <div class="large-12 column">
-      <%= render 'layouts/hero/home_content' %>
-    </div>x
-  </div>
-</div>
 
-<div class="row">
-  <div class="large-12 column">
-    <h1>About</h1>
-    <p>
-      Public Art Found is a platform for street artists and art curators - to make quality decisions based the power of the internet.
-    </p>
-    <p>
-      Think Angelist meets Wikipedia for art.
-    </p>
+  <%= render 'layouts/hero/heroslider' %>
+
+
+
+  <%= render 'layouts/hero/stepbystep' %>
+
+  <%= render 'layouts/hero/explain' %>
+
+  <div class="call-to-action signup-wrapper">
+    <div class="row">
+      <div class="large-8 column large-centered">
+        <%= render 'layouts/email/signup' %>
+      </div>
+    </div>
   </div>
-</div>

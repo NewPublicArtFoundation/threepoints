@@ -2,6 +2,7 @@ class PagesController < ApplicationController
   def index
     @users = User.all
     @locations = Location.all
+    @graffitis = InstagramArt.all.limit(40)
   end
 
   def jsonTest
