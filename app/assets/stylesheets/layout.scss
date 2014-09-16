@@ -1,3 +1,29 @@
+.content-column{
+  margin-right: 320px;
+  position: relative;
+}
+
+.clearfix:after {
+  clear: both;
+}
+
+.spons-wrapper{
+  width: 320px;
+  float: left;
+  position: relative;
+  padding: 0px 0px 0 20px;
+}
+
+.cc{
+  float: left;
+  margin-right: -320px;
+  width: 100%;
+}
+
+.sponsor-column{
+  display: block;
+}
+
 .clearfix{
   clear: both;
 }

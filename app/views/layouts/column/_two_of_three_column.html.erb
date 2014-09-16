@@ -1,5 +1,20 @@
-<% @graffitis.each do |graffiti| %>
-  <%= link_to graffiti, {:class=>'th', :role=>'button', 'aria-label'=>'Thumbnail'} do %>
-    <%= image_tag graffiti.image_url, {'aria-hidden'=>'true'} %>"/>
-  <% end %>
-<% end %>
+<div class="cc">
+  <div class="content-column clearfix">
+    <div class="content-wrapper clearfix">
+      <ul class="small-block-grid-2 medium-block-grid-4 large-block-grid-5">
+        <% @graffitis.each do |graffiti| %>
+          <li>
+            <%= link_to graffiti, {:class=>'th', :role=>'button', 'aria-label'=>'Thumbnail'} do %>
+              <%= image_tag graffiti.image_url, {'aria-hidden'=>'true'} %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="sponsor-column">
+  <div class="spons-wrapper">
+    <img src="http://fakeimg.pl/300x600" alt="">
+  </div>
+</div>
