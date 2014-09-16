@@ -2,7 +2,7 @@ class PagesController < ApplicationController
   def index
     @users = User.all
     @locations = Location.all
-    @graffitis = InstagramArt.all.reverse.limit(40)
+    @graffitis = InstagramArt.all.reverse.limit(20)
   end
 
   def jsonTest
