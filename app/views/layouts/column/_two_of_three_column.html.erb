@@ -5,7 +5,7 @@
         <% @graffitis.each do |graffiti| %>
           <li>
             <%= link_to graffiti, {:class=>'th', :role=>'button', 'aria-label'=>'Thumbnail'} do %>
-              <%= image_tag graffiti.image_url, {'aria-hidden'=>'true'}, alt: $instagram_arts.tags %>
+              <%= image_tag graffiti.image_url, {'aria-hidden'=>'true'}, alt: graffiti.tags %>
             <% end %>
           </li>
         <% end %>
