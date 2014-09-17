@@ -12,6 +12,7 @@ class InstagramController < ApplicationController
 
   def create
     store_tag_response
+    return true
   end
 
   def store_tag_response
