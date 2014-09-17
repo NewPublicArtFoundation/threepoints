@@ -2,7 +2,7 @@ class PagesController < ApplicationController
   def index
     @users = User.all
     @locations = Location.all
-    @graffitis = InstagramArt.paginate(:page => params[:page], :per_page => 40)
+    @graffitis = InstagramArt.paginate(:page => params[:page], :per_page => 40).order('created_at DESC')
   end
 
   def jsonTest
