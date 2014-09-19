@@ -9,7 +9,7 @@ class Graffiti < ActiveRecord::Base
 
   extend FriendlyId
   friendly_id :name, use: :slugged
-  has_paper_trail
+  # has_paper_trail
   acts_as_taggable
   acts_as_votable
   resourcify

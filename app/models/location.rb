@@ -8,7 +8,7 @@ class Location < ActiveRecord::Base
   has_many :graffitis
   has_and_belongs_to_many :artists
 
-  has_paper_trail
+  # has_paper_trail
   resourcify
   extend FriendlyId
   friendly_id :name, use: :slugged
