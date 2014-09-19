@@ -430,7 +430,7 @@ DEPENDENCIES
   omniauth
   omniauth-facebook
   pace-rails
-  paper_trail (~> 3.0.3)
+  paper_trail
   paperclip!
   passenger
   pg
