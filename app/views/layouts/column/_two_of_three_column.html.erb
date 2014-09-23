@@ -3,12 +3,14 @@
     <div class="content-wrapper clearfix">
       <ul class="small-block-grid-2 medium-block-grid-3 large-block-grid-5">
         <% @graffitis.each do |graffiti| %>
-          <li>
-            <%= link_to graffiti, {:class=>'th', :role=>'button', 'aria-label'=>'Thumbnail'} do %>
-              <%= graffiti.location_lon %>
-              <%= graffiti.location_lat %>
-            <% end %>
-          </li>
+          <% if graffiti.location_lon %>
+            <li>
+              <%= link_to graffiti, {:class=>'th', :role=>'button', 'aria-label'=>'Thumbnail'} do %>
+                <%= graffiti.location_lon %>
+                <%= graffiti.location_lat %>
+              <% end %>
+            </li>
+          <% end %>
         <% end %>
       </ul>
     </div>
