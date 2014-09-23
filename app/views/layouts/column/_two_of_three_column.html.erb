@@ -2,16 +2,29 @@
   <div class="content-column clearfix">
     <div class="content-wrapper clearfix">
       <ul class="small-block-grid-2 medium-block-grid-3 large-block-grid-5">
-        <% @graffitis.each do |graffiti| %>
-          <% if graffiti.location_lon %>
-            <li>
-              <%= link_to graffiti, {:class=>'th', :role=>'button', 'aria-label'=>'Thumbnail'} do %>
-                <%= graffiti.location_lon %>
-                <%= graffiti.location_lat %>
-              <% end %>
-            </li>
-          <% end %>
-        <% end %>
+<script>
+var geojson = [
+  <% @graffitis.each do |graffiti| %>
+    <% if graffiti.location_lon %>
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [<%= graffiti.location_lon %>, <%= graffiti.location_lat %>]
+        },
+        "properties": {
+          "title": "Mapbox SF",
+          "description": "155 9th St, San Francisco",
+          "marker-color": "#fc4353",
+          "marker-size": "large",
+          "marker-symbol": "harbor"
+        }
+      }
+    <% end %>
+  <% end %>
+];
+</script>
+
       </ul>
     </div>
   </div>
