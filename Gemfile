@@ -16,6 +16,7 @@ gem 'coffee-rails', '~> 4.0.0'
 gem 'tire'
 gem 'sitemap_generator'
 
+gem 'redditkit'
 gem 'pace-rails'
 gem 'meta-tags'
 
