@@ -8,6 +8,11 @@
   L.mapbox.accessToken = 'pk.eyJ1IjoibGtiZ2lmdCIsImEiOiJyTERaTml3In0.y2wd_Fi58ux53Wm1Ur1qCg';
 </script>
 
+<style>
+  body { margin:0; padding:0; }
+  #map { position:absolute; top:0; bottom:0; width:100%; }
+</style>
+
 <script>
 var geojson = [
   <% @graffitis.each do |graffiti| %>
@@ -19,8 +24,8 @@ var geojson = [
           "coordinates": [<%= graffiti.location_lon %>, <%= graffiti.location_lat %>]
         },
         "properties": {
-          "title": "Mapbox SF",
-          "description": "155 9th St, San Francisco",
+          "title": "<%= graffiti.user_name %>",
+          "description": "<%= graffiti.caption %>",
           "marker-color": "#fc4353",
           "marker-size": "large",
           "marker-symbol": "harbor"
