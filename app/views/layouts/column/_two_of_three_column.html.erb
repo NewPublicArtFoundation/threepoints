@@ -5,7 +5,8 @@
         <% @graffitis.each do |graffiti| %>
           <li>
             <%= link_to graffiti, {:class=>'th', :role=>'button', 'aria-label'=>'Thumbnail'} do %>
-              <%= image_tag graffiti.image_url, {'aria-hidden'=>'true', :alt => graffiti.tags }%>
+              <%= graffiti.location_lon %>
+              <%= graffiti.location_lat %>
             <% end %>
           </li>
         <% end %>
