@@ -12,7 +12,7 @@
 </style>
 
 <script>
-var geojson = [
+var geoJSON = [
   <% @graffitis.each do |graffiti| %>
     <% if graffiti.location_lon %>
       {
@@ -32,12 +32,6 @@ var geojson = [
     <% end %>
   <% end %>
 ];
-</script>
-
-<script>
-  L.mapbox.map('map', 'examples.map-i86nkdio')
-  .setView([37.8, -96], 4)
-  .featureLayer.setGeoJSON(geojson);
 </script>
 
 <div class="row">
