@@ -1,6 +1,6 @@
 class PagesController < ApplicationController
   def index
-    @graffitis = InstagramArt.paginate(:page => params[:page], :per_page => 40).order('created_at DESC')
+    @graffitis = InstagramArt.paginate(:page => params[:page], :per_page => 100).order('created_at DESC')
   end
 
   def jsonTest
