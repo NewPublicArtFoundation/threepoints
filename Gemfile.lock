@@ -182,6 +182,7 @@ GEM
     hashie (2.1.2)
     hashr (0.0.22)
     hike (1.2.3)
+    htmlentities (4.3.2)
     httparty (0.13.1)
       json (~> 1.8)
       multi_xml (>= 0.5.2)
@@ -297,6 +298,10 @@ GEM
       polyamorous (~> 1.0.0)
     rdoc (4.1.1)
       json (~> 1.4)
+    redditkit (1.0.1)
+      faraday (~> 0.8)
+      htmlentities (~> 4.3)
+      multi_json (~> 1.8)
     responders (1.0.0)
       railties (>= 3.2, < 5)
     rest-client (1.7.2)
@@ -438,6 +443,7 @@ DEPENDENCIES
   rails (= 4.1.1)
   rails_12factor (= 0.0.2)
   rails_config
+  redditkit
   rolify
   rspec-rails
   sass-rails (~> 4.0.3)
