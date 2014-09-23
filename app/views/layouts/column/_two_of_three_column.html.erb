@@ -14,6 +14,9 @@
 <script>
 var geoJSON = [
   <% @graffitis.each do |graffiti| %>
+    <% if graffiti.caption != nil %>
+      <% graffiti.caption = graffiti.caption.squish %>
+    <% end %>
     <% if graffiti.location_lon %>
       {
         "type": "Feature",
@@ -23,7 +26,7 @@ var geoJSON = [
         },
         "properties": {
           "title": "<%= graffiti.user_name %>",
-          "description": "<%= graffiti.caption.squish %>",
+          "description": "<%= graffiti.caption %>",
           "marker-color": "#fc4353",
           "marker-size": "large",
           "marker-symbol": "harbor"
