@@ -25,7 +25,7 @@ var geojson = [
         },
         "properties": {
           "title": "<%= graffiti.user_name %>",
-          "description": "<%= graffiti.caption %>",
+          "description": "<%= graffiti.caption.squish %>",
           "marker-color": "#fc4353",
           "marker-size": "large",
           "marker-symbol": "harbor"
