@@ -1,7 +1,13 @@
-<div class="cc">
-  <div class="content-column clearfix">
-    <div class="content-wrapper clearfix">
-      <ul class="small-block-grid-2 medium-block-grid-3 large-block-grid-5">
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<script src='https://api.tiles.mapbox.com/mapbox.js/v2.1.2/mapbox.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox.js/v2.1.2/mapbox.css' rel='stylesheet' />
+
+<div id='map'></div>
+
+<script>
+  L.mapbox.accessToken = 'pk.eyJ1IjoibGtiZ2lmdCIsImEiOiJyTERaTml3In0.y2wd_Fi58ux53Wm1Ur1qCg';
+</script>
+
 <script>
 var geojson = [
   <% @graffitis.each do |graffiti| %>
@@ -25,19 +31,11 @@ var geojson = [
 ];
 </script>
 
-      </ul>
-    </div>
-  </div>
-</div>
-<div class="sponsor-column">
-  <div class="spons-wrapper">
-    <%#= render 'googlead/skyscraper' %>
-  <%#= link_to 'http://adclick.g.doubleclick.net/aclk?sa=L&ai=BYRTpmuIYVP3vBO3S0AGD6YGwB7Xp4LEFAAAAEAEg1eS1HTgAWLX6z7KvAWDJxqmLwKTYD7IBDHd3dy52aWNlLmNvbboBCWdmcF9pbWFnZcgBCdoBOGh0dHA6Ly93d3cudmljZS5jb20vcmVhZC9ueWZ3LXJldmlld3Mtc3ByaW5nLXN1bW1lci0yMDE1mAKQTsACAuACAOoCGi8xNjkxNjI0NS92aWNlLmNvbS9mYXNoaW9u-AL30R6QA-ADmAPgA6gDAeAEAaAGHg&num=0&sig=AOD64_2-I4IR8DGDUf5rySfES-cEENlPzg&client=ca-pub-2894379734658613&adurl=http://adclick.g.doubleclick.net/aclk?sa=L&ai=BRQkimuIYVJ7RBsjV0AHjmIF4AAAAABABIAA4AFDLirjEAli7y5kcYMnGqYvApNgPggEJY2EtZ29vZ2xlsgEMd3d3LnZpY2UuY29tyAECqAMB4AQCoAY-4AbdorwB&num=0&sig=AOD64_1w76gp40X90h67GVEsymXFeIofxw&client=&adurl=https://www.facebook.com/espolontequila' do %>
-  <%#= image_tag 'http://s1.2mdn.net/viewad/3084637/300x600.jpeg' %>
-  <%# end %>
-  <%#= image_tag 'http://pagead2.googlesyndication.com/simgad/11358719611638421426' %>
-  </div>
-</div>
+<script>
+  L.mapbox.map('map', 'examples.map-i86nkdio')
+  .setView([37.8, -96], 4)
+  .featureLayer.setGeoJSON(geojson);
+</script>
 
 <div class="row">
   <%= will_paginate @graffitis %>
